@@ -79,6 +79,6 @@ El video deberá durar entre 5 y 12 minutos y mostrar el razonamiento del proyec
 ## Entrega
 
 - **Rama:** `main`
-- **Commit de entrega:** completar con el SHA final.
+- **Commit de entrega:** `199057a0a3f1e339e8bf0ca6f37220b7b0bb7c84`
 - **Repositorio:** https://github.com/estanislaomolina/nafta2go
 - **Project:** https://github.com/users/estanislaomolina/projects/1
