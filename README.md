@@ -72,13 +72,10 @@ La prioridad actual es la Entrega 1. Las tareas de POC y MVP están planificadas
 
 Pendiente de completar:
 
-> **Video:** PEGAR_ACA_EL_LINK_PUBLICO_DEL_VIDEO
-
-El video deberá durar entre 5 y 12 minutos y mostrar el razonamiento del proyecto, la evidencia del notebook, el PRD, los ADRs y el roadmap.
+> **Video:** [Nafta2Go — Entrega 1: Diseño, PRD y Roadmap](https://youtu.be/zZpi70Od-EE)
 
 ## Entrega
 
 - **Rama:** `main`
-- **Commit de entrega:** `199057a0a3f1e339e8bf0ca6f37220b7b0bb7c84`
 - **Repositorio:** https://github.com/estanislaomolina/nafta2go
 - **Project:** https://github.com/users/estanislaomolina/projects/1
