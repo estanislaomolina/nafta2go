@@ -11,6 +11,7 @@ from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
 from sqlalchemy import inspect
+from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError
 
 from nafta2go.persistence import schema
@@ -83,3 +84,10 @@ def test_alembic_cli_upgrade_from_repo_root(tmp_path):
     )
     assert completed.returncode == 0, completed.stderr
     assert db_file.exists()
+
+
+def test_default_url_is_anchored_to_repo_root(tmp_path, monkeypatch):
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.chdir(tmp_path)
+    path = Path(make_url(database_url()).database)
+    assert path == ROOT / "data" / "nafta2go.db"

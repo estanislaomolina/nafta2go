@@ -1,7 +1,7 @@
 """Conexión a la base y migraciones.
 
-La URL sale de DATABASE_URL; por defecto es un SQLite local en data/, relativo
-a la raíz desde donde se ejecuta.
+La URL sale de DATABASE_URL; por defecto es un SQLite local en data/ de la raíz
+del repositorio, sin importar desde qué carpeta se ejecute.
 """
 
 import os
@@ -12,8 +12,8 @@ from alembic.config import Config
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.engine import make_url
 
-DEFAULT_URL = "sqlite:///data/nafta2go.db"
 ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_URL = f"sqlite:///{ROOT / 'data' / 'nafta2go.db'}"
 
 
 def database_url() -> str:

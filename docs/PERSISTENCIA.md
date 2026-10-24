@@ -16,8 +16,8 @@ Implementa la tarea POC-06 (#11), correspondiente a RF08, RNF03 y RNF05 del
 ## Uso local
 
 La URL de la base sale de `DATABASE_URL`. Si no está definida, se usa
-`sqlite:///data/nafta2go.db`, relativa a la raíz del repositorio. El directorio
-`data/` está en `.gitignore`.
+`data/nafta2go.db` dentro de la raíz del repositorio, sin importar desde qué
+carpeta se ejecute. El directorio `data/` está en `.gitignore`.
 
 ```bash
 alembic upgrade head      # crea o actualiza el esquema
