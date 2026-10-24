@@ -4,6 +4,7 @@ Las funciones reciben una conexión: la transacción la decide quien llama.
 """
 
 import math
+import numbers
 from collections.abc import Iterable, Mapping
 from datetime import datetime
 from decimal import Decimal
@@ -61,7 +62,7 @@ def finish_run(
         .values(
             status=status,
             finished_at=finished_at,
-            report=report,
+            report=None if report is None else _json_safe(report),
             error=error,
             rules_version=rules_version,
         )
@@ -215,6 +216,8 @@ def _json_safe(value: object) -> object:
         return [_json_safe(v) for v in value]
     if value is None or isinstance(value, bool | int | str):
         return value
+    if isinstance(value, numbers.Integral):
+        return int(value)
     if isinstance(value, float):
         return None if not math.isfinite(value) else value
     return str(value)

@@ -1,6 +1,7 @@
 """Tests del ciclo de vida de una ejecución de ingesta."""
 
 from datetime import datetime
+from decimal import Decimal
 
 import pytest
 
@@ -144,3 +145,22 @@ def test_report_is_not_mutated(engine):
     report_before = dict(original.report)
     ingest(engine, capture(), normalizer_returning(original), clock=fixed_clock)
     assert original.report == report_before
+
+
+def test_report_with_non_json_values_is_stored(engine):
+    report = {
+        "filas_validas": 2,
+        "filas_rechazadas": 1,
+        "ultima_vigencia": datetime(2026, 10, 23, 6, 0),
+        "precio_medio": Decimal("2147.50"),
+        "cobertura": float("nan"),
+    }
+    run_id = ingest(
+        engine, capture(), normalizer_returning(result(report=report)), clock=fixed_clock
+    )
+    with engine.connect() as conn:
+        run = repo.get_run(conn, run_id)
+    assert run["status"] == "succeeded"
+    assert run["report"]["ultima_vigencia"] == "2026-10-23 06:00:00"
+    assert run["report"]["precio_medio"] == "2147.50"
+    assert run["report"]["cobertura"] is None
