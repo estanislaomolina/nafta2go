@@ -89,8 +89,8 @@ La Entrega 2 (POC) está en curso. Esta tabla declara qué partes existen, cuál
 | Integración continua: links, lint, tests y secretos | POC-07 | Implementado |
 | Normalización de precios | POC-01 | Pendiente |
 | Persistencia e ingesta mínimas | POC-06 | Pendiente |
-| Proveedor de rutas | POC-03 | Implementado. Los tests simulan la API; la prueba autenticada está pendiente |
-| Motor determinístico | POC-04 | En revisión |
+| Proveedor de rutas | POC-03 | Implementado. Los tests simulan la API; la prueba autenticada está en `docs/evidencia/` |
+| Motor determinístico | POC-04 | Implementado |
 | Flujo de punta a punta | POC-05 | Pendiente |
 | Levantar el sistema completo con contenedores | POC-07 | Pendiente: depende de POC-05 y POC-06 |
 | Diagnóstico estadístico con ML | MVP | Fuera del alcance de la POC |

@@ -1,0 +1,49 @@
+{
+  "executed_at_utc": "2026-10-24T20:27:27+00:00",
+  "provider": "openrouteservice",
+  "endpoint": "POST https://api.heigit.org/openrouteservice/v2/matrix/driving-car",
+  "matrix": {
+    "stations": 20,
+    "locations": 22,
+    "elements": 441,
+    "null_pairs": 0
+  },
+  "latency": {
+    "n": 5,
+    "p50_s": 0.37,
+    "p95_s": 1.237,
+    "max_s": 1.237
+  },
+  "latencies_s": [
+    1.237,
+    0.37,
+    0.394,
+    0.363,
+    0.365
+  ],
+  "reference_trip": {
+    "duration_s": 1087.69,
+    "distance_m": 10229.52
+  },
+  "round_trip": {
+    "ok": true
+  },
+  "rate_limit": {
+    "x-ratelimit-limit": "500",
+    "x-ratelimit-remaining": "495",
+    "x-ratelimit-reset": "1792960031"
+  },
+  "errors": {
+    "invalid_key": {
+      "error": "InvalidCredentials",
+      "status": 403,
+      "provider_code": null
+    },
+    "point_in_river": {
+      "error": null,
+      "status": 200,
+      "provider_code": null
+    }
+  },
+  "requests_used": 8
+}

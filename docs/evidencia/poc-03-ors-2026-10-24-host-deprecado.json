@@ -1,0 +1,49 @@
+{
+  "executed_at_utc": "2026-10-24T20:05:20+00:00",
+  "provider": "openrouteservice",
+  "endpoint": "POST /v2/matrix/driving-car",
+  "matrix": {
+    "stations": 20,
+    "locations": 22,
+    "elements": 441,
+    "null_pairs": 0
+  },
+  "latency": {
+    "n": 5,
+    "p50_s": 0.371,
+    "p95_s": 1.195,
+    "max_s": 1.195
+  },
+  "latencies_s": [
+    1.195,
+    0.364,
+    0.371,
+    0.366,
+    0.371
+  ],
+  "reference_trip": {
+    "duration_s": 1087.69,
+    "distance_m": 10229.52
+  },
+  "round_trip": {
+    "ok": true
+  },
+  "rate_limit": {
+    "x-ratelimit-limit": "50",
+    "x-ratelimit-remaining": "45",
+    "x-ratelimit-reset": "1792958704"
+  },
+  "errors": {
+    "invalid_key": {
+      "error": "InvalidCredentials",
+      "status": 403,
+      "provider_code": null
+    },
+    "point_in_river": {
+      "error": null,
+      "status": 200,
+      "provider_code": null
+    }
+  },
+  "requests_used": 8
+}

@@ -104,7 +104,7 @@ def run_probe(
     return {
         "executed_at_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "provider": "openrouteservice",
-        "endpoint": "POST /v2/matrix/driving-car",
+        "endpoint": f"POST {client.matrix_url}",
         "matrix": {
             "stations": len(stations),
             "locations": len(stations) + 2,
