@@ -1,2 +1,5 @@
 # Dependencias de ejecución de la aplicación.
 requests>=2.32,<3
+sqlalchemy>=2.0,<3
+# 1.16 agrega path_separator, usado en alembic.ini para rutas con espacios.
+alembic>=1.16,<2
