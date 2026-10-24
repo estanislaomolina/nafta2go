@@ -21,6 +21,7 @@ Santiago Bunge
 - [ADRs](adr/README.md): decisiones de diseño y comparación de alternativas.
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
+- [Caso real controlado](docs/CASO-POC.md): consulta Obelisco–Cabildo, captura trazable de precios y tramos de rutas pendientes (POC-05).
 - [Consigna del TP](res/%5BSHR%5D%5BS2%5D%20-%20Consigna%20TP%20I408.pdf): requisitos y formato de las entregas.
 - [GitHub Project](https://github.com/users/estanislaomolina/projects/1): seguimiento operativo del roadmap.
 
