@@ -227,3 +227,21 @@ def test_recommendation_result_with_engine_decimals_is_stored(engine):
         "alternatives": [{"station_id": 9930, "metrics": {"final_l": "17.0"}}]
     }
     assert stored["request"] == {"budget_ars": "12000"}
+
+
+@pytest.mark.parametrize(
+    ("alerts", "expected"),
+    [(None, ""), (float("nan"), ""), ("", ""), ("precio_atipico", "precio_atipico")],
+)
+def test_missing_or_text_alerts_are_stored_as_text(engine, alerts, expected):
+    with engine.begin() as conn:
+        run_id = succeeded_run(conn)
+        repo.add_prices(conn, run_id, [price_row(alertas=alerts)])
+        assert repo.prices_for_run(conn, run_id)[0]["alerts"] == expected
+
+
+def test_alert_list_is_joined(engine):
+    with engine.begin() as conn:
+        run_id = succeeded_run(conn)
+        repo.add_prices(conn, run_id, [price_row(alertas=["precio_atipico", "fecha_futura"])])
+        assert repo.prices_for_run(conn, run_id)[0]["alerts"] == "precio_atipico; fecha_futura"

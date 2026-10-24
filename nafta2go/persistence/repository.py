@@ -129,7 +129,7 @@ def add_prices(conn: Connection, run_id: int, rows: Iterable[Mapping[str, object
             "lon": _optional_float(row["longitud"]),
             "valid_from_raw": str(row["fecha_vigencia_original"]),
             "price_raw": str(row["precio_original"]),
-            "alerts": str(row.get("alertas") or ""),
+            "alerts": _alerts_text(row.get("alertas")),
         }
         for row in rows
     ]
@@ -220,4 +220,13 @@ def _json_safe(value: object) -> object:
         return int(value)
     if isinstance(value, float):
         return None if not math.isfinite(value) else value
+    return str(value)
+
+
+def _alerts_text(value: object) -> str:
+    """Las alertas faltantes (None o NaN de un DataFrame) quedan vacías; una lista se une."""
+    if value is None or (isinstance(value, float) and math.isnan(value)):
+        return ""
+    if isinstance(value, list | tuple):
+        return "; ".join(str(v) for v in value)
     return str(value)

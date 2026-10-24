@@ -83,8 +83,10 @@ persistencia no depende de cómo se normaliza:
 - `rules_version`: la versión de las reglas de normalización.
 
 Los precios se guardan como `Decimal`. Las coordenadas faltantes o `NaN` quedan
-como `NULL`. Los valores crudos que no se pueden representar en JSON (fechas,
-`Decimal`, `NaN`) se convierten a texto o `null`.
+como `NULL`. Los valores que no se pueden representar en JSON (fechas, `Decimal`,
+`NaN`) se convierten a texto o `null`, tanto en los valores crudos de los rechazos como
+en el reporte de calidad de la ejecución. Las alertas faltantes quedan vacías y
+una lista de alertas se guarda separada por `; `.
 
 ## Versión de datos de una recomendación
 
