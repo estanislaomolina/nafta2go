@@ -25,12 +25,15 @@ request = FuelRequest(
     reserve_l=2,
 )
 route = Route(
-    to_station_km=10, after_station_km=20,
-    to_station_min=15, after_station_min=25,
-    direct_km=25, direct_min=30,
+    to_station_km=10,
+    after_station_km=20,
+    to_station_min=15,
+    after_station_min=25,
+    direct_km=25,
+    direct_min=30,
 )
 result = evaluate_candidate(request, price_ars_per_l=1200, route=route)
-print(result.feasible)         # True
+print(result.feasible)  # True
 print(result.metrics.final_l)  # 17.0: litros al terminar el recorrido
 ```
 

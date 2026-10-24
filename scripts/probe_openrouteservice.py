@@ -24,8 +24,8 @@ import requests
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from nafta2go.adapters.openrouteservice import OpenRouteServiceClient
-from nafta2go.adapters.routing import Point, RoutingError, trip_matrix
+from nafta2go.adapters.openrouteservice import OpenRouteServiceClient  # noqa: E402
+from nafta2go.adapters.routing import Point, RoutingError, trip_matrix  # noqa: E402
 
 STATIONS_FILE = ROOT / "scripts" / "data" / "stations_sample.json"
 ORIGIN = Point(lat=-34.6037, lon=-58.3816)  # Obelisco
@@ -104,7 +104,7 @@ def run_probe(
     return {
         "executed_at_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "provider": "openrouteservice",
-        "endpoint": "POST /v2/matrix/driving-car",
+        "endpoint": f"POST {client.matrix_url}",
         "matrix": {
             "stations": len(stations),
             "locations": len(stations) + 2,

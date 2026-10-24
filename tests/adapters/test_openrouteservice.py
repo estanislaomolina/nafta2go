@@ -72,7 +72,7 @@ def test_request_targets_matrix_endpoint_with_auth():
     session = FakeSession(ok_response(1, 1))
     client(session).matrix([OBELISCO], [CABILDO])
     call = session.calls[0]
-    assert call["url"] == "https://api.openrouteservice.org/v2/matrix/driving-car"
+    assert call["url"] == "https://api.heigit.org/openrouteservice/v2/matrix/driving-car"
     assert call["headers"]["Authorization"] == "k"
     assert call["json"]["metrics"] == ["duration", "distance"]
     assert call["json"]["units"] == "m"

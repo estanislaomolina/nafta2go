@@ -18,7 +18,9 @@ from nafta2go.adapters.routing import (
     RoutingError,
 )
 
-BASE_URL = "https://api.openrouteservice.org"
+# api.openrouteservice.org está deprecado y se apaga en noviembre de 2026;
+# la misma API key funciona en api.heigit.org con el prefijo /openrouteservice.
+BASE_URL = "https://api.heigit.org/openrouteservice"
 # Origen + destino + hasta veinte candidatas (RF03).
 MAX_LOCATIONS = 22
 # Conexión y lectura en segundos.
@@ -39,7 +41,7 @@ class OpenRouteServiceClient:
     ) -> None:
         self._api_key = api_key
         self._session = session or requests.Session()
-        self._url = f"{base_url.rstrip('/')}/v2/matrix/{profile}"
+        self.matrix_url = f"{base_url.rstrip('/')}/v2/matrix/{profile}"
         self._timeout = timeout
         self.last_rate_limit: dict[str, str] = {}
 
@@ -61,7 +63,7 @@ class OpenRouteServiceClient:
         }
         try:
             response = self._session.post(
-                self._url,
+                self.matrix_url,
                 json=body,
                 headers={"Authorization": self._api_key},
                 timeout=self._timeout,

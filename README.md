@@ -66,9 +66,37 @@ Los ADRs de la Entrega 1 documentan las alternativas evaluadas para:
 - proveedor de rutas y alternativa OSRM;
 - arquitectura modular por capas.
 
+## Desarrollo local
+
+Requiere Python 3.12. Desde la raíz del repositorio:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-dev.txt
+alembic upgrade head
+pytest -v
+ruff check . && ruff format --check .
+```
+
+`alembic upgrade head` crea la base local (SQLite en `data/`); ver [docs/PERSISTENCIA.md](docs/PERSISTENCIA.md).
+
+Los tests y controles de estilo coinciden con los de integración continua. Los tests de persistencia verifican las migraciones en bases temporales. El detalle de cada check, cuáles bloquean el merge y cómo se manejan las credenciales está en [docs/CALIDAD.md](docs/CALIDAD.md).
+
 ## Estado del desarrollo
 
-La Entrega 1 está documentada y comenzó el desarrollo de la Entrega 2. El adaptador de rutas tiene pruebas con respuestas simuladas; la validación autenticada del proveedor y el flujo de POC con datos reales siguen pendientes. El trabajo se sigue en GitHub Projects.
+La Entrega 2 (POC) está en curso. Esta tabla declara qué partes existen, cuáles están simuladas y cuáles faltan; se actualiza en la misma PR que cambia el estado de un componente.
+
+| Componente | Tarea | Estado |
+|---|---|---|
+| Integración continua: links, lint, tests y secretos | POC-07 | Implementado |
+| Normalización de precios | POC-01 | Pendiente |
+| Persistencia e ingesta mínimas | POC-06 | Implementado: esquema, migraciones e ingesta trazable. La descarga y normalización reales esperan POC-01 |
+| Proveedor de rutas | POC-03 | Implementado, con prueba autenticada registrada en docs/evidencia/ |
+| Motor determinístico | POC-04 | Implementado y probado; PR #26 integrado |
+| Flujo de punta a punta | POC-05 | Pendiente |
+| Levantar el sistema completo con contenedores | POC-07 | Pendiente: depende de POC-05 y POC-06 |
+| Diagnóstico estadístico con ML | MVP | Fuera del alcance de la POC |
 
 ## Demostración local de rutas y motor (POC-05 en desarrollo)
 
@@ -94,7 +122,7 @@ El adaptador de OpenRouteService y su prueba autenticada están documentados en 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 pytest -v
 cp .env.example .env   # completar ORS_API_KEY
 python scripts/probe_openrouteservice.py
