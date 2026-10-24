@@ -153,6 +153,11 @@ def _parse_table(table: object, rows: int, cols: int) -> list[list[float | None]
 def _cell(value: object) -> float | None:
     if value is None:
         return None
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
-        raise ValueError(f"valor no numérico en la matriz: {value!r}")
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        or value < 0
+    ):
+        raise ValueError(f"valor inválido en la matriz: {value!r}")
     return float(value)

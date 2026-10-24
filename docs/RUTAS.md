@@ -53,7 +53,7 @@ Nunca escribe la API key.
 
 - Las coordenadas van como **`[longitud, latitud]`**, al revés que en el dataset. `Point` siempre se construye con `lat` y `lon` nombrados y el adaptador hace la inversión.
 - La respuesta trae `durations` (segundos) y `distances` (metros) como matrices `sources × destinations`. Un par sin ruta viene como `null` y el adaptador lo entrega como `None`.
-- Si la respuesta tiene status 200 pero no tiene esa forma (falta una matriz, filas o columnas de largo distinto, valores no numéricos), se trata como proveedor no disponible y no se usa.
+- Si la respuesta tiene status 200 pero no tiene esa forma (falta una matriz, filas o columnas de largo distinto, valores no numéricos, no finitos o negativos), se trata como proveedor no disponible y no se usa.
 
 ## Una matriz por recomendación
 

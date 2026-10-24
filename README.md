@@ -67,7 +67,7 @@ Los ADRs de la Entrega 1 documentan las alternativas evaluadas para:
 
 ## Estado del desarrollo
 
-La prioridad actual es la Entrega 1. Las tareas de POC y MVP están planificadas en GitHub Projects, pero su implementación se realizará en entregas posteriores.
+La Entrega 1 está documentada y comenzó el desarrollo de la Entrega 2. El adaptador de rutas tiene pruebas con respuestas simuladas; la validación autenticada del proveedor y el flujo de POC con datos reales siguen pendientes. El trabajo se sigue en GitHub Projects.
 
 ## Proveedor de rutas (POC-03)
 

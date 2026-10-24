@@ -75,4 +75,4 @@ Para POC-03 se implementó el adaptador `nafta2go/adapters/openrouteservice.py` 
 * `docs/PRD.md`, RF03, RF04, RNF01 y los supuestos de rutas.
 * `notebooks/data_exploration.ipynb`, sección de viabilidad del proveedor de rutas.
 * `docs/Propuesta nafta2go.md`, fuentes y plan alternativo de rutas.
-* `docs/RUTAS.md`, contrato, errores, límites, latencia y plan alternativo verificados en POC-03.
+* `docs/RUTAS.md`, contrato y plan alternativo de POC-03; límites y latencia pendientes de la prueba autenticada.

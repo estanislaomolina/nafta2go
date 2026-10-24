@@ -179,6 +179,8 @@ def test_connection_error_is_mapped():
         {"distances": [[1.0]]},
         {"durations": [[1.0, 2.0]], "distances": [[1.0, 2.0]]},
         {"durations": [[1.0]], "distances": [["x"]]},
+        {"durations": [[-1.0]], "distances": [[1.0]]},
+        {"durations": [[1.0]], "distances": [[-1.0]]},
     ],
 )
 def test_malformed_response_raises_provider_unavailable(payload):
