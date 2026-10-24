@@ -77,3 +77,18 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  containers:
+    name: Contenedores
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir la imagen
+        run: docker compose build
+      - name: Migrar la base dentro del contenedor
+        run: docker compose run --rm migrate
+      - name: Verificar que el esquema quedó en la última versión
+        run: docker compose run --rm migrate alembic current | tee current.txt && grep -q "(head)" current.txt
+      - name: Bajar servicios y volúmenes
+        if: always()
+        run: docker compose down --volumes
