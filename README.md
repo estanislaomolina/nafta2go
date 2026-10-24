@@ -2,7 +2,7 @@
 
 Nafta2Go es un recomendador de estaciones de servicio para conductores de CABA. Combina precio publicado, presupuesto, autonomía, capacidad del tanque y desvío del recorrido para mostrar alternativas explicadas.
 
-Este repositorio corresponde a la **Entrega 1: Diseño** del Trabajo Práctico Integrador. La entrega define el problema, documenta la evidencia disponible y organiza el trabajo futuro de la POC y el MVP. Todavía no contiene la implementación funcional del producto.
+Este repositorio contiene el diseño de la **Entrega 1** y el desarrollo en curso de la **Entrega 2: POC y SRD** del Trabajo Práctico Integrador. El motor y el adaptador de rutas tienen pruebas automáticas; el flujo de punta a punta con datos reales todavía está pendiente.
 
 ## Integrantes
 
@@ -20,6 +20,7 @@ Santiago Bunge
 - [Roadmap](docs/ROADMAP.md): hitos, dependencias, orden de construcción y vínculo con GitHub Projects.
 - [ADRs](adr/README.md): decisiones de diseño y comparación de alternativas.
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
+- [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
 - [Consigna del TP](res/%5BSHR%5D%5BS2%5D%20-%20Consigna%20TP%20I408.pdf): requisitos y formato de las entregas.
 - [GitHub Project](https://github.com/users/estanislaomolina/projects/1): seguimiento operativo del roadmap.
 
