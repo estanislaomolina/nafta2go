@@ -14,7 +14,7 @@ El workflow [ci.yml](../.github/workflows/ci.yml) corre en cada push y PR hacia
 | `Docs y notebooks` | Links relativos de todos los `.md` y formato de las notebooks | Un link apunta a un archivo inexistente o una notebook no es válida |
 | `Lint` | `ruff check .` y `ruff format --check .` con [ruff.toml](../ruff.toml) | Hay errores de estilo, imports sin usar o código sin formatear |
 | `Tests` | `pytest -v --strict-markers` con las dependencias de `requirements-dev.txt` | Falla un test, falta `requirements-dev.txt` o no se encuentran tests |
-| `Secretos` | [gitleaks](https://github.com/gitleaks/gitleaks) sobre todo el historial | Aparece algo con forma de credencial (API keys, tokens, claves privadas) |
+| `Secretos` | [gitleaks](https://github.com/gitleaks/gitleaks) sobre los commits nuevos de cada push y PR | Aparece algo con forma de credencial (API keys, tokens, claves privadas) |
 
 Los cuatro son **checks requeridos** en el ruleset de `dev` y `main`: una PR con
 cualquiera en rojo no se puede mergear. El ruleset identifica los checks por el

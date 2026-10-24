@@ -2,7 +2,7 @@
 
 Nafta2Go es un recomendador de estaciones de servicio para conductores de CABA. Combina precio publicado, presupuesto, autonomía, capacidad del tanque y desvío del recorrido para mostrar alternativas explicadas.
 
-Este repositorio corresponde a la **Entrega 1: Diseño** del Trabajo Práctico Integrador. La entrega define el problema, documenta la evidencia disponible y organiza el trabajo futuro de la POC y el MVP. Todavía no contiene la implementación funcional del producto.
+Este repositorio contiene el diseño de la **Entrega 1** y el desarrollo en curso de la **Entrega 2: POC y SRD** del Trabajo Práctico Integrador. El motor y el adaptador de rutas tienen pruebas automáticas; el flujo de punta a punta con datos reales todavía está pendiente.
 
 ## Integrantes
 
@@ -20,6 +20,7 @@ Santiago Bunge
 - [Roadmap](docs/ROADMAP.md): hitos, dependencias, orden de construcción y vínculo con GitHub Projects.
 - [ADRs](adr/README.md): decisiones de diseño y comparación de alternativas.
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
+- [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
 - [Consigna del TP](res/%5BSHR%5D%5BS2%5D%20-%20Consigna%20TP%20I408.pdf): requisitos y formato de las entregas.
 - [GitHub Project](https://github.com/users/estanislaomolina/projects/1): seguimiento operativo del roadmap.
 
@@ -80,7 +81,7 @@ ruff check . && ruff format --check .
 
 `alembic upgrade head` crea la base local (SQLite en `data/`); ver [docs/PERSISTENCIA.md](docs/PERSISTENCIA.md).
 
-Son los mismos comandos que corre la integración continua. El detalle de cada check, cuáles bloquean el merge y cómo se manejan las credenciales está en [docs/CALIDAD.md](docs/CALIDAD.md).
+Los tests y controles de estilo coinciden con los de integración continua. Los tests de persistencia verifican las migraciones en bases temporales. El detalle de cada check, cuáles bloquean el merge y cómo se manejan las credenciales está en [docs/CALIDAD.md](docs/CALIDAD.md).
 
 ## Estado del desarrollo
 
@@ -91,8 +92,8 @@ La Entrega 2 (POC) está en curso. Esta tabla declara qué partes existen, cuál
 | Integración continua: links, lint, tests y secretos | POC-07 | Implementado |
 | Normalización de precios | POC-01 | Pendiente |
 | Persistencia e ingesta mínimas | POC-06 | Implementado: esquema, migraciones e ingesta trazable. La descarga y normalización reales esperan POC-01 |
-| Proveedor de rutas | POC-03 | Implementado. Los tests simulan la API; la prueba autenticada está pendiente |
-| Motor determinístico | POC-04 | En revisión |
+| Proveedor de rutas | POC-03 | Implementado, con prueba autenticada registrada en docs/evidencia/ |
+| Motor determinístico | POC-04 | Implementado y probado; PR #26 integrado |
 | Flujo de punta a punta | POC-05 | Pendiente |
 | Levantar el sistema completo con contenedores | POC-07 | Pendiente: depende de POC-05 y POC-06 |
 | Diagnóstico estadístico con ML | MVP | Fuera del alcance de la POC |
