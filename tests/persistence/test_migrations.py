@@ -1,6 +1,10 @@
 """Tests de las migraciones y la configuración de la base."""
 
+import os
+import subprocess
+import sys
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 from alembic import command
@@ -12,6 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from nafta2go.persistence import schema
 from nafta2go.persistence.database import (
     DEFAULT_URL,
+    ROOT,
     alembic_config,
     create_db_engine,
     database_url,
@@ -64,3 +69,17 @@ def test_sqlite_engine_creates_parent_directory(tmp_path):
     url = f"sqlite:///{tmp_path / 'nuevo' / 'dir' / 'db.sqlite'}"
     upgrade_to_head(url)
     assert (tmp_path / "nuevo" / "dir" / "db.sqlite").exists()
+
+
+def test_alembic_cli_upgrade_from_repo_root(tmp_path):
+    db_file = tmp_path / "cli.db"
+    env = os.environ | {"DATABASE_URL": f"sqlite:///{db_file}"}
+    completed = subprocess.run(
+        [str(Path(sys.executable).parent / "alembic"), "upgrade", "head"],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert db_file.exists()
