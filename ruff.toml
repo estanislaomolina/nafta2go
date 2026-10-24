@@ -1,0 +1,7 @@
+target-version = "py312"
+line-length = 100
+# Las notebooks son exploración (AGENTS.md §9); la lógica reutilizable vive en módulos con lint.
+extend-exclude = ["notebooks"]
+
+[lint]
+select = ["E", "F", "W", "I", "UP", "B"]
