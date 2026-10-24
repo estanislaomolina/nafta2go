@@ -1,2 +1,4 @@
 # Dependencias de ejecución de la aplicación.
 requests>=2.32,<3
+sqlalchemy>=2.0,<3
+alembic>=1.13,<2
