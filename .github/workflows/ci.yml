@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  docs:
+    name: Docs y notebooks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Links relativos en Markdown
+        run: python .github/scripts/check_links.py
+      - name: Notebooks válidas
+        run: |
+          pip install nbformat
+          python -c "
+          import nbformat, pathlib, sys
+          nbs = list(pathlib.Path('.').rglob('*.ipynb'))
+          for nb in nbs:
+              nbformat.validate(nbformat.read(nb, as_version=4))
+              print('OK', nb)
+          "
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Correr pytest
+        run: |
+          if [ -d tests ]; then
+            pytest -v
+          else
+            echo "Todavía no hay carpeta tests/; se omite pytest."
+          fi
