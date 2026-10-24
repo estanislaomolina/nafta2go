@@ -2,7 +2,7 @@
 
 Implementa la tarea POC-04 (#9), correspondiente a RF04 y RF05 del
 [PRD](PRD.md). Es un módulo Python sin dependencias externas. Requiere Python
-3.11 o superior; el CI existente utiliza Python 3.12.
+3.12, como el CI y las convenciones del repositorio.
 
 Desde la raíz del repositorio:
 

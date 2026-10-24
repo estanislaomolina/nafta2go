@@ -2,7 +2,7 @@
 
 Nafta2Go es un recomendador de estaciones de servicio para conductores de CABA. Combina precio publicado, presupuesto, autonomía, capacidad del tanque y desvío del recorrido para mostrar alternativas explicadas.
 
-Este repositorio corresponde a la **Entrega 1: Diseño** del Trabajo Práctico Integrador. La entrega define el problema, documenta la evidencia disponible y organiza el trabajo futuro de la POC y el MVP. Todavía no contiene la implementación funcional del producto.
+Este repositorio contiene el diseño de la **Entrega 1** y el desarrollo en curso de la **Entrega 2: POC y SRD** del Trabajo Práctico Integrador. El motor y el adaptador de rutas tienen pruebas automáticas; el flujo de punta a punta con datos reales todavía está pendiente.
 
 ## Integrantes
 
@@ -19,6 +19,8 @@ Santiago Bunge
 - [Notebook de exploración](notebooks/data_exploration.ipynb): descubrimiento de recursos oficiales, calidad, cobertura, histórico, riesgo de fechas, rutas y esfuerzo.
 - [Roadmap](docs/ROADMAP.md): hitos, dependencias, orden de construcción y vínculo con GitHub Projects.
 - [ADRs](adr/README.md): decisiones de diseño y comparación de alternativas.
+- [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
+- [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
 - [Consigna del TP](res/%5BSHR%5D%5BS2%5D%20-%20Consigna%20TP%20I408.pdf): requisitos y formato de las entregas.
 - [GitHub Project](https://github.com/users/estanislaomolina/projects/1): seguimiento operativo del roadmap.
 
@@ -66,7 +68,22 @@ Los ADRs de la Entrega 1 documentan las alternativas evaluadas para:
 
 ## Estado del desarrollo
 
-La prioridad actual es la Entrega 1. Las tareas de POC y MVP están planificadas en GitHub Projects, pero su implementación se realizará en entregas posteriores.
+La Entrega 1 está documentada y comenzó el desarrollo de la Entrega 2. El adaptador de rutas tiene pruebas con respuestas simuladas; la validación autenticada del proveedor y el flujo de POC con datos reales siguen pendientes. El trabajo se sigue en GitHub Projects.
+
+## Proveedor de rutas (POC-03)
+
+El adaptador de OpenRouteService y su prueba autenticada están documentados en [docs/RUTAS.md](docs/RUTAS.md). Para correrlos:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+pytest -v
+cp .env.example .env   # completar ORS_API_KEY
+python scripts/probe_openrouteservice.py
+```
+
+Los tests no usan red: reemplazan la API por una sesión HTTP simulada. Solo la prueba autenticada consulta OpenRouteService y necesita la API key.
 
 ## Video de la entrega
 

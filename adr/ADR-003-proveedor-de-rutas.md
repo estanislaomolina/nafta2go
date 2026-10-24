@@ -45,6 +45,8 @@ Esta decisión queda `Propuesta` hasta comprobar cuota, autenticación, contrato
 
 La decisión se acepta si una prueba autenticada confirma el contrato, los límites, la latencia y una matriz representativa. Si no se confirma, se reduce el número de candidatas, se aplica caché sólo cuando sea compatible y se prueba OSRM regional.
 
+Para POC-03 se implementó el adaptador `nafta2go/adapters/openrouteservice.py` detrás del contrato `RoutingProvider`, con pruebas automáticas del contrato, los errores y los timeouts, y la prueba autenticada `scripts/probe_openrouteservice.py`, que pide una matriz de 22 ubicaciones con 20 estaciones reales de CABA. El detalle está en `docs/RUTAS.md`. La decisión sigue `Propuesta` hasta registrar en `docs/evidencia/` el resultado de esa prueba con una cuenta real.
+
 ## Pros and Cons of the Options
 
 ### OpenRouteService Standard
@@ -73,3 +75,4 @@ La decisión se acepta si una prueba autenticada confirma el contrato, los lími
 * `docs/PRD.md`, RF03, RF04, RNF01 y los supuestos de rutas.
 * `notebooks/data_exploration.ipynb`, sección de viabilidad del proveedor de rutas.
 * `docs/Propuesta nafta2go.md`, fuentes y plan alternativo de rutas.
+* `docs/RUTAS.md`, contrato y plan alternativo de POC-03; límites y latencia pendientes de la prueba autenticada.
