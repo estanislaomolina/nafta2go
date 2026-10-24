@@ -170,4 +170,61 @@ sin elegir una estación ganadora. Se puede consultar `--help` para modificar la
 entradas. La salida del proceso es 0 si hay candidatas viables, 1 si ninguna lo es
 y 2 si los parámetros son inválidos. La ejecución no consulta la API ni necesita
 instalar dependencias externas; las pruebas completas sí requieren los paquetes
-de `requirements.txt`.
+de `requirements-dev.txt`.
+
+## Consulta desde la base de datos
+
+`nafta2go.application.stored_query.select_stored_candidates` recibe una conexión,
+`fuel_type` (`super` o `premium`), `schedule_id` (2 diurno, 3 nocturno) y
+`reference_at` con zona horaria. Lee exclusivamente la última ingesta `vigente`
+exitosa; no mezcla versiones ni recurre al histórico o a una ingesta anterior si
+la última no ofrece cobertura. La ingesta sigue dependiendo del normalizador de
+POC-01; esta función sólo consume filas guardadas.
+
+La fecha de publicación guardada se interpreta como hora argentina sin zona,
+según el contrato de normalización/persistencia. Se le asigna la zona
+`America/Argentina/Buenos_Aires` y se compara con la referencia en UTC. Se excluyen fechas futuras y precios con más de
+`max_age_days` de antigüedad exacta (30 × 24 horas por defecto, límite incluido).
+`tzdata` permite resolver esa zona también en sistemas sin base IANA instalada,
+según el mecanismo de respaldo de [ZoneInfo](https://docs.python.org/3/library/zoneinfo.html#data-sources).
+La referencia sirve para validar la vigencia, no para reconstruir qué captura
+existía en una fecha pasada: no es una consulta histórica ni una evaluación temporal.
+
+También se filtran producto y franja, precios no positivos o no finitos,
+coordenadas ausentes/no finitas, el rectángulo de CABA acordado en POC-01 y las
+alertas `fuera_de_caba`/`sin_coordenadas`. La provincia no está en el esquema de
+precios: se exige que la ingesta haya filtrado CABA previamente. El rectángulo no
+reemplaza un polígono ni verifica la entrada física de la estación.
+
+Entre las publicaciones utilizables de cada estación se conserva la más reciente.
+La preselección ordena por fecha descendente e identificador numérico ascendente
+y devuelve hasta diez estaciones distintas. No es un ranking de conveniencia ni
+de cercanía. Las alertas `precio_atipico` se conservan sin cambiar ni excluir por
+sí solas el precio oficial.
+
+`CandidateSelection` informa `data_run_id`, fecha de referencia, precios elegidos
+con sus IDs/filas/fechas/alertas, cantidad de estaciones elegibles y motivos
+normalizados de exclusión con sus conteos. Sus estados son `ready`,
+`no_successful_ingestion` e `insufficient_coverage`. El mínimo requerido se fija
+con `minimum_candidates` (por defecto una para un caso reducido); debe estar entre
+uno y el límite elegido. No certifica cobertura representativa de toda CABA.
+
+`evaluate_from_database` conecta esa selección con `evaluate_stations`, utilizando
+el `RoutingProvider` recibido. Si no se alcanza el mínimo no llama al proveedor y
+devuelve la falta de cobertura sin evaluaciones. Los errores de base y rutas se
+propagan; no se presentan como una búsqueda vacía exitosa. No escribe consultas,
+ubicaciones ni recomendaciones en la base.
+
+Las pruebas de `tests/application/test_stored_query.py` usan un SQLite temporal
+con migraciones reales, filas normalizadas ficticias y un proveedor sin red.
+Verifican el recorrido ingesta → base → selección → rutas → motor y sus límites.
+Para ejecutarlas:
+
+```bash
+python -m pip install -r requirements-dev.txt
+pytest -q tests/application/test_stored_query.py
+```
+
+Quedan pendientes el normalizador real, la matriz del caso controlado, el ranking
+y la demostración completa de POC-05. La demo de terminal conserva su escenario
+sintético y no se conecta implícitamente a la base ni a una API real.

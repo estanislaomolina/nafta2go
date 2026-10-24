@@ -100,5 +100,12 @@ destino y coordenadas, porque las ubicaciones de los usuarios no se conservan (R
 
 ## Pendiente
 
+La lectura para recomendar se conecta mediante
+`nafta2go.application.stored_query.evaluate_from_database`: toma una sola ingesta
+vigente exitosa, filtra precios utilizables y conserva `data_run_id` y los IDs de
+precio en el resultado. El contrato y los estados de cobertura están en
+[docs/MOTOR.md](MOTOR.md). Este recorrido sólo lee; no registra ubicaciones ni
+resultados en `recommendations`.
+
 - Conectar la descarga y la normalización reales cuando exista POC-01.
 - Registrar recomendaciones desde el flujo de punta a punta (POC-05).
