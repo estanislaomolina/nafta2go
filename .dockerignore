@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+.env
+.pytest_cache
+.ruff_cache
+.superpowers
+**/__pycache__
+data
+docs
+notebooks
+res
+scripts
+tests

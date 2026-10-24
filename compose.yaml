@@ -1,0 +1,21 @@
+# Servicios locales de Nafta2Go. Uso: docker compose up --build
+# La base es un SQLite dentro del volumen nafta2go-data (ver ADR-005).
+services:
+  migrate:
+    build: .
+    image: nafta2go:local
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: sqlite:////app/data/nafta2go.db
+    volumes:
+      - nafta2go-data:/app/data
+    restart: "no"
+
+  # Los servicios que usen la base (por ejemplo la API de POC-05) deben esperar
+  # a que las migraciones terminen bien:
+  #   depends_on:
+  #     migrate:
+  #       condition: service_completed_successfully
+
+volumes:
+  nafta2go-data:

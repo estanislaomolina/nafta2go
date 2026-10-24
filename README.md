@@ -83,6 +83,16 @@ ruff check . && ruff format --check .
 
 Los tests y controles de estilo coinciden con los de integración continua. Los tests de persistencia verifican las migraciones en bases temporales. El detalle de cada check, cuáles bloquean el merge y cómo se manejan las credenciales está en [docs/CALIDAD.md](docs/CALIDAD.md).
 
+## Levantar con Docker
+
+Requiere Docker con Compose v2. Desde la raíz del repositorio:
+
+```bash
+docker compose up --build
+```
+
+Construye la imagen de la aplicación y corre las migraciones sobre una base SQLite guardada en el volumen `nafta2go-data`. El contenedor `migrate` termina cuando el esquema queda actualizado. Para borrar la base: `docker compose down --volumes`. La API se suma a `compose.yaml` con el flujo de punta a punta (POC-05).
+
 ## Estado del desarrollo
 
 La Entrega 2 (POC) está en curso. Esta tabla declara qué partes existen, cuáles están simuladas y cuáles faltan; se actualiza en la misma PR que cambia el estado de un componente.
@@ -95,7 +105,7 @@ La Entrega 2 (POC) está en curso. Esta tabla declara qué partes existen, cuál
 | Proveedor de rutas | POC-03 | Implementado, con prueba autenticada registrada en docs/evidencia/ |
 | Motor determinístico | POC-04 | Implementado y probado; PR #26 integrado |
 | Flujo de punta a punta | POC-05 | Pendiente |
-| Levantar el sistema completo con contenedores | POC-07 | Pendiente: depende de POC-05 y POC-06 |
+| Levantar el sistema completo con contenedores | POC-07 | Parcial: imagen y migraciones con `docker compose`. Falta la API (POC-05) |
 | Diagnóstico estadístico con ML | MVP | Fuera del alcance de la POC |
 
 ## Demostración local de rutas y motor (POC-05 en desarrollo)
