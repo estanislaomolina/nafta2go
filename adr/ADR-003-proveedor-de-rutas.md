@@ -1,6 +1,6 @@
 ---
-status: Propuesto
-date: 2026-09-18
+status: Aceptado
+date: 2026-10-24
 decision-makers: Equipo Nafta2Go
 consulted: PRD, propuesta y notebook de exploración
 informed: Cátedra, pendiente de validación
@@ -30,7 +30,7 @@ El recomendador necesita distancias y tiempos para comprobar alcanzabilidad, con
 
 Chosen option: **proponer OpenRouteService como proveedor principal, encapsulado detrás de un adaptador, y conservar OSRM como alternativa técnica**, because ofrece rutas y matrices sin administrar inicialmente la infraestructura del grafo, mientras que el adaptador reduce el costo de cambiar si la prueba autenticada falla.
 
-Esta decisión queda `Propuesta` hasta comprobar cuota, autenticación, contrato, errores, latencia y atribución con una prueba reproducible.
+La decisión se propuso el 2026-09-18 y se aceptó el 2026-10-24, después de comprobar cuota, autenticación, contrato, errores y latencia con una prueba reproducible (ver *Confirmation*).
 
 ### Consequences
 
@@ -45,7 +45,16 @@ Esta decisión queda `Propuesta` hasta comprobar cuota, autenticación, contrato
 
 La decisión se acepta si una prueba autenticada confirma el contrato, los límites, la latencia y una matriz representativa. Si no se confirma, se reduce el número de candidatas, se aplica caché sólo cuando sea compatible y se prueba OSRM regional.
 
-Para POC-03 se implementó el adaptador `nafta2go/adapters/openrouteservice.py` detrás del contrato `RoutingProvider`, con pruebas automáticas del contrato, los errores y los timeouts, y la prueba autenticada `scripts/probe_openrouteservice.py`, que pide una matriz de 22 ubicaciones con 20 estaciones reales de CABA. El detalle está en `docs/RUTAS.md`. La decisión sigue `Propuesta` hasta registrar en `docs/evidencia/` el resultado de esa prueba con una cuenta real.
+Para POC-03 se implementó el adaptador `nafta2go/adapters/openrouteservice.py` detrás del contrato `RoutingProvider`, con pruebas automáticas del contrato, los errores y los timeouts, y la prueba autenticada `scripts/probe_openrouteservice.py`, que pide una matriz de 22 ubicaciones con 20 estaciones reales de CABA.
+
+La prueba del 2026-10-24 (`docs/evidencia/poc-03-ors-2026-10-24.json`) confirmó una cuota de 500 matrices diarias, una latencia p50 de 0,37 s y p95 de 1,24 s, ningún par sin ruta en 441 elementos y la respuesta 403 ante una key inválida. Con eso la decisión pasa a `Aceptado`.
+
+La prueba también encontró dos cosas que no estaban previstas:
+
+* El host `api.openrouteservice.org` está deprecado y se apaga entre el 02/11 y el 06/11/2026. El adaptador pasó a `api.heigit.org/openrouteservice`, con la misma key. Sobre el host viejo la cuota observada era de 50 diarias.
+* ORS no rechaza puntos fuera de la red vial: los ajusta a la vía más cercana y responde 200. Validar el área de servicio de las coordenadas queda a cargo de la normalización (POC-01) y del flujo (POC-05).
+
+Queda pendiente mostrar en la interfaz la atribución que exigen las condiciones de uso de ORS y OpenStreetMap; es parte del MVP. El detalle está en `docs/RUTAS.md`.
 
 ## Pros and Cons of the Options
 

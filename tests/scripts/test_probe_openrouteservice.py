@@ -118,3 +118,17 @@ def test_run_probe_requires_at_least_one_run():
     with pytest.raises(ValueError, match="runs"):
         run_probe("clave-valida", STATIONS, runs=0, session=session, sleep=lambda s: None)
     assert session.calls == []
+
+
+def test_run_probe_records_the_queried_endpoint():
+    evidence = run_probe(
+        "clave-valida",
+        STATIONS,
+        runs=1,
+        session=ScriptedSession(),
+        sleep=lambda s: None,
+        clock=fake_clock(),
+    )
+    assert evidence["endpoint"] == (
+        "POST https://api.heigit.org/openrouteservice/v2/matrix/driving-car"
+    )
