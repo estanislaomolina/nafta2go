@@ -32,6 +32,8 @@ def create_db_engine(url: str | None = None) -> Engine:
 def alembic_config(url: str | None = None) -> Config:
     config = Config(str(ROOT / "alembic.ini"))
     config.set_main_option("script_location", str(ROOT / "migrations"))
+    # Desde el código, el logging lo configura la aplicación, no alembic.ini.
+    config.attributes["configure_logging"] = False
     # configparser interpreta "%" como interpolación.
     config.set_main_option("sqlalchemy.url", (url or database_url()).replace("%", "%%"))
     return config

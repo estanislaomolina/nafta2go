@@ -84,6 +84,7 @@ def test_alembic_cli_upgrade_from_repo_root(tmp_path):
     )
     assert completed.returncode == 0, completed.stderr
     assert db_file.exists()
+    assert "Running upgrade  -> 0001" in completed.stderr
 
 
 def test_default_url_is_anchored_to_repo_root(tmp_path, monkeypatch):

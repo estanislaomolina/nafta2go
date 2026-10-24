@@ -24,6 +24,8 @@ alembic upgrade head      # crea o actualiza el esquema
 alembic downgrade base    # lo elimina
 ```
 
+Con Docker, `docker compose up --build` corre las mismas migraciones dentro del contenedor `migrate`, sobre una base guardada en el volumen `nafta2go-data`.
+
 Para cambiar el esquema: modificar `schema.py`, crear una migración con
 `alembic revision -m "descripcion"` y escribir `upgrade` y `downgrade`. El test
 `test_migration_matches_schema_metadata` falla si la migración y `schema.py` no coinciden.
