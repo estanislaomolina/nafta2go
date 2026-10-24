@@ -98,6 +98,23 @@ La Entrega 2 (POC) está en curso. Esta tabla declara qué partes existen, cuál
 | Levantar el sistema completo con contenedores | POC-07 | Pendiente: depende de POC-05 y POC-06 |
 | Diagnóstico estadístico con ML | MVP | Fuera del alcance de la POC |
 
+## Demostración local de rutas y motor (POC-05 en desarrollo)
+
+Requiere Python 3.12. Desde la raíz del repositorio:
+
+```bash
+python -m nafta2go.demo
+python -m nafta2go.demo --presupuesto 6000 --sin-destino
+python -m nafta2go.demo --help
+```
+
+La demo usa estaciones, precios y rutas **ficticios**, sin red ni credenciales.
+Permite modificar presupuesto, combustible inicial, consumo, capacidad y reserva;
+imprime la compra posible, combustible final, desvío y motivos de descarte.
+Muestra las candidatas en orden de entrada, sin ranking. La ingesta de datos reales,
+la validación autenticada de rutas y la recomendación completa siguen pendientes.
+Los contratos y las fórmulas están en [docs/MOTOR.md](docs/MOTOR.md).
+
 ## Proveedor de rutas (POC-03)
 
 El adaptador de OpenRouteService y su prueba autenticada están documentados en [docs/RUTAS.md](docs/RUTAS.md). Para correrlos:

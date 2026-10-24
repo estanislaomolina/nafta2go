@@ -131,3 +131,43 @@ Los tests usan escenarios sintéticos con resultados calculables a mano, límite
 de reserva, presupuesto y tanque, ida y vuelta, fallos de ruta, entradas inválidas
 y restricciones físicas/económicas sobre combinaciones de precios y presupuestos.
 No constituyen evidencia de cobertura ni validación de un proveedor externo.
+
+## Conexión con la matriz de rutas (inicio de POC-05)
+
+`nafta2go.application.recommendation.evaluate_stations` recibe la consulta del
+motor, hasta diez `Candidate` (identificador, ubicación y precio ya validado),
+origen, destino opcional y un `RoutingProvider`. Pide una única matriz usando
+`trip_matrix` y devuelve un `StationEvaluation` por candidata, en el mismo orden.
+Cada resultado conserva la candidata y su evaluación explicada por el motor.
+Todavía no selecciona una ganadora ni produce un ranking.
+
+`route_from_matrix` toma la fila cero para el tramo origen-estación y la fila de
+esa estación para el tramo estación-destino (u origen). Convierte metros a
+kilómetros y segundos a minutos usando `Decimal`. Con destino usa la ruta directa
+como referencia; sin destino la referencia es cero y admite una vuelta distinta
+de la ida. Un tramo necesario `None` se convierte en `route_unavailable`; los
+pares ajenos a ese recorrido no afectan la evaluación. Una matriz inconsistente
+o un fallo global del proveedor se propaga como error, sin simular una consulta
+vacía exitosa. Sin candidatas no se consulta al proveedor.
+
+Las pruebas de conexión están en `tests/application/test_recommendation.py` y usan
+matrices sintéticas, sin red ni credenciales. Quedan pendientes la ingesta y los
+filtros de datos reales, la validación autenticada de rutas, el ranking y la demo
+completa. Esta conexión por sí sola no cierra la tarea #10.
+
+Para inspeccionar ese recorrido en la terminal, ejecutar desde la raíz:
+
+```bash
+python -m nafta2go.demo
+python -m nafta2go.demo --presupuesto 6000 --sin-destino
+python -m nafta2go.demo --litros-iniciales 0
+```
+
+El proveedor ficticio de la demo devuelve dos recorridos evaluables y una estación
+sin ruta completa. Los precios, coordenadas y distancias de ese ejemplo son
+sintéticos y se rotulan al ejecutarlo. La salida conserva el orden de entrada,
+sin elegir una estación ganadora. Se puede consultar `--help` para modificar las
+entradas. La salida del proceso es 0 si hay candidatas viables, 1 si ninguna lo es
+y 2 si los parámetros son inválidos. La ejecución no consulta la API ni necesita
+instalar dependencias externas; las pruebas completas sí requieren los paquetes
+de `requirements.txt`.
