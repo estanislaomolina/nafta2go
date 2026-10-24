@@ -187,8 +187,8 @@ def record_recommendation(
             data_run_id=data_run_id,
             engine_version=engine_version,
             routing_provider=routing_provider,
-            request={k: _json_safe(v) for k, v in request.items()},
-            result=dict(result),
+            request=_json_safe(dict(request)),
+            result=_json_safe(dict(result)),
         )
     )
     return inserted.inserted_primary_key[0]
@@ -208,6 +208,11 @@ def _optional_float(value: object) -> float | None:
 
 
 def _json_safe(value: object) -> object:
+    """Convierte a tipos JSON: NaN a null y fechas o Decimal a texto, recorriendo anidados."""
+    if isinstance(value, Mapping):
+        return {str(k): _json_safe(v) for k, v in value.items()}
+    if isinstance(value, list | tuple):
+        return [_json_safe(v) for v in value]
     if value is None or isinstance(value, bool | int | str):
         return value
     if isinstance(value, float):

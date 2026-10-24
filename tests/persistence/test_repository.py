@@ -207,3 +207,23 @@ def test_rejection_raw_values_are_made_json_safe(engine):
         repo.add_rejections(conn, run_id, [raw])
         stored = repo.rejections_for_run(conn, run_id)[0]["raw"]
     assert stored == {"precio": None, "fecha": "2026-10-01 09:30:00", "monto": "12.5"}
+
+
+def test_recommendation_result_with_engine_decimals_is_stored(engine):
+    result = {"alternatives": [{"station_id": 9930, "metrics": {"final_l": Decimal("17.0")}}]}
+    with engine.begin() as conn:
+        run_id = succeeded_run(conn)
+        rec_id = repo.record_recommendation(
+            conn,
+            data_run_id=run_id,
+            engine_version="poc-04",
+            routing_provider="openrouteservice",
+            request={"budget_ars": Decimal("12000")},
+            result=result,
+            created_at=T0,
+        )
+        stored = repo.get_recommendation(conn, rec_id)
+    assert stored["result"] == {
+        "alternatives": [{"station_id": 9930, "metrics": {"final_l": "17.0"}}]
+    }
+    assert stored["request"] == {"budget_ars": "12000"}
