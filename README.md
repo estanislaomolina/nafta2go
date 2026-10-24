@@ -73,9 +73,12 @@ Requiere Python 3.12. Desde la raíz del repositorio:
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-dev.txt
+alembic upgrade head
 pytest -v
 ruff check . && ruff format --check .
 ```
+
+`alembic upgrade head` crea la base local (SQLite en `data/`); ver [docs/PERSISTENCIA.md](docs/PERSISTENCIA.md).
 
 Son los mismos comandos que corre la integración continua. El detalle de cada check, cuáles bloquean el merge y cómo se manejan las credenciales está en [docs/CALIDAD.md](docs/CALIDAD.md).
 
@@ -87,7 +90,7 @@ La Entrega 2 (POC) está en curso. Esta tabla declara qué partes existen, cuál
 |---|---|---|
 | Integración continua: links, lint, tests y secretos | POC-07 | Implementado |
 | Normalización de precios | POC-01 | Pendiente |
-| Persistencia e ingesta mínimas | POC-06 | Pendiente |
+| Persistencia e ingesta mínimas | POC-06 | Implementado: esquema, migraciones e ingesta trazable. La descarga y normalización reales esperan POC-01 |
 | Proveedor de rutas | POC-03 | Implementado. Los tests simulan la API; la prueba autenticada está pendiente |
 | Motor determinístico | POC-04 | En revisión |
 | Flujo de punta a punta | POC-05 | Pendiente |

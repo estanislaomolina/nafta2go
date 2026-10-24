@@ -11,4 +11,10 @@ Los Architecture Decision Records documentan decisiones de diseño relevantes, l
 | [ADR-003](ADR-003-proveedor-de-rutas.md) | OpenRouteService como proveedor principal y OSRM como alternativa | Propuesto |
 | [ADR-004](ADR-004-arquitectura-por-capas.md) | Arquitectura modular por capas | Aceptado |
 
+## Decisiones de la Entrega 2
+
+| ADR | Decisión | Estado |
+|---|---|---|
+| [ADR-005](ADR-005-persistencia-de-la-poc.md) | SQLite con SQLAlchemy y Alembic para la persistencia de la POC | Aceptado |
+
 La decisión sobre el proveedor de rutas debe actualizarse después de comprobar cuota, latencia, autenticación y condiciones de uso con una prueba reproducible.
