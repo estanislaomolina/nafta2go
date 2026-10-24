@@ -41,6 +41,9 @@ recibe una `FuelRequest`, un precio en pesos por litro y una `Route` o `None`.
 Las entradas numéricas admiten enteros, floats finitos, cadenas decimales y
 `Decimal`; se convierten usando su representación decimal. Los booleanos se
 rechazan. Las entradas inválidas generan `ValueError` con el nombre del campo.
+Como protección numérica, los valores distintos de cero deben tener una magnitud
+de al menos `1e-12` y menor que `1e13`. Este límite técnico evita exponentes que
+desborden la aritmética; las restricciones físicas de cada campo se aplican además.
 
 | Objeto | Campo | Unidad y restricción |
 |---|---|---|
@@ -82,15 +85,20 @@ desvio_km = max(0, km_hasta_estacion + km_despues_estacion - km_directos)
 tiempo_extra_min = max(0, min_hasta_estacion + min_despues_estacion - min_directos)
 ```
 
-La reserva debe conservarse tanto al llegar a la estación como al terminar el
-recorrido; la igualdad es admisible. Una estación inalcanzable o que compromete
-la reserva de llegada se descarta antes de calcular una carga hipotética. La
+La reserva debe conservarse al llegar a la estación si la consulta empieza con
+esa cantidad disponible. Si ya se empieza por debajo, no se permite consumir
+más antes de cargar: el mínimo de llegada es `min(reserva, litros_iniciales)`.
+Esto permite cargar cuando el vehículo ya está en la estación, sin habilitar un
+viaje que profundice el déficit de reserva. Al terminar el recorrido siempre se
+exige la reserva completa; la igualdad es admisible. Una estación inalcanzable o
+que compromete el mínimo de llegada se descarta antes de calcular una carga. La
 capacidad libre se calcula al llegar, porque el viaje ya consumió combustible.
 Presupuesto cero y ausencia de espacio para cargar son descartes aunque el
 recorrido pudiera completarse sin cargar. Una ganancia neta negativa por sí sola
 no es un descarte: el combustible final debe respetar la reserva.
 
-Se usa aritmética `Decimal` con precisión local de 28 dígitos. La división para
+Se usa aritmética `Decimal` con un contexto local propio de 28 dígitos, independiente
+de la precisión y los límites de exponentes del llamador. La división para
 calcular la compra redondea hacia abajo para no superar el presupuesto. No se
 redondea a centavos ni a litros de surtidor: son estimaciones, y el formato de
 presentación se resolverá en la interfaz. La autonomía final incluye la reserva;

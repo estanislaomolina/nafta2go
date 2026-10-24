@@ -1,7 +1,7 @@
 """Evaluación determinística de una candidata con precio y ruta ya validados."""
 
 from dataclasses import dataclass, fields
-from decimal import Decimal, InvalidOperation, ROUND_DOWN, ROUND_HALF_EVEN, localcontext
+from decimal import ROUND_DOWN, ROUND_HALF_EVEN, Context, Decimal, InvalidOperation, localcontext
 from enum import StrEnum
 
 
@@ -14,6 +14,8 @@ def _number(raw: object, name: str, *, positive: bool = False) -> Decimal:
         raise ValueError(f"{name}: se requiere un número finito") from exc
     if not value.is_finite() or value < 0:
         raise ValueError(f"{name}: se requiere un número finito no negativo")
+    if value != 0 and not -12 <= value.adjusted() <= 12:
+        raise ValueError(f"{name}: magnitud fuera del rango numérico admitido [1e-12, 1e13)")
     if positive and value == 0:
         raise ValueError(f"{name}: debe ser mayor que cero")
     return value
@@ -102,16 +104,14 @@ def evaluate_candidate(
     if route is None:
         return Evaluation((DiscardReason.ROUTE_UNAVAILABLE,), None)
 
-    with localcontext() as context:
-        context.prec = 28
-        context.rounding = ROUND_HALF_EVEN
+    with localcontext(Context(prec=28, rounding=ROUND_HALF_EVEN)):
         per_km = request.consumption_l_per_100km / 100
         to_station = route.to_station_km * per_km
         after_station = route.after_station_km * per_km
         arrival = request.remaining_l - to_station
         if arrival < 0:
             return Evaluation((DiscardReason.STATION_UNREACHABLE,), None)
-        if arrival < request.reserve_l:
+        if arrival < min(request.reserve_l, request.remaining_l):
             return Evaluation((DiscardReason.RESERVE_AT_STATION,), None)
 
         free_capacity = request.tank_capacity_l - arrival
@@ -137,7 +137,11 @@ def evaluate_candidate(
             final_l=final,
             net_gain_l=final - request.remaining_l,
             final_range_km=max(Decimal(0), final) / per_km,
-            extra_km=max(Decimal(0), route.to_station_km + route.after_station_km - route.direct_km),
-            extra_min=max(Decimal(0), route.to_station_min + route.after_station_min - route.direct_min),
+            extra_km=max(
+                Decimal(0), route.to_station_km + route.after_station_km - route.direct_km
+            ),
+            extra_min=max(
+                Decimal(0), route.to_station_min + route.after_station_min - route.direct_min
+            ),
         )
         return Evaluation(tuple(reasons), metrics)
