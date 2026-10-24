@@ -1,11 +1,15 @@
 """Entorno de Alembic: usa la misma configuración de base que la aplicación."""
 
+from logging.config import fileConfig
+
 from alembic import context
 
 from nafta2go.persistence.database import create_db_engine, database_url
 from nafta2go.persistence.schema import metadata
 
 config = context.config
+if config.config_file_name and config.attributes.get("configure_logging", True):
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 url = config.get_main_option("sqlalchemy.url") or database_url()
 
 
