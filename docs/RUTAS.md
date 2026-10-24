@@ -23,7 +23,7 @@ escribir otro adaptador con el método `matrix(sources, destinations)`.
 3. Correr los tests (no usan red ni la key):
 
 ```bash
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 pytest -v
 ```
 
