@@ -70,6 +70,23 @@ Los ADRs de la Entrega 1 documentan las alternativas evaluadas para:
 
 La Entrega 1 está documentada y comenzó el desarrollo de la Entrega 2. El adaptador de rutas tiene pruebas con respuestas simuladas; la validación autenticada del proveedor y el flujo de POC con datos reales siguen pendientes. El trabajo se sigue en GitHub Projects.
 
+## Demostración local de rutas y motor (POC-05 en desarrollo)
+
+Requiere Python 3.12. Desde la raíz del repositorio:
+
+```bash
+python -m nafta2go.demo
+python -m nafta2go.demo --presupuesto 6000 --sin-destino
+python -m nafta2go.demo --help
+```
+
+La demo usa estaciones, precios y rutas **ficticios**, sin red ni credenciales.
+Permite modificar presupuesto, combustible inicial, consumo, capacidad y reserva;
+imprime la compra posible, combustible final, desvío y motivos de descarte.
+Muestra las candidatas en orden de entrada, sin ranking. La ingesta de datos reales,
+la validación autenticada de rutas y la recomendación completa siguen pendientes.
+Los contratos y las fórmulas están en [docs/MOTOR.md](docs/MOTOR.md).
+
 ## Proveedor de rutas (POC-03)
 
 El adaptador de OpenRouteService y su prueba autenticada están documentados en [docs/RUTAS.md](docs/RUTAS.md). Para correrlos:
