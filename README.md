@@ -19,6 +19,7 @@ Santiago Bunge
 - [Notebook de exploración](notebooks/data_exploration.ipynb): descubrimiento de recursos oficiales, calidad, cobertura, histórico, riesgo de fechas, rutas y esfuerzo.
 - [Roadmap](docs/ROADMAP.md): hitos, dependencias, orden de construcción y vínculo con GitHub Projects.
 - [ADRs](adr/README.md): decisiones de diseño y comparación de alternativas.
+- [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Consigna del TP](res/%5BSHR%5D%5BS2%5D%20-%20Consigna%20TP%20I408.pdf): requisitos y formato de las entregas.
 - [GitHub Project](https://github.com/users/estanislaomolina/projects/1): seguimiento operativo del roadmap.
 
@@ -67,6 +68,21 @@ Los ADRs de la Entrega 1 documentan las alternativas evaluadas para:
 ## Estado del desarrollo
 
 La prioridad actual es la Entrega 1. Las tareas de POC y MVP están planificadas en GitHub Projects, pero su implementación se realizará en entregas posteriores.
+
+## Proveedor de rutas (POC-03)
+
+El adaptador de OpenRouteService y su prueba autenticada están documentados en [docs/RUTAS.md](docs/RUTAS.md). Para correrlos:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+pytest -v
+cp .env.example .env   # completar ORS_API_KEY
+python scripts/probe_openrouteservice.py
+```
+
+Los tests no usan red: reemplazan la API por una sesión HTTP simulada. Solo la prueba autenticada consulta OpenRouteService y necesita la API key.
 
 ## Video de la entrega
 
