@@ -178,8 +178,8 @@ de `requirements-dev.txt`.
 `fuel_type` (`super` o `premium`), `schedule_id` (2 diurno, 3 nocturno) y
 `reference_at` con zona horaria. Lee exclusivamente la última ingesta `vigente`
 exitosa; no mezcla versiones ni recurre al histórico o a una ingesta anterior si
-la última no ofrece cobertura. La ingesta sigue dependiendo del normalizador de
-POC-01; esta función sólo consume filas guardadas.
+la última no ofrece cobertura. Consume las filas guardadas por el normalizador
+de POC-01, ya integrado, y reutiliza sus constantes de producto, zona y alertas.
 
 La fecha de publicación guardada se interpreta como hora argentina sin zona,
 según el contrato de normalización/persistencia. Se le asigna la zona
@@ -216,8 +216,9 @@ propagan; no se presentan como una búsqueda vacía exitosa. No escribe consulta
 ubicaciones ni recomendaciones en la base.
 
 Las pruebas de `tests/application/test_stored_query.py` usan un SQLite temporal
-con migraciones reales, filas normalizadas ficticias y un proveedor sin red.
-Verifican el recorrido ingesta → base → selección → rutas → motor y sus límites.
+con migraciones reales, escenarios normalizados ficticios, la fixture CSV del
+normalizador real y un proveedor sin red. Verifican el recorrido normalización →
+ingesta → base → selección → rutas → motor y sus límites.
 Para ejecutarlas:
 
 ```bash
@@ -225,6 +226,15 @@ python -m pip install -r requirements-dev.txt
 pytest -q tests/application/test_stored_query.py
 ```
 
-Quedan pendientes el normalizador real, la matriz del caso controlado, el ranking
-y la demostración completa de POC-05. La demo de terminal conserva su escenario
+Quedan pendientes la matriz del caso controlado, el ranking y la demostración
+completa de POC-05. La demo de terminal conserva su escenario
 sintético y no se conecta implícitamente a la base ni a una API real.
+
+Además de los tests, se ejecutó el normalizador real sobre el CSV oficial
+capturado el 24/10/2026 y se persistió el resultado en un SQLite temporal migrado.
+La consulta para súper diurna, con referencia a la hora de esa captura, encontró
+31 estaciones elegibles y seleccionó diez; sus IDs y orden coinciden con el caso
+controlado. El reporte, hash del original y precios elegidos están en la
+[evidencia de selección desde base](evidencia/poc-05-seleccion-db-2026-10-24.json).
+Esa comprobación no consulta rutas ni produce una recomendación; corresponde a
+la captura y fecha indicadas, y no acredita precios actuales en otra fecha.

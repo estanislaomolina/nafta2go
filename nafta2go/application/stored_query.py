@@ -17,10 +17,18 @@ from nafta2go.application.recommendation import (
     evaluate_stations,
 )
 from nafta2go.domain.engine import FuelRequest
+from nafta2go.normalization.rules import (
+    ALERT_SEPARATOR,
+    CABA_BBOX,
+    LOCAL_TIMEZONE,
+    MISSING_COORDINATES,
+    NAPHTHA_PRODUCTS,
+    OUTSIDE_CABA,
+)
 from nafta2go.persistence import repository
 
-LOCAL_ZONE = ZoneInfo("America/Argentina/Buenos_Aires")
-PRODUCT_IDS = {"super": 2, "premium": 3}
+LOCAL_ZONE = ZoneInfo(LOCAL_TIMEZONE)
+PRODUCT_IDS = {fuel: product_id for product_id, fuel in NAPHTHA_PRODUCTS.items()}
 
 
 class CoverageStatus(StrEnum):
@@ -75,13 +83,16 @@ def _filter_reason(
         return "stale_price"
     if not row["price"].is_finite() or row["price"] <= 0:
         return "invalid_price"
-    alerts = {value.strip() for value in row["alerts"].split(";")}
+    alerts = {value.strip() for value in row["alerts"].split(ALERT_SEPARATOR)}
     lat, lon = row["lat"], row["lon"]
-    if "sin_coordenadas" in alerts or lat is None or lon is None:
+    if MISSING_COORDINATES in alerts or lat is None or lon is None:
         return "missing_coordinates"
     if not math.isfinite(lat) or not math.isfinite(lon):
         return "invalid_coordinates"
-    if "fuera_de_caba" in alerts or not (-34.71 <= lat <= -34.52 and -58.54 <= lon <= -58.33):
+    if OUTSIDE_CABA in alerts or not (
+        CABA_BBOX["lat_min"] <= lat <= CABA_BBOX["lat_max"]
+        and CABA_BBOX["lon_min"] <= lon <= CABA_BBOX["lon_max"]
+    ):
         return "outside_caba"
     return None
 
@@ -168,7 +179,9 @@ def select_stored_candidates(
             price_id=row["id"],
             source_row=row["source_row"],
             published_at_local=row["valid_from"],
-            alerts=tuple(value.strip() for value in row["alerts"].split(";") if value.strip()),
+            alerts=tuple(
+                value.strip() for value in row["alerts"].split(ALERT_SEPARATOR) if value.strip()
+            ),
         )
         for row in rows[:limit]
     )

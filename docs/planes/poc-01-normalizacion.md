@@ -144,7 +144,7 @@ RULES_VERSION = "1"
   3. `fecha_inconsistente_anio_mes`: el año o el mes no coinciden con `anio`/`mes` (solo se evalúa si se pasan).
 - `local_now() -> pd.Timestamp`: hora actual en `America/Argentina/Buenos_Aires`, sin zona.
 
-- [ ] **Paso 1: escribir los tests que fallan**
+- [x] **Paso 1: escribir los tests que fallan**
 
 ```python
 def test_vigente_iso_format():
@@ -191,10 +191,10 @@ def test_future_uses_local_time():
     assert date_reasons(pd.Series([pd.Timestamp("2026-10-24 23:00")]), ingested).tolist() == [None]
 ```
 
-- [ ] **Paso 2:** correr `pytest tests/normalization/test_dates.py -v`. Esperado: FAIL (import).
-- [ ] **Paso 3:** implementar. `parse_dates` usa `pd.to_datetime(raw, format=DATE_FORMAT[source], errors="coerce")`.
-- [ ] **Paso 4:** correr los tests. Esperado: 6 passed.
-- [ ] **Paso 5:** commit `feat(normalizacion): reglas de parseo y validacion de fechas por origen` (`Refs #6`).
+- [x] **Paso 2:** correr `pytest tests/normalization/test_dates.py -v`. Esperado: FAIL (import).
+- [x] **Paso 3:** implementar. `parse_dates` usa `pd.to_datetime(raw, format=DATE_FORMAT[source], errors="coerce")`.
+- [x] **Paso 4:** correr los tests. Esperado: 6 passed.
+- [x] **Paso 5:** commit `feat(normalizacion): reglas de parseo y validacion de fechas por origen` (`Refs #6`).
 
 ### Tarea 2: Precio, coordenadas, duplicados y alertas
 
@@ -208,7 +208,7 @@ def test_future_uses_local_time():
   - Filas idénticas en `KEY + ["precio"]`: se conserva la primera y las demás se descartan y se cuentan.
   - Misma `KEY` con precios distintos: todas pasan a `rejected` con `motivo = "clave_duplicada_conflicto"`.
 
-- [ ] **Paso 1: escribir los tests que fallan**
+- [x] **Paso 1: escribir los tests que fallan**
 
 ```python
 def test_parse_prices_formats():
@@ -253,8 +253,8 @@ def test_conflicting_duplicate_rejects_all():
 
 `_frame(...)` y `_dups(...)` son helpers del test que arman un `DataFrame` mínimo. Por defecto usan coordenadas dentro de CABA (`-34.60, -58.40`), el mismo mes y `tipo_nafta="super"`.
 
-- [ ] **Paso 2:** FAIL. **Paso 3:** implementar. Para los atípicos, calcular la mediana y el tamaño por `(fecha_vigencia.dt.to_period("M"), tipo_nafta)` con `groupby().transform`; marcar solo si el tamaño es `>= OUTLIER_MIN_GROUP`. **Paso 4:** 7 passed.
-- [ ] **Paso 5:** commit `feat(normalizacion): validaciones de precio, coordenadas, atipicos y duplicados` (`Refs #6`).
+- [x] **Paso 2:** FAIL. **Paso 3:** implementar. Para los atípicos, calcular la mediana y el tamaño por `(fecha_vigencia.dt.to_period("M"), tipo_nafta)` con `groupby().transform`; marcar solo si el tamaño es `>= OUTLIER_MIN_GROUP`. **Paso 4:** 7 passed.
+- [x] **Paso 5:** commit `feat(normalizacion): validaciones de precio, coordenadas, atipicos y duplicados` (`Refs #6`).
 
 ### Tarea 3: Lectura del CSV crudo con filtro de alcance
 
@@ -286,12 +286,12 @@ def test_conflicting_duplicate_rejects_all():
   - 1 de otra provincia.
   - 1 de CABA con gas oil.
 
-- [ ] **Paso 1: escribir los tests que fallan**
+- [x] **Paso 1: escribir los tests que fallan**
   - `test_historico_filters_scope_and_numbers_rows`: quedan 7 filas, `idproducto` solo `{"2","3"}`, y `fila_origen` conserva las posiciones del archivo.
   - `test_vigente_filters_scope`: quedan 2 filas.
   - `test_missing_columns_clear_error`: un CSV sin `fecha_vigencia` lanza `UnexpectedSchema` con un mensaje que contiene `fecha_vigencia`.
-- [ ] **Pasos 2 a 4:** FAIL → implementar → 3 passed.
-- [ ] **Paso 5:** commit `feat(normalizacion): lectura por chunks del CSV crudo con filtro CABA y nafta` (`Refs #6`).
+- [x] **Pasos 2 a 4:** FAIL → implementar → 3 passed.
+- [x] **Paso 5:** commit `feat(normalizacion): lectura por chunks del CSV crudo con filtro CABA y nafta` (`Refs #6`).
 
 ### Tarea 4: Pipeline y contrato con POC-06
 
@@ -305,7 +305,7 @@ def test_conflicting_duplicate_rejects_all():
   - Convierte a `list[dict]` con `to_dict("records")`. `NaN` → `None` en coordenadas; las fechas quedan como `datetime`.
 - `normalize_capture(capture: RawCapture) -> NormalizationResult`: es `read_raw(Path(capture.stored_path), capture.source)` seguido de `normalize(..., ingested_at=capture.fetched_at)`. Es la función que se pasa como `normalize` a `ingest()`.
 
-- [ ] **Paso 1: escribir los tests que fallan**
+- [x] **Paso 1: escribir los tests que fallan**
 
 ```python
 INGESTED = pd.Timestamp("2026-10-24 18:00")
@@ -357,8 +357,8 @@ def test_ingest_accepts_normalize_capture(engine, tmp_path):
     ...  # la ejecución queda succeeded y prices_for_run devuelve 4 filas
 ```
 
-- [ ] **Pasos 2 a 4:** FAIL → implementar → toda la suite en verde.
-- [ ] **Paso 5:** commit `feat(normalizacion): pipeline con rechazos trazables y contrato con la ingesta` (`Refs #6`).
+- [x] **Pasos 2 a 4:** FAIL → implementar → toda la suite en verde.
+- [x] **Paso 5:** commit `feat(normalizacion): pipeline con rechazos trazables y contrato con la ingesta` (`Refs #6`).
 
 ### Tarea 5: Descarga verificada de capturas
 
@@ -377,13 +377,13 @@ def test_ingest_accepts_normalize_capture(engine, tmp_path):
   - Si `size` no es `None`, verifica que los bytes coincidan. Si no coinciden, borra el `.part` y lanza `IncompleteDownload`.
   - Si coinciden, renombra el archivo a `root/raw/<source>/<AAAAMMDDTHHMMSSZ>_<sha256[:12]>.csv` y devuelve el `RawCapture`.
 
-- [ ] **Paso 1: escribir los tests que fallan**, con una `FakeSession` como la de `tests/adapters/test_openrouteservice.py`:
+- [x] **Paso 1: escribir los tests que fallan**, con una `FakeSession` como la de `tests/adapters/test_openrouteservice.py`:
   - `test_discovers_vigente_and_historico`
   - `test_missing_resource_raises_lookup`
   - `test_download_stores_raw_and_returns_capture` (comprueba el SHA-256 y el contenido)
   - `test_incomplete_download_leaves_no_files`
-- [ ] **Pasos 2 a 4:** FAIL → implementar con `session.get(..., stream=True, timeout=(10, 300))` y chunks de 1 MiB → 4 passed.
-- [ ] **Paso 5:** commit `feat(ingesta): descubrimiento y descarga verificada de capturas crudas` (`Refs #6`).
+- [x] **Pasos 2 a 4:** FAIL → implementar con `session.get(..., stream=True, timeout=(10, 300))` y chunks de 1 MiB → 4 passed.
+- [x] **Paso 5:** commit `feat(ingesta): descubrimiento y descarga verificada de capturas crudas` (`Refs #6`).
 
 ### Tarea 6: Comando de ingesta, corrida real y documentación
 
@@ -394,14 +394,14 @@ def test_ingest_accepts_normalize_capture(engine, tmp_path):
   - Con `--file`: arma el `RawCapture` desde ese archivo.
   - En los dos casos, después llama a `ingest(create_db_engine(), capture, normalize_capture)` e imprime el `run_id` y el reporte.
 
-- [ ] **Paso 1:** implementar el comando.
-- [ ] **Paso 2:** corrida real del vigente. Esperado: unas 732 filas leídas, casi sin rechazos y unas 184 estaciones. Anotar los números obtenidos, porque cambian con cada actualización de la fuente.
-- [ ] **Paso 3:** corrida real del histórico (~780 MB, conviene correrla en segundo plano). Esperado con la captura del 2026-10-24:
+- [x] **Paso 1:** implementar el comando.
+- [x] **Paso 2:** corrida real del vigente. Esperado: unas 732 filas leídas, casi sin rechazos y unas 184 estaciones. Anotar los números obtenidos, porque cambian con cada actualización de la fuente.
+- [x] **Paso 3:** corrida real del histórico (~780 MB, conviene correrla en segundo plano). Esperado con la captura del 2026-10-24:
   - 80.025 filas leídas.
   - Rechazos: `fecha_invalida` = 6, `fecha_futura` = 1, `precio_no_positivo` ≈ 10, `fecha_inconsistente_anio_mes` = 0.
   - Alertas: `sin_coordenadas` = 6, y `fuera_de_caba` y `precio_atipico` mayores que 0.
   - Unas 237 estaciones.
-- [ ] **Paso 4:** escribir `docs/NORMALIZACION.md` con:
+- [x] **Paso 4:** escribir `docs/NORMALIZACION.md` con:
   - El formato real de fecha de cada origen, con un ejemplo.
   - La evidencia de que el histórico usa el día primero (coincide 99,99 % contra 3 %).
   - La explicación de las 84 fechas futuras.
@@ -410,7 +410,7 @@ def test_ingest_accepts_normalize_capture(engine, tmp_path):
   - Cómo correr el comando.
   - Los números de la corrida real.
 - [ ] **Paso 5:** ADR-006, solo si el equipo lo considera una decisión estructural. Debe comparar tres alternativas: (a) corregir automáticamente, (b) rechazar o marcar sin corregir (la propuesta) y (c) descartar en silencio. También la decisión sobre la fuente: CSV por HTTP con SHA-256, frente al DataStore (ya no está disponible) y a HTTPS (redirige).
-- [ ] **Paso 6:** actualizar la tabla de estado del README. Correr `pytest -v`, `ruff check . && ruff format --check .` y `python .github/scripts/check_links.py`.
+- [x] **Paso 6:** actualizar la tabla de estado del README. Correr `pytest -v`, `ruff check . && ruff format --check .` y `python .github/scripts/check_links.py`.
 - [ ] **Paso 7:** abrir la PR contra `dev` con `Closes #6` y pegar en la descripción los reportes de las dos corridas reales.
 
 ## Cobertura de los criterios de aceptación

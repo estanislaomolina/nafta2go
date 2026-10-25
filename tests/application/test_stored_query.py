@@ -1,7 +1,9 @@
 """Consulta desde SQLite migrado, con precios normalizados y rutas simulados."""
 
+import hashlib
 from datetime import UTC, datetime, timedelta, timezone
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
@@ -12,6 +14,7 @@ from nafta2go.application.stored_query import (
     select_stored_candidates,
 )
 from nafta2go.domain.engine import FuelRequest
+from nafta2go.normalization.pipeline import normalize_capture
 from nafta2go.persistence import repository as repo
 from nafta2go.persistence.models import NormalizationResult, RawCapture
 from nafta2go.services.ingestion import ingest
@@ -250,6 +253,31 @@ def test_route_failures_are_not_reported_as_empty_coverage(engine):
 
     with pytest.raises(ProviderTimeout):
         evaluate(engine, UnavailableProvider())
+
+
+def test_real_normalizer_fixture_connects_to_database_selection_and_motor(engine):
+    path = Path(__file__).resolve().parents[1] / "fixtures/vigente_sample.csv"
+    raw = path.read_bytes()
+    # La fixture publica precios de julio; la consulta se congela en julio.
+    reference = datetime(2026, 7, 7, 21, tzinfo=UTC)
+    capture = RawCapture(
+        "vigente",
+        path.as_uri(),
+        hashlib.sha256(raw).hexdigest(),
+        len(raw),
+        str(path),
+        datetime(2026, 7, 7, 18),
+    )
+    run_id = ingest(
+        engine, capture, normalize_capture, clock=lambda: reference.replace(tzinfo=None)
+    )
+    result = evaluate(engine, FakeProvider(), reference_at=reference)
+    assert result.selection.data_run_id == run_id
+    assert result.selection.status == CoverageStatus.READY
+    assert [item.station_id for item in result.selection.candidates] == ["6270"]
+    assert result.selection.candidates[0].price_ars_per_l == Decimal(2129)
+    assert result.selection.items[0].source_row == 3
+    assert result.evaluations[0].evaluation.feasible
 
 
 @pytest.mark.parametrize(

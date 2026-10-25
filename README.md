@@ -21,6 +21,7 @@ Santiago Bunge
 - [ADRs](adr/README.md): decisiones de diseño y comparación de alternativas.
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
+- [Normalización de precios](docs/NORMALIZACION.md): formato real de las fechas, reglas de rechazo y alertas, duplicados y corrida real (POC-01).
 - [Consigna del TP](res/%5BSHR%5D%5BS2%5D%20-%20Consigna%20TP%20I408.pdf): requisitos y formato de las entregas.
 - [GitHub Project](https://github.com/users/estanislaomolina/projects/1): seguimiento operativo del roadmap.
 
@@ -79,7 +80,7 @@ pytest -v
 ruff check . && ruff format --check .
 ```
 
-`alembic upgrade head` crea la base local (SQLite en `data/`); ver [docs/PERSISTENCIA.md](docs/PERSISTENCIA.md).
+`alembic upgrade head` crea la base local (SQLite en `data/`); ver [docs/PERSISTENCIA.md](docs/PERSISTENCIA.md). Para cargar precios reales: `python -m nafta2go.normalization --source vigente` (ver [docs/NORMALIZACION.md](docs/NORMALIZACION.md)).
 
 Los tests y controles de estilo coinciden con los de integración continua. Los tests de persistencia verifican las migraciones en bases temporales. El detalle de cada check, cuáles bloquean el merge y cómo se manejan las credenciales está en [docs/CALIDAD.md](docs/CALIDAD.md).
 
@@ -100,11 +101,11 @@ La Entrega 2 (POC) está en curso. Esta tabla declara qué partes existen, cuál
 | Componente | Tarea | Estado |
 |---|---|---|
 | Integración continua: links, lint, tests y secretos | POC-07 | Implementado |
-| Normalización de precios | POC-01 | Pendiente |
-| Persistencia e ingesta mínimas | POC-06 | Implementado: esquema, migraciones e ingesta trazable. La descarga y normalización reales esperan POC-01 |
+| Normalización de precios | POC-01 | Implementado: descarga verificada, reglas con rechazos y alertas, y corrida real documentada en docs/NORMALIZACION.md |
+| Persistencia e ingesta mínimas | POC-06 | Implementado: esquema, migraciones e ingesta trazable, conectada a la normalización de POC-01 |
 | Proveedor de rutas | POC-03 | Implementado, con prueba autenticada registrada en docs/evidencia/ |
 | Motor determinístico | POC-04 | Implementado y probado; PR #26 integrado |
-| Flujo de punta a punta | POC-05 | Parcial: consulta desde base y conexión con rutas/motor probadas; normalización real, rutas del caso y ranking pendientes |
+| Flujo de punta a punta | POC-05 | Parcial: normalización, base y conexión con rutas/motor probadas; rutas del caso y ranking pendientes |
 | Levantar el sistema completo con contenedores | POC-07 | Parcial: imagen y migraciones con `docker compose`. Falta la API (POC-05) |
 | Diagnóstico estadístico con ML | MVP | Fuera del alcance de la POC |
 

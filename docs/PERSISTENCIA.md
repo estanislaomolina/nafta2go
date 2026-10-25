@@ -107,5 +107,5 @@ precio en el resultado. El contrato y los estados de cobertura están en
 [docs/MOTOR.md](MOTOR.md). Este recorrido sólo lee; no registra ubicaciones ni
 resultados en `recommendations`.
 
-- Conectar la descarga y la normalización reales cuando exista POC-01.
+- Verificar el caso completo con precios normalizados, rutas reales y motor (POC-05).
 - Registrar recomendaciones desde el flujo de punta a punta (POC-05).
