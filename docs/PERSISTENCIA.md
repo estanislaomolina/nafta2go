@@ -48,8 +48,12 @@ erDiagram
 | `rejected_rows` | Filas rechazadas: fila del archivo, motivo y valores crudos en JSON |
 | `recommendations` | Recomendación: ejecución de datos usada, versión del motor, proveedor de rutas, parámetros y resultado |
 
-Las fechas de ejecución se guardan en UTC. `valid_from` conserva la hora local
-publicada por la fuente.
+Las fechas de la ejecución (`started_at` y `finished_at`) se guardan en UTC.
+`raw_captures.fetched_at` y `valid_from` quedan en hora local de Argentina sin
+zona, como publica la fuente: la regla de fecha futura compara las dos en la
+misma zona (ver [NORMALIZACION.md](NORMALIZACION.md)). Para comparar una
+ejecución con su captura hay que restar tres horas a la ejecución: Argentina no
+tiene horario de verano.
 
 ## Ciclo de vida de una ejecución
 
