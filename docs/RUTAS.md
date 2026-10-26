@@ -111,7 +111,7 @@ inválida y un punto fuera de la red vial. Evidencia:
 | Dato | Publicado (plan Standard) | Observado en `api.heigit.org` |
 |---|---|---|
 | Solicitudes Matrix por día | 500 | 500 (`x-ratelimit-limit`, con reinicio 24 h después) |
-| Solicitudes Matrix por minuto | 40 | No verificado: la prueba usa 8 solicitudes espaciadas y los headers informan solo la cuota diaria |
+| Solicitudes Matrix por minuto | 40 | Verificado el 26/10: 40 respuestas 200 en 12,93 s, intento 41 rechazado con 429 a los 13,23 s y recuperación 200 tras 65 s |
 | Latencia de una matriz de 22 ubicaciones | No publicada | p50 0,37 s, p95 1,24 s, máximo 1,24 s (la primera llamada es la más lenta) |
 | Pares sin ruta en la matriz | — | 0 de 441 |
 | Ruta de referencia Obelisco → Cabildo y Juramento | — | 10,2 km, 18 min |
@@ -122,6 +122,31 @@ La cuota cuenta solicitudes, no elementos de la matriz. Con una solicitud por
 recomendación y el supuesto del PRD de 40 consultas diarias, el uso esperado es
 del 8 % de la cuota diaria. La latencia observada deja margen para el objetivo
 de p95 ≤ 5 s de la consulta completa (RNF01).
+
+### Verificación específica del límite por minuto
+
+El 26/10/2026 se completó una prueba autenticada acotada con matrices de un solo
+par Obelisco → Cabildo y Juramento. La
+[evidencia completa](evidencia/poc-03-limite-minuto-2026-10-26.json) conserva
+las 41 respuestas del primer grupo y la recuperación, sin credencial ni cuerpos
+de error. Los primeros 40 intentos recibieron 200; el 41 recibió 429. La cuota
+diaria todavía tenía 419 solicitudes antes del rechazo, y la llamada posterior
+a una pausa de 65 segundos recibió 200 con 418 disponibles. Esto distingue el
+límite de frecuencia del agotamiento diario. Es una medición de esa cuenta,
+endpoint y fecha; no garantiza límites futuros ni mide la concurrencia del MVP.
+
+Para repetirla, sin otras consultas simultáneas con la misma clave:
+
+```bash
+python scripts/probe_openrouteservice.py --verify-minute-limit
+```
+
+El modo es explícito, consulta como máximo 42 matrices pequeñas, comprueba el
+saldo diario y termina si el grupo tarda más de 55 segundos, faltan créditos,
+aparece un error de proveedor o no se obtiene el rechazo esperado. No reintenta
+errores. Si la comprobación de recuperación falla, guarda evidencia parcial con
+`verified=false`; una comprobación incompleta no se presenta como exitosa.
+Las pruebas automáticas simulan respuestas y reloj, sin red ni esperas reales.
 
 ### Puntos fuera de la red vial
 
