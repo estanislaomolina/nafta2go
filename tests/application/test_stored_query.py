@@ -58,7 +58,14 @@ def put_run(engine, rows=(), *, status="succeeded", source="vigente", finished_a
 
 
 def select(engine, **overrides):
-    options = {"fuel_type": "super", "schedule_id": 2, "reference_at": REFERENCE, **overrides}
+    options = {
+        "fuel_type": "super",
+        "schedule_id": 2,
+        "reference_at": REFERENCE,
+        # Estos tests verifican selección y conexión, no el mínimo de cobertura.
+        "minimum_candidates": 1,
+        **overrides,
+    }
     with engine.connect() as conn:
         return select_stored_candidates(conn, **options)
 
@@ -80,7 +87,14 @@ class FakeProvider:
 
 
 def evaluate(engine, provider, **overrides):
-    options = {"fuel_type": "super", "schedule_id": 2, "reference_at": REFERENCE, **overrides}
+    options = {
+        "fuel_type": "super",
+        "schedule_id": 2,
+        "reference_at": REFERENCE,
+        # Estos tests verifican selección y conexión, no el mínimo de cobertura.
+        "minimum_candidates": 1,
+        **overrides,
+    }
     with engine.connect() as conn:
         return evaluate_from_database(conn, REQUEST, ORIGIN, DESTINATION, provider, **options)
 

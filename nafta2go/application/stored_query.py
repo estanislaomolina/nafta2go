@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import Connection
 
 from nafta2go.adapters.routing import Point, RoutingProvider
+from nafta2go.application.coverage_rules import MAX_PRICE_AGE_DAYS, MIN_RECENT_CANDIDATES
 from nafta2go.application.recommendation import (
     MAX_POC_CANDIDATES,
     Candidate,
@@ -103,9 +104,9 @@ def select_stored_candidates(
     fuel_type: str,
     schedule_id: int,
     reference_at: datetime,
-    max_age_days: int = 30,
+    max_age_days: int = MAX_PRICE_AGE_DAYS,
     limit: int = MAX_POC_CANDIDATES,
-    minimum_candidates: int = 1,
+    minimum_candidates: int = MIN_RECENT_CANDIDATES,
 ) -> CandidateSelection:
     """Selecciona precios válidos de una única versión de datos vigente.
 
@@ -211,9 +212,9 @@ def evaluate_from_database(
     fuel_type: str,
     schedule_id: int,
     reference_at: datetime,
-    max_age_days: int = 30,
+    max_age_days: int = MAX_PRICE_AGE_DAYS,
     limit: int = MAX_POC_CANDIDATES,
-    minimum_candidates: int = 1,
+    minimum_candidates: int = MIN_RECENT_CANDIDATES,
 ) -> StoredQueryResult:
     """Lee una versión de precios y enruta sólo si alcanza el mínimo configurado."""
     selection = select_stored_candidates(
