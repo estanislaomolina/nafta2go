@@ -112,30 +112,31 @@ def find_run_by_sha256(conn: Connection, source: str, sha256: str) -> int | None
 
 
 def add_prices(conn: Connection, run_id: int, rows: Iterable[Mapping[str, object]]) -> int:
-    values = [
-        {
-            "run_id": run_id,
-            "source_row": int(row["fila_origen"]),
-            "station_id": int(row["idempresa"]),
-            "company": str(row["empresa"]),
-            "brand": str(row["empresabandera"]),
-            "address": str(row["direccion"]),
-            "product_id": int(row["idproducto"]),
-            "fuel_type": str(row["tipo_nafta"]),
-            "schedule_id": int(row["idtipohorario"]),
-            "price": Decimal(str(row["precio"])),
-            "valid_from": row["fecha_vigencia"],
-            "lat": _optional_float(row["latitud"]),
-            "lon": _optional_float(row["longitud"]),
-            "valid_from_raw": str(row["fecha_vigencia_original"]),
-            "price_raw": str(row["precio_original"]),
-            "alerts": _alerts_text(row.get("alertas")),
-        }
-        for row in rows
-    ]
+    values = [{"run_id": run_id, **price_record(row)} for row in rows]
     if values:
         conn.execute(station_prices.insert(), values)
     return len(values)
+
+
+def price_record(row: Mapping[str, object]) -> dict:
+    """Fila normalizada (contrato de POC-01) con las columnas de station_prices, sin run_id."""
+    return {
+        "source_row": int(row["fila_origen"]),
+        "station_id": int(row["idempresa"]),
+        "company": str(row["empresa"]),
+        "brand": str(row["empresabandera"]),
+        "address": str(row["direccion"]),
+        "product_id": int(row["idproducto"]),
+        "fuel_type": str(row["tipo_nafta"]),
+        "schedule_id": int(row["idtipohorario"]),
+        "price": Decimal(str(row["precio"])),
+        "valid_from": row["fecha_vigencia"],
+        "lat": _optional_float(row["latitud"]),
+        "lon": _optional_float(row["longitud"]),
+        "valid_from_raw": str(row["fecha_vigencia_original"]),
+        "price_raw": str(row["precio_original"]),
+        "alerts": _alerts_text(row.get("alertas")),
+    }
 
 
 def prices_for_run(conn: Connection, run_id: int, fuel_type: str | None = None) -> list[dict]:
