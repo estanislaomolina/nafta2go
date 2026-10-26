@@ -133,7 +133,7 @@ de reserva, presupuesto y tanque, ida y vuelta, fallos de ruta, entradas inváli
 y restricciones físicas/económicas sobre combinaciones de precios y presupuestos.
 No constituyen evidencia de cobertura ni validación de un proveedor externo.
 
-## Conexión con la matriz de rutas (inicio de POC-05)
+## Conexión con la matriz de rutas
 
 `nafta2go.application.recommendation.evaluate_stations` recibe la consulta del
 motor, hasta diez `Candidate` (identificador, ubicación y precio ya validado),
@@ -155,23 +155,6 @@ Las pruebas de conexión están en `tests/application/test_recommendation.py` y 
 matrices sintéticas, sin red ni credenciales. La consulta completa conecta la
 ingesta, los filtros, el ranking y el registro; su evidencia real está en
 [POC-05](POC-05.md).
-
-Para inspeccionar ese recorrido en la terminal, ejecutar desde la raíz:
-
-```bash
-python -m nafta2go.demo
-python -m nafta2go.demo --presupuesto 6000 --sin-destino
-python -m nafta2go.demo --litros-iniciales 0
-```
-
-El proveedor ficticio de la demo devuelve dos recorridos evaluables y una estación
-sin ruta completa. Los precios, coordenadas y distancias de ese ejemplo son
-sintéticos y se rotulan al ejecutarlo. La salida conserva el orden de entrada,
-sin elegir una estación ganadora. Se puede consultar `--help` para modificar las
-entradas. La salida del proceso es 0 si hay candidatas viables, 1 si ninguna lo es
-y 2 si los parámetros son inválidos. La ejecución no consulta la API ni necesita
-instalar dependencias externas; las pruebas completas sí requieren los paquetes
-de `requirements-dev.txt`.
 
 ## Consulta desde la base de datos
 
@@ -237,15 +220,6 @@ python -m pip install -r requirements-dev.txt
 pytest -q tests/application/test_stored_query.py
 ```
 
-La matriz real del caso, el ranking y la demostración completa están documentados
-en [POC-05](POC-05.md). La demo de terminal conserva su escenario
-sintético y no se conecta implícitamente a la base ni a una API real.
-
-Además de los tests, se ejecutó el normalizador real sobre el CSV oficial
-capturado el 24/10/2026 y se persistió el resultado en un SQLite temporal migrado.
-La consulta para súper diurna, con referencia a la hora de esa captura, encontró
-31 estaciones elegibles y seleccionó diez; sus IDs y orden coinciden con el caso
-controlado. El reporte, hash del original y precios elegidos están en la
-[evidencia de selección desde base](evidencia/poc-05-seleccion-db-2026-10-24.json).
-Esa comprobación no consulta rutas ni produce una recomendación; corresponde a
-la captura y fecha indicadas, y no acredita precios actuales en otra fecha.
+La matriz real, las alternativas y la ejecución completa están documentadas en
+[POC-05](POC-05.md). La evidencia del flujo definitivo incluye normalización e
+ingesta reales, rutas autenticadas y recomendación persistida con su origen de datos.

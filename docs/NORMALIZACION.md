@@ -1,9 +1,8 @@
 # Normalización de precios de la POC
 
 Implementa la tarea POC-01 (#6), correspondiente a RF08, RF09 y RNF05 del
-[PRD](PRD.md) y a la puerta G1 del [Roadmap](ROADMAP.md). El plan de trabajo
-está en [planes/poc-01-normalizacion.md](planes/poc-01-normalizacion.md) y la
-persistencia que recibe el resultado en [PERSISTENCIA.md](PERSISTENCIA.md).
+[PRD](PRD.md) y a la puerta G1 del [Roadmap](ROADMAP.md). La persistencia
+que recibe el resultado está documentada en [PERSISTENCIA.md](PERSISTENCIA.md).
 
 | Módulo | Responsabilidad |
 |---|---|

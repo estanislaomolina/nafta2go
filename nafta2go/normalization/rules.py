@@ -1,6 +1,6 @@
 """Constantes de las reglas de normalización: alcance, formatos, umbrales y motivos.
 
-Ver docs/planes/poc-01-normalizacion.md para la evidencia que fija cada valor.
+Ver docs/NORMALIZACION.md para las reglas y la evidencia de normalización.
 """
 
 SOURCES = ("vigente", "historico")
