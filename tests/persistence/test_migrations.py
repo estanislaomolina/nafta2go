@@ -92,3 +92,44 @@ def test_default_url_is_anchored_to_repo_root(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     path = Path(make_url(database_url()).database)
     assert path == ROOT / "data" / "nafta2go.db"
+
+
+def test_upgrade_preserves_existing_recommendations(database_url):
+    from sqlalchemy import text
+
+    command.upgrade(alembic_config(database_url), "0001")
+    db = create_db_engine(database_url)
+    with db.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO ingestion_runs (id, source, status, started_at) "
+                "VALUES (1, 'vigente', 'succeeded', '2026-10-24')"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO recommendations "
+                "(id, created_at, data_run_id, engine_version, routing_provider, request, result) "
+                "VALUES (1, '2026-10-24', 1, 'v1', 'fake', '{}', '{}')"
+            )
+        )
+    upgrade_to_head(database_url)
+    with db.connect() as conn:
+        row = conn.execute(text("SELECT data_run_id, scenario FROM recommendations")).one()
+        assert tuple(row) == (1, None)
+    db.dispose()
+
+
+def test_recommendation_requires_exactly_one_data_origin(engine):
+    with pytest.raises(IntegrityError), engine.begin() as conn:
+        conn.execute(
+            schema.recommendations.insert().values(
+                created_at=datetime(2026, 10, 26),
+                engine_version="test",
+                routing_provider="fake",
+                request={},
+                result={},
+                data_run_id=None,
+                scenario=None,
+            )
+        )

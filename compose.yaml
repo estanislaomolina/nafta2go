@@ -11,11 +11,19 @@ services:
       - nafta2go-data:/app/data
     restart: "no"
 
-  # Los servicios que usen la base (por ejemplo la API de POC-05) deben esperar
-  # a que las migraciones terminen bien:
-  #   depends_on:
-  #     migrate:
-  #       condition: service_completed_successfully
+  query:
+    image: nafta2go:local
+    build: .
+    profiles: [poc]
+    entrypoint: ["python", "-m", "nafta2go.query"]
+    environment:
+      DATABASE_URL: sqlite:////app/data/nafta2go.db
+      ORS_API_KEY: ${ORS_API_KEY:-}
+    volumes:
+      - nafta2go-data:/app/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   nafta2go-data:

@@ -15,7 +15,7 @@ El workflow [ci.yml](../.github/workflows/ci.yml) corre en cada push y PR hacia
 | `Lint` | `ruff check .` y `ruff format --check .` con [ruff.toml](../ruff.toml) | Hay errores de estilo, imports sin usar o código sin formatear |
 | `Tests` | `pytest -v --strict-markers` con las dependencias de `requirements-dev.txt` | Falla un test, falta `requirements-dev.txt` o no se encuentran tests |
 | `Secretos` | [gitleaks](https://github.com/gitleaks/gitleaks) sobre los commits nuevos de cada push y PR | Aparece algo con forma de credencial (API keys, tokens, claves privadas) |
-| `Contenedores` | Construye la imagen con `docker compose build`, corre las migraciones en el contenedor y verifica que el esquema quede en la última versión | El `Dockerfile` no construye, una migración falla dentro del contenedor o el esquema no llega a `head` |
+| `Contenedores` | Construye la imagen con `docker compose build`, corre las migraciones, verifica el esquema y reproduce la consulta completa con la matriz real guardada | El `Dockerfile` no construye, una migración falla dentro del contenedor el esquema no llega a `head` o la consulta no produce un resultado histórico trazable |
 
 `Docs y notebooks`, `Lint`, `Tests` y `Secretos` son **checks requeridos** en el
 ruleset de `dev` y `main`: una PR con cualquiera en rojo no se puede mergear.

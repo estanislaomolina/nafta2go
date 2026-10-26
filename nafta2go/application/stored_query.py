@@ -54,6 +54,9 @@ class StoredPrice:
     source_row: int
     published_at_local: datetime
     alerts: tuple[str, ...]
+    company: str = ""
+    brand: str = ""
+    address: str = ""
 
 
 @dataclass(frozen=True)
@@ -240,6 +243,9 @@ def select_candidates(
             alerts=tuple(
                 value.strip() for value in row["alerts"].split(ALERT_SEPARATOR) if value.strip()
             ),
+            company=row.get("company", ""),
+            brand=row.get("brand", ""),
+            address=row.get("address", ""),
         )
         for row in selected[:limit]
     )

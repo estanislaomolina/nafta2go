@@ -134,7 +134,7 @@ erróneas **no producen un error**, sino una ruta absurda.
 Mitigaciones:
 
 - Las estaciones se validan dentro de CABA en la normalización (POC-01).
-- Validar que el origen y el destino del usuario estén dentro del área de servicio antes de pedir la matriz (POC-05).
+- La consulta de POC-05 valida origen y destino dentro del rectángulo de servicio de CABA antes de pedir la matriz. El rectángulo es una simplificación; no comprueba el acceso vial.
 - La respuesta incluye `snapped_distance` por ubicación. El adaptador todavía no la usa; descartar los pares ajustados más allá de un umbral es una mejora pendiente.
 
 ## Plan alternativo

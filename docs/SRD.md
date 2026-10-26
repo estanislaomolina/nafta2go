@@ -42,8 +42,8 @@ resuelto en POC-02 de esta forma:
 | RF03 Preseleccionar y enrutar candidatas | `stored_query` (hasta 10 en el corredor), `application/recommendation.evaluate_stations` | Implementado con un máximo de 10 (el PRD admite hasta 20); se recorta por la cuota del proveedor |
 | RF04 Cálculos de alcanzabilidad, reserva, consumo, capacidad, litros y desvío | `domain/engine.evaluate_candidate` | Implementado, determinístico |
 | RF05 Descartar alternativas inviables con motivo | `domain/engine.DiscardReason`, exclusiones de `stored_query` | Implementado |
-| RF06 Hasta tres alternativas diferenciadas | — | **Pendiente**: el motor evalúa candidatas pero todavía no arma el ranking (POC-05) |
-| RF07 Explicar cada resultado | `FuelMetrics`, `StoredPrice` (fecha, fila, alertas) | Datos disponibles; falta la presentación (POC-05) |
+| RF06 Hasta tres alternativas diferenciadas | `domain/ranking`, `application/query` | Implementado: combustible neto, menor desvío y equilibrio; agrupa prioridades que eligen la misma estación |
+| RF07 Explicar cada resultado | `query` CLI y `application/query` | Implementado: dirección, precio, fecha, litros, consumo, reserva, desvío, alertas y fuente; JSON con todos los descartes |
 | RF08 Ingerir y normalizar | `adapters/energy_source`, `normalization/`, `services/ingestion` | Implementado, con corrida real documentada |
 | RF09 Umbral configurable de vigencia | `application/coverage_rules`, `stored_query` | Implementado: 30 días, configurable en un solo módulo |
 | RF10 y RF11 Diagnóstico ML y ranking conservador | — | Fuera de la POC, por consigna. La alerta `precio_atipico` de la normalización es una regla, no un modelo |
@@ -51,9 +51,9 @@ resuelto en POC-02 de esta forma:
 | RF13 Configurar sin modificar código | — | Pendiente (Debería): hoy los parámetros son constantes de código |
 | RF15 Escenarios históricos | `application/scenario`, `docs/evidencia/escenario-vigente-2026-10-24/` | Implementado como respaldo automático y rotulado |
 | RNF03 Privacidad | `persistence/repository.record_recommendation` | Implementado: rechaza origen, destino y coordenadas en la consulta guardada |
-| RNF05 Trazabilidad | `ingestion_runs`, `raw_captures`, `recommendations.data_run_id`, rótulo `scenario` | Implementado para datos; falta registrar recomendaciones desde el flujo (POC-05) |
+| RNF05 Trazabilidad | `ingestion_runs`, `raw_captures`, `recommendations.data_run_id`, rótulo `scenario` | Implementado: ingesta, recomendación persistida y escenario identificado por fecha y hashes |
 | RNF06 Calidad | CI: links, lint, tests, secretos y contenedores | Implementado |
-| RNF07 Portabilidad | `Dockerfile`, `compose.yaml`, configuración por variables de entorno | Parcial: el contenedor migra la base; falta el servicio de la aplicación |
+| RNF07 Portabilidad | `Dockerfile`, `compose.yaml`, configuración por variables de entorno | Implementado para la POC: migraciones y comando de consulta completo; reproducción sin red en CI |
 
 ## 3. Arquitectura
 
@@ -73,7 +73,7 @@ infraestructura.
 | Normalización | `nafta2go/normalization/` | Reglas de calidad de datos sobre el CSV crudo | pandas |
 | Persistencia | `nafta2go/persistence/` | Esquema, migraciones y repositorios | SQLAlchemy |
 | Adaptadores | `nafta2go/adapters/` | Fuentes externas: catálogo de la Secretaría de Energía y OpenRouteService | requests |
-| Entrada | `python -m nafta2go.normalization`, `python -m nafta2go.coverage`, `scripts/` | Comandos de la POC | Aplicación |
+| Entrada | `python -m nafta2go.normalization`, `python -m nafta2go.coverage`, `python -m nafta2go.query`, `scripts/` | Comandos de la POC | Aplicación |
 
 Las reglas de dependencia son estas:
 - El dominio no importa nada de las otras capas.
@@ -97,6 +97,7 @@ flowchart LR
     subgraph Entrada
         CLI1[normalization CLI]
         CLI2[coverage CLI]
+        CLI3[query CLI]
         API[API / web<br/>MVP]
     end
 
@@ -126,6 +127,9 @@ flowchart LR
     CLI1 --> ING --> NORM
     ING --> REPO --> DB
     CLI2 --> COV
+    CLI3 --> COV
+    CLI3 --> RANK[domain/ranking]
+    CLI3 --> REPO
     API -.-> COV
     COV --> SQ --> REPO
     COV --> EVI
@@ -146,7 +150,7 @@ flowchart LR
    precios, los rechazos y el cierre `succeeded`. Si algo falla, se revierte
    todo y la ejecución queda `failed`.
 
-### Flujo de consulta (implementado hasta la evaluación)
+### Flujo de consulta (implementado)
 
 ```mermaid
 sequenceDiagram
@@ -174,14 +178,14 @@ sequenceDiagram
     R-->>A: distancias y duraciones
     A->>M: evaluate_candidate por estación
     M-->>A: métricas o motivos de descarte
-    A-->>C: estado, selección rotulada y evaluaciones
+    A->>A: ranking de hasta tres alternativas, agrupando prioridades
+    A->>DB: registra ingesta o escenario, sin ubicaciones del conductor
+    A-->>C: resultado explicado, alternativas y descartes
 ```
 
-Lo que falta para cerrar el flujo (POC-05):
-- Un punto de entrada que reciba la consulta.
-- El ranking de hasta tres alternativas (RF06).
-- La presentación explicada (RF07).
-- El registro en `recommendations`.
+El comando `python -m nafta2go.query` conecta esos pasos mediante
+`application.query.recommend`. La [evidencia real y el procedimiento de POC-05](POC-05.md)
+incluyen ingesta desde el CSV completo, matriz autenticada, ranking y registro.
 
 ## 4. Stack tecnológico
 
@@ -204,7 +208,7 @@ erDiagram
     ingestion_runs ||--o| raw_captures : "referencia al original"
     ingestion_runs ||--o{ station_prices : "precios normalizados"
     ingestion_runs ||--o{ rejected_rows : "filas rechazadas"
-    ingestion_runs ||--o{ recommendations : "versión de datos usada"
+    ingestion_runs |o--o{ recommendations : "versión de datos usada"
 
     ingestion_runs {
         int id PK
@@ -252,7 +256,8 @@ erDiagram
     recommendations {
         int id PK
         datetime created_at
-        int data_run_id FK
+        int data_run_id FK "nulo para escenario"
+        json scenario "nulo para ingesta vigente"
         string engine_version
         string routing_provider
         json request "sin ubicaciones"
@@ -273,9 +278,11 @@ Estas son las reglas del modelo:
   `fetched_at` van en hora local de Argentina sin zona, como publica la fuente.
 - **Privacidad (RNF03).** `recommendations.request` no admite origen, destino
   ni coordenadas.
-- **Escenario histórico.** No es una tabla: se lee desde
+- **Escenario histórico.** Los precios no son una tabla: se leen desde
   `docs/evidencia/escenario-vigente-2026-10-24/` y no se ingiere. Así nunca
-  puede tomarse como la última captura.
+  puede tomarse como la última captura. Las recomendaciones guardan su ID, fecha
+  y hashes en `scenario`; un CHECK exige exactamente uno entre ingesta y escenario
+  ([ADR-007](../adr/ADR-007-trazabilidad-de-recomendaciones-historicas.md)).
 
 ## 6. Contratos de las interfaces principales
 
@@ -296,6 +303,7 @@ Estas son las reglas del modelo:
 | `normalize_capture(RawCapture)` | Captura guardada: origen, URL, SHA-256, ruta y `fetched_at` | `NormalizationResult`: filas válidas, rechazos con `motivo`, reporte y `rules_version` |
 | `ingest(engine, capture, normalize)` | Captura y normalizador | `run_id`; si falla, `IngestionFailed` y la ejecución queda `failed` |
 | `evaluate_candidate(FuelRequest, precio, Route)` | Consumo, tanque, litros iniciales, presupuesto, reserva; tramos en km y min | `Evaluation`: `FuelMetrics` si es factible, o motivos de `DiscardReason` |
+| `application.query.recommend` | Consulta validada, conexión y proveedor | Alternativas explicadas y descartes, con resultado persistido sin ubicaciones |
 | `select_with_coverage` / `evaluate_with_coverage` | Origen, destino opcional, producto, franja, fecha con zona | `CoverageQueryResult`: estado, selección usada y rotulada, selección actual, selección del escenario y evaluaciones |
 
 Estados de cobertura (`CoverageStatus`):
@@ -322,6 +330,7 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 |---|---|
 | `python -m nafta2go.normalization --source {vigente,historico} [--file RUTA]` | Descarga (o usa un CSV), normaliza, ingiere e imprime el reporte |
 | `python -m nafta2go.coverage --origin=LAT,LON [--destination=LAT,LON]` | Reporta la cobertura y la decisión de la consulta, sin consultar rutas |
+| `python -m nafta2go.query --origin=LAT,LON [--destination=LAT,LON]` | Consulta explicada, ranking y registro; `--matrix-file` reproduce una matriz real guardada |
 | `python scripts/probe_openrouteservice.py` | Prueba autenticada del proveedor de rutas |
 | `python scripts/freeze_scenario.py --file ...` | Congela un escenario histórico |
 
@@ -355,7 +364,8 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
   - Los parámetros de negocio están en `coverage_rules.py` y `normalization/rules.py`.
 - **Ejecución local:** con `python -m pip install -r requirements-dev.txt`
   y `alembic upgrade head`, o con `docker compose up --build`, que construye la
-  imagen y migra la base en un volumen.
+  imagen y migra la base en un volumen. `docker compose run --rm query` ejecuta
+  el flujo completo; ver [POC-05](POC-05.md).
 - **Observabilidad:** las ingestas y las descargas registran logs con campos
   (`run_id`, filas, rechazos, SHA-256). El reporte de calidad queda en cada
   ejecución. Las métricas y alertas de RNF08 son del MVP.
@@ -365,7 +375,7 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 | Parte | Simplificación | Plan para el MVP |
 |---|---|---|
 | Interfaz | No hay API ni web: comandos y código | API HTTP y web por encima de la capa de aplicación |
-| Ranking | El motor evalúa hasta 10 candidatas pero no elige las tres alternativas de RF06 | Ranking por combustible neto, menor desvío y equilibrio |
+| Ranking | Tres prioridades determinísticas; equilibrio con igual peso a ganancia neta y km extra normalizados | Comparación general/conservadora con diagnóstico ML |
 | Candidatas | Hasta 10 en lugar de 20, preseleccionadas por recencia dentro del corredor | Evaluar si la cuota permite 20 |
 | Corredor | Desvío estimado en línea recta | Se mantiene como prefiltro; el desvío real ya lo calcula el motor |
 | Escenario histórico | Una sola captura congelada | Congelar capturas nuevas con el mismo script |

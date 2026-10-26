@@ -69,7 +69,7 @@ El servicio de integración debe filtrar previamente CABA, producto compatible,
 vigencia del precio y cobertura, y conservar identificadores de estación, fuente,
 fechas y versiones de datos/rutas. Este motor no certifica esos atributos: evalúa
 una sola candidata normalizada. La selección de hasta diez estaciones y el ranking
-se integrarán en POC-05. Todavía no existe una POC con datos reales de punta a punta.
+se implementan en la capa de aplicación de [POC-05](POC-05.md), con evidencia real.
 
 ## Cálculos y decisiones de negocio
 
@@ -102,7 +102,8 @@ no es un descarte: el combustible final debe respetar la reserva.
 
 Se usa aritmética `Decimal` con un contexto local propio de 28 dígitos, independiente
 de la precisión y los límites de exponentes del llamador. La división para
-calcular la compra redondea hacia abajo para no superar el presupuesto. No se
+calcular la compra redondea hacia abajo. Existe un caso límite con entradas de
+más de 28 cifras significativas, registrado en el issue #34. No se
 redondea a centavos ni a litros de surtidor: son estimaciones, y el formato de
 presentación se resolverá en la interfaz. La autonomía final incluye la reserva;
 no equivale a distancia segura disponible antes de consumirla.
@@ -139,7 +140,7 @@ motor, hasta diez `Candidate` (identificador, ubicación y precio ya validado),
 origen, destino opcional y un `RoutingProvider`. Pide una única matriz usando
 `trip_matrix` y devuelve un `StationEvaluation` por candidata, en el mismo orden.
 Cada resultado conserva la candidata y su evaluación explicada por el motor.
-Todavía no selecciona una ganadora ni produce un ranking.
+Esta función conserva las evaluaciones; `application.query.recommend` agrega el ranking y el registro.
 
 `route_from_matrix` toma la fila cero para el tramo origen-estación y la fila de
 esa estación para el tramo estación-destino (u origen). Convierte metros a
@@ -151,9 +152,9 @@ o un fallo global del proveedor se propaga como error, sin simular una consulta
 vacía exitosa. Sin candidatas no se consulta al proveedor.
 
 Las pruebas de conexión están en `tests/application/test_recommendation.py` y usan
-matrices sintéticas, sin red ni credenciales. Quedan pendientes la ingesta y los
-filtros de datos reales, la validación autenticada de rutas, el ranking y la demo
-completa. Esta conexión por sí sola no cierra la tarea #10.
+matrices sintéticas, sin red ni credenciales. La consulta completa conecta la
+ingesta, los filtros, el ranking y el registro; su evidencia real está en
+[POC-05](POC-05.md).
 
 Para inspeccionar ese recorrido en la terminal, ejecutar desde la raíz:
 
@@ -236,8 +237,8 @@ python -m pip install -r requirements-dev.txt
 pytest -q tests/application/test_stored_query.py
 ```
 
-Quedan pendientes la matriz del caso controlado, el ranking y la demostración
-completa de POC-05. La demo de terminal conserva su escenario
+La matriz real del caso, el ranking y la demostración completa están documentados
+en [POC-05](POC-05.md). La demo de terminal conserva su escenario
 sintético y no se conecta implícitamente a la base ni a una API real.
 
 Además de los tests, se ejecutó el normalizador real sobre el CSV oficial
