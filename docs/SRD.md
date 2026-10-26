@@ -52,7 +52,7 @@ resuelto en POC-02 de esta forma:
 | RF15 Escenarios históricos | `application/scenario`, `docs/evidencia/escenario-vigente-2026-10-24/` | Implementado como respaldo automático y rotulado |
 | RNF03 Privacidad | `persistence/repository.record_recommendation` | Implementado: rechaza origen, destino y coordenadas en la consulta guardada |
 | RNF05 Trazabilidad | `ingestion_runs`, `raw_captures`, `recommendations.data_run_id`, rótulo `scenario` | Implementado: ingesta, recomendación persistida y escenario identificado por fecha y hashes |
-| RNF06 Calidad | CI: links, lint, tests, secretos y contenedores | Implementado |
+| RNF06 Calidad | CI: links, lint, tests, secretos y contenedores | Implementado: cobertura de líneas ≥ 90%, 0 tests fallidos y job Tests ≤ 5 min |
 | RNF07 Portabilidad | `Dockerfile`, `compose.yaml`, configuración por variables de entorno | Implementado para la POC: migraciones y comando de consulta completo; reproducción sin red en CI |
 
 ## 3. Arquitectura
@@ -199,7 +199,7 @@ incluyen ingesta desde el CSV completo, matriz autenticada, ranking y registro.
 | OpenRouteService Matrix V2 | Distancias y tiempos | Una sola solicitud por consulta devuelve todos los tramos. La cuota diaria alcanza ([RUTAS](RUTAS.md)) | OSRM propio, que queda como plan alternativo detrás del mismo protocolo ([ADR-003](../adr/ADR-003-proveedor-de-rutas.md)) |
 | Docker + Compose | Ejecución local y CI | Misma imagen en la máquina y en el CI. Prepara la salida a cloud (RNF07) | Instalación local únicamente |
 | GitHub Actions | Integración continua | Checks requeridos en `dev` y `main`: links, ruff, pytest, gitleaks y contenedores ([CALIDAD](CALIDAD.md)) | — |
-| pytest + ruff | Calidad | Tests sin red y con bases temporales. Un único linter y formateador | flake8 + black |
+| pytest + pytest-cov + ruff | Calidad | Tests sin red y con bases temporales; cobertura de líneas ≥ 90% controlada en CI. Un único linter y formateador | flake8 + black |
 
 ## 5. Modelo de datos
 
@@ -357,7 +357,8 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
   primeros son requeridos por el ruleset ([CALIDAD](CALIDAD.md)).
 - **Tests:** unitarios para dominio y reglas, de integración contra un SQLite
   migrado y de contrato con sesiones HTTP falsas. Ningún test usa red. Las
-  fixtures salen de filas reales de la fuente.
+  fixtures salen de filas reales de la fuente. Se exige cobertura de líneas de
+  `nafta2go` ≥ 90% y el job Tests tiene un límite de 5 minutos.
 - **Configuración:**
   - `DATABASE_URL` y `ORS_API_KEY`, por variables de entorno, con un
     `.env.example` sin valores reales.

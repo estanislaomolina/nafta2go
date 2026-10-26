@@ -81,7 +81,7 @@ python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-dev.txt
 alembic upgrade head
-pytest -v
+pytest -v --strict-markers --cov=nafta2go --cov-report=term-missing --cov-precision=2 --cov-fail-under=90
 ruff check . && ruff format --check .
 ```
 
