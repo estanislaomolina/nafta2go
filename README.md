@@ -19,6 +19,7 @@ Santiago Bunge
 - [Notebook de exploración](notebooks/data_exploration.ipynb): descubrimiento de recursos oficiales, calidad, cobertura, histórico, riesgo de fechas, rutas y esfuerzo.
 - [Roadmap](docs/ROADMAP.md): hitos, dependencias, orden de construcción y vínculo con GitHub Projects.
 - [ADRs](adr/README.md): decisiones de diseño y comparación de alternativas.
+- [SRD](docs/SRD.md): especificación técnica de la POC: arquitectura y diagramas, stack, modelo de datos, contratos y estrategia de datos.
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
 - [Normalización de precios](docs/NORMALIZACION.md): formato real de las fechas, reglas de rechazo y alertas, duplicados y corrida real (POC-01).
@@ -30,13 +31,15 @@ Santiago Bunge
 
 La exploración del 18 de septiembre de 2026 utilizó el catálogo oficial de precios en surtidor de la Secretaría de Energía. Para el conjunto vigente se observaron 36.667 registros, 1.630 filas de CABA y 732 filas de nafta. Sólo 8 registros correspondientes a 2 estaciones tenían una antigüedad de hasta 30 días.
 
-El histórico filtrado de nafta en CABA reunió 20.522 observaciones, 76 identificadores de estación y aproximadamente 142 meses de cobertura. Se detectaron 84 fechas posteriores a la ejecución, por lo que las reglas de normalización deben confirmarse antes de unir fuentes o entrenar modelos.
+El histórico filtrado de nafta en CABA reunió 20.522 observaciones, 76 identificadores de estación y aproximadamente 142 meses de cobertura. Se detectaron 84 fechas posteriores a la ejecución, por lo que las reglas de normalización deben confirmarse antes de unir fuentes o entrenar modelos. En la POC se confirmó que esas fechas salían de leer el histórico con el mes primero: con el día primero coincide con `anio`/`mes` en el 99,99 % de las filas y queda una sola fecha futura real (ver [docs/NORMALIZACION.md](docs/NORMALIZACION.md)).
 
 El proyecto es **viable con condiciones y/o recorte de alcance**. La POC debe validar fechas, cobertura y proveedor de rutas. Si no existe cobertura reciente suficiente, el sistema deberá informar la limitación o utilizar escenarios históricos claramente rotulados; nunca presentar precios antiguos como actuales.
 
 ## Reproducir la exploración
 
-La notebook consulta recursos públicos y necesita conexión a Internet. No requiere credenciales para acceder al catálogo ni al DataStore de la Secretaría de Energía.
+La notebook es la evidencia de la Entrega 1. Consulta recursos públicos y necesita conexión a Internet.
+
+> **Aviso:** la notebook ya no se puede ejecutar completa. El DataStore (`datastore_search_sql`) de la Secretaría de Energía dejó de existir y el portal redirige HTTPS a HTTP. Los datos se obtienen ahora con el comando de ingesta de la POC, que descarga los CSV completos (ver [docs/NORMALIZACION.md](docs/NORMALIZACION.md)).
 
 ### Requisitos
 
