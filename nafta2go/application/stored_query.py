@@ -2,8 +2,8 @@
 
 import math
 from collections import Counter
-from collections.abc import Iterable
-from dataclasses import dataclass
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from zoneinfo import ZoneInfo
@@ -23,6 +23,7 @@ from nafta2go.application.recommendation import (
     StationEvaluation,
     evaluate_stations,
 )
+from nafta2go.application.scenario import ScenarioPrices, load_scenario
 from nafta2go.domain.engine import FuelRequest
 from nafta2go.normalization.rules import (
     ALERT_SEPARATOR,
@@ -42,6 +43,8 @@ class CoverageStatus(StrEnum):
     READY = "ready"
     NO_SUCCESSFUL_INGESTION = "no_successful_ingestion"
     INSUFFICIENT_COVERAGE = "insufficient_coverage"
+    # Precios de la captura congelada: nunca se presentan como actuales.
+    HISTORICAL_SCENARIO = "historical_scenario"
 
 
 @dataclass(frozen=True)
@@ -54,6 +57,16 @@ class StoredPrice:
 
 
 @dataclass(frozen=True)
+class ScenarioRef:
+    """Rótulo del escenario histórico que originó una selección."""
+
+    scenario_id: str
+    reference_at: datetime
+    extract_sha256: str
+    source_sha256: str
+
+
+@dataclass(frozen=True)
 class CandidateSelection:
     status: CoverageStatus
     data_run_id: int | None
@@ -62,6 +75,7 @@ class CandidateSelection:
     eligible_station_count: int
     minimum_candidates: int
     exclusions: dict[str, int]
+    scenario: ScenarioRef | None = None
 
     @property
     def candidates(self) -> tuple[Candidate, ...]:
@@ -71,6 +85,17 @@ class CandidateSelection:
 @dataclass(frozen=True)
 class StoredQueryResult:
     selection: CandidateSelection
+    evaluations: tuple[StationEvaluation, ...]
+
+
+@dataclass(frozen=True)
+class CoverageQueryResult:
+    """Consulta con escenario automático: `selection` es la que se usó para enrutar."""
+
+    status: CoverageStatus
+    selection: CandidateSelection
+    current: CandidateSelection
+    historical: CandidateSelection | None
     evaluations: tuple[StationEvaluation, ...]
 
 
@@ -323,4 +348,52 @@ def evaluate_from_database(
     return StoredQueryResult(
         selection,
         evaluate_stations(request, selection.candidates, origin, destination, provider),
+    )
+
+
+def evaluate_with_coverage(
+    conn: Connection,
+    request: FuelRequest,
+    origin: Point,
+    destination: Point | None,
+    provider: RoutingProvider,
+    *,
+    fuel_type: str,
+    schedule_id: int,
+    reference_at: datetime,
+    scenario_loader: Callable[[], ScenarioPrices] = load_scenario,
+) -> CoverageQueryResult:
+    """Usa la captura actual si alcanza la cobertura; si no, el escenario histórico rotulado.
+
+    Los parámetros de cobertura salen de coverage_rules. En el escenario, la vigencia
+    se mide contra su fecha de referencia y la selección lleva el rótulo `scenario`.
+    """
+    options = {"fuel_type": fuel_type, "schedule_id": schedule_id}
+    corridor = {"origin": origin, "destination": destination}
+    current = select_stored_candidates(conn, reference_at=reference_at, **options, **corridor)
+    if current.status == CoverageStatus.READY:
+        evaluations = evaluate_stations(request, current.candidates, origin, destination, provider)
+        return CoverageQueryResult(CoverageStatus.READY, current, current, None, evaluations)
+
+    scenario = scenario_loader()
+    historical = select_candidates(
+        scenario.rows, reference_at=scenario.reference_at, **options, **corridor
+    )
+    historical = replace(
+        historical,
+        scenario=ScenarioRef(
+            scenario.scenario_id,
+            scenario.reference_at,
+            scenario.extract_sha256,
+            scenario.source_sha256,
+        ),
+    )
+    if historical.status != CoverageStatus.READY:
+        return CoverageQueryResult(
+            CoverageStatus.INSUFFICIENT_COVERAGE, historical, current, historical, ()
+        )
+    historical = replace(historical, status=CoverageStatus.HISTORICAL_SCENARIO)
+    evaluations = evaluate_stations(request, historical.candidates, origin, destination, provider)
+    return CoverageQueryResult(
+        CoverageStatus.HISTORICAL_SCENARIO, historical, current, historical, evaluations
     )

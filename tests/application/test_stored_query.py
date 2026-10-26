@@ -8,9 +8,11 @@ from pathlib import Path
 import pytest
 
 from nafta2go.adapters.routing import DistanceMatrix, Point, ProviderTimeout
+from nafta2go.application.scenario import ScenarioPrices
 from nafta2go.application.stored_query import (
     CoverageStatus,
     evaluate_from_database,
+    evaluate_with_coverage,
     select_candidates,
     select_stored_candidates,
 )
@@ -398,3 +400,120 @@ def test_select_candidates_works_on_rows_without_database():
 def test_invalid_corridor_options_fail(engine, changes, field):
     with pytest.raises(ValueError, match=field):
         select(engine, **changes)
+
+
+SCENARIO_REFERENCE = datetime(2026, 10, 24, 18, tzinfo=timezone(timedelta(hours=-3)))
+LATER = datetime(2026, 12, 1, 15, tzinfo=UTC)
+
+
+def scenario_row(station_id):
+    return {
+        "id": None,
+        "station_id": station_id,
+        "product_id": 2,
+        "fuel_type": "super",
+        "schedule_id": 2,
+        "price": Decimal(1100),
+        "valid_from": datetime(2026, 10, 20, 9),
+        "lat": -34.59,
+        "lon": -58.41,
+        "source_row": station_id,
+        "alerts": "",
+    }
+
+
+def fake_scenario(*station_ids):
+    def loader():
+        return ScenarioPrices(
+            scenario_id="escenario-de-prueba",
+            reference_at=SCENARIO_REFERENCE,
+            extract_sha256="a" * 64,
+            source_sha256="b" * 64,
+            rows=tuple(scenario_row(s) for s in station_ids),
+        )
+
+    return loader
+
+
+def failing_loader():
+    raise AssertionError("no debería cargarse el escenario")
+
+
+def covered(engine, provider, loader, reference_at=REFERENCE):
+    with engine.connect() as conn:
+        return evaluate_with_coverage(
+            conn,
+            REQUEST,
+            ORIGIN,
+            DESTINATION,
+            provider,
+            fuel_type="super",
+            schedule_id=2,
+            reference_at=reference_at,
+            scenario_loader=loader,
+        )
+
+
+def test_current_coverage_is_used_without_loading_the_scenario(engine):
+    put_run(engine, [price_row(i) for i in (1, 2, 3)])
+    result = covered(engine, FakeProvider(), failing_loader)
+    assert result.status == CoverageStatus.READY
+    assert result.selection.scenario is None
+    assert result.historical is None
+    assert len(result.evaluations) == 3
+
+
+def test_insufficient_current_coverage_activates_the_labeled_scenario(engine):
+    put_run(engine, [price_row(1)])
+    result = covered(engine, FakeProvider(), fake_scenario(11, 12, 13))
+    assert result.status == CoverageStatus.HISTORICAL_SCENARIO
+    assert result.selection.scenario.scenario_id == "escenario-de-prueba"
+    assert result.selection.scenario.reference_at == SCENARIO_REFERENCE
+    # La vigencia se mide contra la fecha del escenario, no contra la de la consulta.
+    assert result.selection.reference_at == SCENARIO_REFERENCE.astimezone(UTC)
+    assert result.selection.data_run_id is None
+    assert [item.candidate.station_id for item in result.selection.items] == ["11", "12", "13"]
+    assert all(item.price_id is None for item in result.selection.items)
+    assert result.current.eligible_station_count == 1
+    assert {e.candidate.station_id for e in result.evaluations} == {"11", "12", "13"}
+
+
+def test_without_successful_ingestion_the_scenario_is_used(engine):
+    result = covered(engine, FakeProvider(), fake_scenario(11, 12, 13))
+    assert result.current.status == CoverageStatus.NO_SUCCESSFUL_INGESTION
+    assert result.status == CoverageStatus.HISTORICAL_SCENARIO
+
+
+def test_insufficient_coverage_everywhere_does_not_call_routes(engine):
+    put_run(engine, [price_row(1)])
+    provider = FakeProvider()
+    result = covered(engine, provider, fake_scenario(11))
+    assert result.status == CoverageStatus.INSUFFICIENT_COVERAGE
+    assert result.evaluations == ()
+    assert provider.calls == []
+    assert result.historical.eligible_station_count == 1
+
+
+def test_stale_current_prices_fall_back_to_the_frozen_capture(engine):
+    put_run(engine, [price_row(i) for i in (1, 2, 3)])
+    result = covered(engine, FakeProvider(), fake_scenario(11, 12, 13), reference_at=LATER)
+    assert result.current.exclusions == {"stale_price": 3}
+    assert result.status == CoverageStatus.HISTORICAL_SCENARIO
+
+
+def test_real_frozen_scenario_covers_obelisco_cabildo(engine):
+    with engine.connect() as conn:
+        result = evaluate_with_coverage(
+            conn,
+            REQUEST,
+            Point(-34.6037, -58.3816),
+            Point(-34.5627, -58.4565),
+            FakeProvider(),
+            fuel_type="super",
+            schedule_id=2,
+            reference_at=LATER,
+        )
+    assert result.status == CoverageStatus.HISTORICAL_SCENARIO
+    assert result.selection.scenario.scenario_id == "vigente-2026-10-24"
+    assert result.historical.eligible_station_count == 16
+    assert len(result.selection.items) == 10
