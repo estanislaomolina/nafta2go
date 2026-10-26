@@ -1,0 +1,17 @@
+{
+  "scenario_id": "vigente-2026-10-24",
+  "reference_at": "2026-10-24T18:00:00-03:00",
+  "source": {
+    "url": "http://datos.energia.gob.ar/dataset/1c181390-5045-475e-94dc-410429be4b17/resource/80ac25de-a44a-4445-9215-090cf55cfda5/download/precios-en-surtidor-resolucin-3142016.csv",
+    "sha256": "e22e8009d41b5f2d0d6c7ff96d5b3966c826f85509c21f8a67116b66bf4a2c02",
+    "bytes": 9268946,
+    "fetched_at_local": "2026-10-24T17:57:10.993519",
+    "license": "CC-BY-4.0"
+  },
+  "extract": {
+    "file": "precios_caba_nafta.csv",
+    "sha256": "c46a38b22f9bd93ce5faddf37305102e0ba08e153451c0310d998b0364031019",
+    "rows": 732,
+    "rule": "provincia == 'CAPITAL FEDERAL' (sin distinguir mayúsculas) e idproducto en ['2', '3']; encabezado y orden de filas del archivo original"
+  }
+}

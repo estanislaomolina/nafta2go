@@ -38,4 +38,4 @@ def test_decided_values():
 def test_scenario_reference_has_timezone():
     reference = coverage_rules.HISTORICAL_SCENARIO_REFERENCE_AT
     assert reference.utcoffset() is not None
-    assert reference.astimezone(UTC).isoformat() == "2026-10-24T20:30:00+00:00"
+    assert reference.astimezone(UTC).isoformat() == "2026-10-24T21:00:00+00:00"
