@@ -11,6 +11,7 @@ from nafta2go.adapters.routing import DistanceMatrix, Point, ProviderTimeout
 from nafta2go.application.stored_query import (
     CoverageStatus,
     evaluate_from_database,
+    select_candidates,
     select_stored_candidates,
 )
 from nafta2go.domain.engine import FuelRequest
@@ -285,7 +286,8 @@ def test_real_normalizer_fixture_connects_to_database_selection_and_motor(engine
     run_id = ingest(
         engine, capture, normalize_capture, clock=lambda: reference.replace(tzinfo=None)
     )
-    result = evaluate(engine, FakeProvider(), reference_at=reference)
+    # La estación de la fixture queda a unos 8 km de desvío del recorrido de prueba.
+    result = evaluate(engine, FakeProvider(), reference_at=reference, max_detour_km=50)
     assert result.selection.data_run_id == run_id
     assert result.selection.status == CoverageStatus.READY
     assert [item.station_id for item in result.selection.candidates] == ["6270"]
@@ -312,5 +314,87 @@ def test_real_normalizer_fixture_connects_to_database_selection_and_motor(engine
     ],
 )
 def test_invalid_query_options_fail_before_loading_data(engine, changes, field):
+    with pytest.raises(ValueError, match=field):
+        select(engine, **changes)
+
+
+# Dentro de la caja de CABA pero a más de 20 km de desvío del recorrido ORIGIN → DESTINATION.
+FAR_FROM_ROUTE = {"latitud": -34.70, "longitud": -58.50}
+
+
+def test_corridor_excludes_stations_far_from_the_route(engine):
+    put_run(engine, [price_row(1), price_row(2, **FAR_FROM_ROUTE)])
+    selection = select(engine, origin=ORIGIN, destination=DESTINATION)
+    assert [item.candidate.station_id for item in selection.items] == ["1"]
+    assert selection.eligible_station_count == 1
+    assert selection.exclusions == {"outside_corridor": 1}
+
+
+def test_without_origin_the_whole_city_is_eligible(engine):
+    put_run(engine, [price_row(1), price_row(2, **FAR_FROM_ROUTE)])
+    assert select(engine).eligible_station_count == 2
+
+
+def test_wider_corridor_includes_the_far_station(engine):
+    put_run(engine, [price_row(1), price_row(2, **FAR_FROM_ROUTE)])
+    selection = select(engine, origin=ORIGIN, destination=DESTINATION, max_detour_km=50)
+    assert selection.eligible_station_count == 2
+
+
+def test_quality_exclusions_are_counted_before_the_corridor(engine):
+    put_run(engine, [price_row(1, latitud=None, longitud=None, alertas="sin_coordenadas")])
+    selection = select(engine, origin=ORIGIN, destination=DESTINATION)
+    assert selection.exclusions == {"missing_coordinates": 1}
+
+
+def test_evaluation_only_routes_stations_inside_the_corridor(engine):
+    put_run(engine, [price_row(1), price_row(2, **FAR_FROM_ROUTE)])
+    provider = FakeProvider()
+    result = evaluate(engine, provider)
+    assert [e.candidate.station_id for e in result.evaluations] == ["1"]
+    assert result.selection.exclusions == {"outside_corridor": 1}
+
+
+def test_select_candidates_works_on_rows_without_database():
+    rows = [
+        {
+            "id": None,
+            "station_id": 7,
+            "product_id": 2,
+            "fuel_type": "super",
+            "schedule_id": 2,
+            "price": Decimal(1200),
+            "valid_from": datetime(2026, 10, 23, 6),
+            "lat": -34.61,
+            "lon": -58.40,
+            "source_row": 3,
+            "alerts": "",
+        }
+    ]
+    selection = select_candidates(
+        rows,
+        fuel_type="super",
+        schedule_id=2,
+        reference_at=REFERENCE,
+        origin=ORIGIN,
+        destination=DESTINATION,
+        minimum_candidates=1,
+    )
+    assert selection.status == CoverageStatus.READY
+    assert selection.data_run_id is None
+    assert selection.items[0].price_id is None
+    assert selection.items[0].source_row == 3
+
+
+@pytest.mark.parametrize(
+    "changes,field",
+    [
+        ({"max_detour_km": -1}, "max_detour_km"),
+        ({"max_detour_km": float("nan")}, "max_detour_km"),
+        ({"max_detour_km": True}, "max_detour_km"),
+        ({"destination": DESTINATION}, "destination"),
+    ],
+)
+def test_invalid_corridor_options_fail(engine, changes, field):
     with pytest.raises(ValueError, match=field):
         select(engine, **changes)

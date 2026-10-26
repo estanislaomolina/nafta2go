@@ -2,6 +2,7 @@
 
 import math
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
@@ -10,7 +11,12 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import Connection
 
 from nafta2go.adapters.routing import Point, RoutingProvider
-from nafta2go.application.coverage_rules import MAX_PRICE_AGE_DAYS, MIN_RECENT_CANDIDATES
+from nafta2go.application.corridor import straight_detour_km
+from nafta2go.application.coverage_rules import (
+    MAX_DETOUR_KM,
+    MAX_PRICE_AGE_DAYS,
+    MIN_RECENT_CANDIDATES,
+)
 from nafta2go.application.recommendation import (
     MAX_POC_CANDIDATES,
     Candidate,
@@ -41,7 +47,7 @@ class CoverageStatus(StrEnum):
 @dataclass(frozen=True)
 class StoredPrice:
     candidate: Candidate
-    price_id: int
+    price_id: int | None
     source_row: int
     published_at_local: datetime
     alerts: tuple[str, ...]
@@ -104,6 +110,9 @@ def select_stored_candidates(
     fuel_type: str,
     schedule_id: int,
     reference_at: datetime,
+    origin: Point | None = None,
+    destination: Point | None = None,
+    max_detour_km: float = MAX_DETOUR_KM,
     max_age_days: int = MAX_PRICE_AGE_DAYS,
     limit: int = MAX_POC_CANDIDATES,
     minimum_candidates: int = MIN_RECENT_CANDIDATES,
@@ -112,8 +121,136 @@ def select_stored_candidates(
 
     reference_at debe incluir zona horaria. valid_from se interpreta como hora
     local argentina sin zona, según el contrato de persistencia/normalización.
+    Con origen, solo cuentan las estaciones dentro del corredor del recorrido.
     La preselección es por recencia e ID; no representa un ranking de conveniencia.
     """
+    options = dict(
+        fuel_type=fuel_type,
+        schedule_id=schedule_id,
+        reference_at=reference_at,
+        origin=origin,
+        destination=destination,
+        max_detour_km=max_detour_km,
+        max_age_days=max_age_days,
+        limit=limit,
+        minimum_candidates=minimum_candidates,
+    )
+    _validate_options(**options)
+    run_id = repository.latest_successful_run(conn, "vigente")
+    if run_id is None:
+        return CandidateSelection(
+            CoverageStatus.NO_SUCCESSFUL_INGESTION,
+            None,
+            reference_at.astimezone(UTC),
+            (),
+            0,
+            minimum_candidates,
+            {},
+        )
+    return select_candidates(repository.prices_for_run(conn, run_id), data_run_id=run_id, **options)
+
+
+def select_candidates(
+    rows: Iterable[dict],
+    *,
+    fuel_type: str,
+    schedule_id: int,
+    reference_at: datetime,
+    origin: Point | None = None,
+    destination: Point | None = None,
+    max_detour_km: float = MAX_DETOUR_KM,
+    max_age_days: int = MAX_PRICE_AGE_DAYS,
+    limit: int = MAX_POC_CANDIDATES,
+    minimum_candidates: int = MIN_RECENT_CANDIDATES,
+    data_run_id: int | None = None,
+) -> CandidateSelection:
+    """Aplica los filtros de vigencia, calidad y corredor a filas con forma de station_prices.
+
+    Las filas pueden venir de una ingesta (data_run_id) o de un escenario sin base,
+    en cuyo caso id es None y el desempate usa source_row.
+    """
+    _validate_options(
+        fuel_type=fuel_type,
+        schedule_id=schedule_id,
+        reference_at=reference_at,
+        origin=origin,
+        destination=destination,
+        max_detour_km=max_detour_km,
+        max_age_days=max_age_days,
+        limit=limit,
+        minimum_candidates=minimum_candidates,
+    )
+    age = timedelta(days=max_age_days)
+    reference_at = reference_at.astimezone(UTC)
+
+    exclusions = Counter()
+    latest = {}
+    for row in rows:
+        reason = _filter_reason(row, PRODUCT_IDS[fuel_type], schedule_id, reference_at, age)
+        if reason is None and origin is not None:
+            station = Point(row["lat"], row["lon"])
+            if straight_detour_km(origin, station, destination) > max_detour_km:
+                reason = "outside_corridor"
+        if reason:
+            exclusions[reason] += 1
+            continue
+        station_id = row["station_id"]
+        previous = latest.get(station_id)
+        if previous is not None:
+            exclusions["superseded_price"] += 1
+            if _recency(row) <= _recency(previous):
+                continue
+        latest[station_id] = row
+
+    selected = sorted(latest.values(), key=lambda row: row["station_id"])
+    selected.sort(key=lambda row: row["valid_from"], reverse=True)
+    items = tuple(
+        StoredPrice(
+            candidate=Candidate(
+                str(row["station_id"]), Point(row["lat"], row["lon"]), row["price"]
+            ),
+            price_id=row["id"],
+            source_row=row["source_row"],
+            published_at_local=row["valid_from"],
+            alerts=tuple(
+                value.strip() for value in row["alerts"].split(ALERT_SEPARATOR) if value.strip()
+            ),
+        )
+        for row in selected[:limit]
+    )
+    status = (
+        CoverageStatus.READY
+        if len(items) >= minimum_candidates
+        else CoverageStatus.INSUFFICIENT_COVERAGE
+    )
+    return CandidateSelection(
+        status,
+        data_run_id,
+        reference_at,
+        items,
+        len(selected),
+        minimum_candidates,
+        dict(sorted(exclusions.items())),
+    )
+
+
+def _recency(row: dict) -> tuple:
+    tie = row["id"] if row["id"] is not None else row["source_row"]
+    return (row["valid_from"], tie)
+
+
+def _validate_options(
+    *,
+    fuel_type: str,
+    schedule_id: int,
+    reference_at: datetime,
+    origin: Point | None,
+    destination: Point | None,
+    max_detour_km: float,
+    max_age_days: int,
+    limit: int,
+    minimum_candidates: int,
+) -> None:
     if not isinstance(fuel_type, str) or fuel_type not in PRODUCT_IDS:
         raise ValueError("fuel_type: debe ser super o premium")
     if (
@@ -139,67 +276,18 @@ def select_stored_candidates(
     if isinstance(max_age_days, bool) or not isinstance(max_age_days, int) or max_age_days < 0:
         raise ValueError("max_age_days: debe ser un entero no negativo")
     try:
-        age = timedelta(days=max_age_days)
+        timedelta(days=max_age_days)
     except OverflowError as exc:
         raise ValueError("max_age_days: fuera de rango") from exc
-    reference_at = reference_at.astimezone(UTC)
-    run_id = repository.latest_successful_run(conn, "vigente")
-    if run_id is None:
-        return CandidateSelection(
-            CoverageStatus.NO_SUCCESSFUL_INGESTION,
-            None,
-            reference_at,
-            (),
-            0,
-            minimum_candidates,
-            {},
-        )
-
-    exclusions = Counter()
-    latest = {}
-    for row in repository.prices_for_run(conn, run_id):
-        reason = _filter_reason(row, PRODUCT_IDS[fuel_type], schedule_id, reference_at, age)
-        if reason:
-            exclusions[reason] += 1
-            continue
-        station_id = row["station_id"]
-        previous = latest.get(station_id)
-        if previous is not None:
-            exclusions["superseded_price"] += 1
-            if (row["valid_from"], row["id"]) <= (previous["valid_from"], previous["id"]):
-                continue
-        latest[station_id] = row
-
-    rows = sorted(latest.values(), key=lambda row: row["station_id"])
-    rows.sort(key=lambda row: row["valid_from"], reverse=True)
-    items = tuple(
-        StoredPrice(
-            candidate=Candidate(
-                str(row["station_id"]), Point(row["lat"], row["lon"]), row["price"]
-            ),
-            price_id=row["id"],
-            source_row=row["source_row"],
-            published_at_local=row["valid_from"],
-            alerts=tuple(
-                value.strip() for value in row["alerts"].split(ALERT_SEPARATOR) if value.strip()
-            ),
-        )
-        for row in rows[:limit]
-    )
-    status = (
-        CoverageStatus.READY
-        if len(items) >= minimum_candidates
-        else CoverageStatus.INSUFFICIENT_COVERAGE
-    )
-    return CandidateSelection(
-        status,
-        run_id,
-        reference_at,
-        items,
-        len(rows),
-        minimum_candidates,
-        dict(sorted(exclusions.items())),
-    )
+    if origin is None and destination is not None:
+        raise ValueError("destination: requiere origin")
+    if (
+        isinstance(max_detour_km, bool)
+        or not isinstance(max_detour_km, int | float)
+        or not math.isfinite(max_detour_km)
+        or max_detour_km < 0
+    ):
+        raise ValueError("max_detour_km: debe ser un número finito no negativo")
 
 
 def evaluate_from_database(
@@ -212,6 +300,7 @@ def evaluate_from_database(
     fuel_type: str,
     schedule_id: int,
     reference_at: datetime,
+    max_detour_km: float = MAX_DETOUR_KM,
     max_age_days: int = MAX_PRICE_AGE_DAYS,
     limit: int = MAX_POC_CANDIDATES,
     minimum_candidates: int = MIN_RECENT_CANDIDATES,
@@ -222,6 +311,9 @@ def evaluate_from_database(
         fuel_type=fuel_type,
         schedule_id=schedule_id,
         reference_at=reference_at,
+        origin=origin,
+        destination=destination,
+        max_detour_km=max_detour_km,
         max_age_days=max_age_days,
         limit=limit,
         minimum_candidates=minimum_candidates,
