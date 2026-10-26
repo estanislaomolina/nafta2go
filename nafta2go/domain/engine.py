@@ -3,6 +3,9 @@
 from dataclasses import dataclass, fields
 from decimal import ROUND_DOWN, ROUND_HALF_EVEN, Context, Decimal, InvalidOperation, localcontext
 from enum import StrEnum
+from fractions import Fraction
+
+MAX_INPUT_DIGITS = 28
 
 
 def _number(raw: object, name: str, *, positive: bool = False) -> Decimal:
@@ -16,9 +19,13 @@ def _number(raw: object, name: str, *, positive: bool = False) -> Decimal:
         raise ValueError(f"{name}: se requiere un número finito no negativo")
     if value != 0 and not -12 <= value.adjusted() <= 12:
         raise ValueError(f"{name}: magnitud fuera del rango numérico admitido [1e-12, 1e13)")
+    if len(value.as_tuple().digits) > MAX_INPUT_DIGITS:
+        raise ValueError(
+            f"{name}: se admiten como máximo {MAX_INPUT_DIGITS} dígitos significativos"
+        )
     if positive and value == 0:
         raise ValueError(f"{name}: debe ser mayor que cero")
-    return value
+    return Decimal(0) if value == 0 else value
 
 
 def _validate_numbers(instance: object, *, positive: tuple[str, ...] = ()) -> None:
@@ -105,26 +112,35 @@ def evaluate_candidate(
         return Evaluation((DiscardReason.ROUTE_UNAVAILABLE,), None)
 
     with localcontext(Context(prec=28, rounding=ROUND_HALF_EVEN)):
+        # Las restricciones físicas usan fracciones exactas de las entradas.
+        # Un producto de dos valores de 28 dígitos puede requerir más de 28.
+        exact_per_km = Fraction(request.consumption_l_per_100km) / 100
+        exact_to_station = Fraction(route.to_station_km) * exact_per_km
+        exact_after_station = Fraction(route.after_station_km) * exact_per_km
+        exact_arrival = Fraction(request.remaining_l) - exact_to_station
+        if exact_arrival < 0:
+            return Evaluation((DiscardReason.STATION_UNREACHABLE,), None)
+        if exact_arrival < min(Fraction(request.reserve_l), Fraction(request.remaining_l)):
+            return Evaluation((DiscardReason.RESERVE_AT_STATION,), None)
+        exact_free_capacity = Fraction(request.tank_capacity_l) - exact_arrival
+        purchase_limit = min(Fraction(request.budget_ars) / Fraction(price), exact_free_capacity)
+
         per_km = request.consumption_l_per_100km / 100
         to_station = route.to_station_km * per_km
         after_station = route.after_station_km * per_km
         arrival = request.remaining_l - to_station
-        if arrival < 0:
-            return Evaluation((DiscardReason.STATION_UNREACHABLE,), None)
-        if arrival < min(request.reserve_l, request.remaining_l):
-            return Evaluation((DiscardReason.RESERVE_AT_STATION,), None)
-
         free_capacity = request.tank_capacity_l - arrival
         with localcontext() as purchase_context:
             purchase_context.rounding = ROUND_DOWN
-            purchased = min(request.budget_ars / price, free_capacity)
+            purchased = Decimal(purchase_limit.numerator) / Decimal(purchase_limit.denominator)
         final = arrival + purchased - after_station
+        exact_final = exact_arrival + Fraction(purchased) - exact_after_station
         reasons = []
         if request.budget_ars == 0:
             reasons.append(DiscardReason.NO_BUDGET)
-        if free_capacity == 0:
+        if exact_free_capacity == 0:
             reasons.append(DiscardReason.NO_TANK_SPACE)
-        if final < request.reserve_l:
+        if exact_final < Fraction(request.reserve_l):
             reasons.append(DiscardReason.INSUFFICIENT_FUEL_FOR_TRIP)
         metrics = FuelMetrics(
             consumption_to_station_l=to_station,
