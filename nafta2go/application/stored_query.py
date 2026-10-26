@@ -351,6 +351,49 @@ def evaluate_from_database(
     )
 
 
+def select_with_coverage(
+    conn: Connection,
+    origin: Point,
+    destination: Point | None,
+    *,
+    fuel_type: str,
+    schedule_id: int,
+    reference_at: datetime,
+    scenario_loader: Callable[[], ScenarioPrices] = load_scenario,
+) -> CoverageQueryResult:
+    """Elige la captura actual si alcanza la cobertura; si no, el escenario histórico rotulado.
+
+    No consulta rutas: `evaluations` queda vacío. Los parámetros de cobertura salen de
+    coverage_rules. En el escenario, la vigencia se mide contra su fecha de referencia
+    y la selección lleva el rótulo `scenario`.
+    """
+    options = {"fuel_type": fuel_type, "schedule_id": schedule_id}
+    corridor = {"origin": origin, "destination": destination}
+    current = select_stored_candidates(conn, reference_at=reference_at, **options, **corridor)
+    if current.status == CoverageStatus.READY:
+        return CoverageQueryResult(CoverageStatus.READY, current, current, None, ())
+
+    scenario = scenario_loader()
+    historical = select_candidates(
+        scenario.rows, reference_at=scenario.reference_at, **options, **corridor
+    )
+    label = ScenarioRef(
+        scenario.scenario_id,
+        scenario.reference_at,
+        scenario.extract_sha256,
+        scenario.source_sha256,
+    )
+    historical = replace(historical, scenario=label)
+    if historical.status != CoverageStatus.READY:
+        return CoverageQueryResult(
+            CoverageStatus.INSUFFICIENT_COVERAGE, historical, current, historical, ()
+        )
+    historical = replace(historical, status=CoverageStatus.HISTORICAL_SCENARIO)
+    return CoverageQueryResult(
+        CoverageStatus.HISTORICAL_SCENARIO, historical, current, historical, ()
+    )
+
+
 def evaluate_with_coverage(
     conn: Connection,
     request: FuelRequest,
@@ -363,37 +406,18 @@ def evaluate_with_coverage(
     reference_at: datetime,
     scenario_loader: Callable[[], ScenarioPrices] = load_scenario,
 ) -> CoverageQueryResult:
-    """Usa la captura actual si alcanza la cobertura; si no, el escenario histórico rotulado.
-
-    Los parámetros de cobertura salen de coverage_rules. En el escenario, la vigencia
-    se mide contra su fecha de referencia y la selección lleva el rótulo `scenario`.
-    """
-    options = {"fuel_type": fuel_type, "schedule_id": schedule_id}
-    corridor = {"origin": origin, "destination": destination}
-    current = select_stored_candidates(conn, reference_at=reference_at, **options, **corridor)
-    if current.status == CoverageStatus.READY:
-        evaluations = evaluate_stations(request, current.candidates, origin, destination, provider)
-        return CoverageQueryResult(CoverageStatus.READY, current, current, None, evaluations)
-
-    scenario = scenario_loader()
-    historical = select_candidates(
-        scenario.rows, reference_at=scenario.reference_at, **options, **corridor
+    """Como select_with_coverage, y enruta y evalúa solo si hay cobertura en algún origen."""
+    result = select_with_coverage(
+        conn,
+        origin,
+        destination,
+        fuel_type=fuel_type,
+        schedule_id=schedule_id,
+        reference_at=reference_at,
+        scenario_loader=scenario_loader,
     )
-    historical = replace(
-        historical,
-        scenario=ScenarioRef(
-            scenario.scenario_id,
-            scenario.reference_at,
-            scenario.extract_sha256,
-            scenario.source_sha256,
-        ),
-    )
-    if historical.status != CoverageStatus.READY:
-        return CoverageQueryResult(
-            CoverageStatus.INSUFFICIENT_COVERAGE, historical, current, historical, ()
-        )
-    historical = replace(historical, status=CoverageStatus.HISTORICAL_SCENARIO)
-    evaluations = evaluate_stations(request, historical.candidates, origin, destination, provider)
-    return CoverageQueryResult(
-        CoverageStatus.HISTORICAL_SCENARIO, historical, current, historical, evaluations
-    )
+    if result.status == CoverageStatus.INSUFFICIENT_COVERAGE:
+        return result
+    candidates = result.selection.candidates
+    evaluations = evaluate_stations(request, candidates, origin, destination, provider)
+    return replace(result, evaluations=evaluations)
