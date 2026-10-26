@@ -184,7 +184,8 @@ de POC-01, ya integrado, y reutiliza sus constantes de producto, zona y alertas.
 La fecha de publicación guardada se interpreta como hora argentina sin zona,
 según el contrato de normalización/persistencia. Se le asigna la zona
 `America/Argentina/Buenos_Aires` y se compara con la referencia en UTC. Se excluyen fechas futuras y precios con más de
-`max_age_days` de antigüedad exacta (30 × 24 horas por defecto, límite incluido).
+`max_age_days` de antigüedad exacta (por defecto `MAX_PRICE_AGE_DAYS` = 30 × 24 horas,
+límite incluido).
 `tzdata` permite resolver esa zona también en sistemas sin base IANA instalada,
 según el mecanismo de respaldo de [ZoneInfo](https://docs.python.org/3/library/zoneinfo.html#data-sources).
 La referencia sirve para validar la vigencia, no para reconstruir qué captura
@@ -198,16 +199,25 @@ reemplaza un polígono ni verifica la entrada física de la estación.
 
 Entre las publicaciones utilizables de cada estación se conserva la más reciente.
 La preselección ordena por fecha descendente e identificador numérico ascendente
-y devuelve hasta diez estaciones distintas. No es un ranking de conveniencia ni
-de cercanía. Las alertas `precio_atipico` se conservan sin cambiar ni excluir por
+y devuelve hasta diez estaciones distintas. No es un ranking de conveniencia. Si se
+pasa `origin`, solo cuentan las estaciones dentro del corredor del recorrido
+(`MAX_DETOUR_KM` en línea recta; motivo `outside_corridor`), como se explica en
+[COBERTURA.md](COBERTURA.md). Las alertas `precio_atipico` se conservan sin cambiar ni excluir por
 sí solas el precio oficial.
 
 `CandidateSelection` informa `data_run_id`, fecha de referencia, precios elegidos
 con sus IDs/filas/fechas/alertas, cantidad de estaciones elegibles y motivos
 normalizados de exclusión con sus conteos. Sus estados son `ready`,
 `no_successful_ingestion` e `insufficient_coverage`. El mínimo requerido se fija
-con `minimum_candidates` (por defecto una para un caso reducido); debe estar entre
-uno y el límite elegido. No certifica cobertura representativa de toda CABA.
+con `minimum_candidates` (por defecto `MIN_RECENT_CANDIDATES` = 3); debe estar entre
+uno y el límite elegido. Los dos valores por defecto se definen una sola vez en
+`nafta2go/application/coverage_rules.py`. No certifica cobertura representativa de toda CABA.
+
+`evaluate_with_coverage` agrega el escenario histórico: si la captura actual no
+alcanza el mínimo en el corredor, usa la captura congelada con el estado
+`historical_scenario` y su rótulo, y si tampoco alcanza no consulta rutas. Los
+estados y la garantía de no presentar precios viejos como actuales están en
+[COBERTURA.md](COBERTURA.md).
 
 `evaluate_from_database` conecta esa selección con `evaluate_stations`, utilizando
 el `RoutingProvider` recibido. Si no se alcanza el mínimo no llama al proveedor y

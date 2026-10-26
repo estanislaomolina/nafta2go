@@ -16,5 +16,6 @@ Los Architecture Decision Records documentan decisiones de diseño relevantes, l
 | ADR | Decisión | Estado |
 |---|---|---|
 | [ADR-005](ADR-005-persistencia-de-la-poc.md) | SQLite con SQLAlchemy y Alembic para la persistencia de la POC | Aceptado |
+| [ADR-006](ADR-006-escenario-historico-de-la-poc.md) | Captura vigente congelada como escenario histórico de la POC | Propuesto |
 
 La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de POC-03; el resultado está en [docs/RUTAS.md](../docs/RUTAS.md).
