@@ -47,6 +47,9 @@ rechazan. Las entradas inválidas generan `ValueError` con el nombre del campo.
 Como protección numérica, los valores distintos de cero deben tener una magnitud
 de al menos `1e-12` y menor que `1e13`. Este límite técnico evita exponentes que
 desborden la aritmética; las restricciones físicas de cada campo se aplican además.
+Cada entrada admite como máximo 28 dígitos significativos, contando los ceros
+finales del coeficiente decimal. El exceso se rechaza con `ValueError` y el
+nombre del campo; no se redondea silenciosamente. El cero se canonicaliza como 0.
 
 | Objeto | Campo | Unidad y restricción |
 |---|---|---|
@@ -100,13 +103,22 @@ Presupuesto cero y ausencia de espacio para cargar son descartes aunque el
 recorrido pudiera completarse sin cargar. Una ganancia neta negativa por sí sola
 no es un descarte: el combustible final debe respetar la reserva.
 
-Se usa aritmética `Decimal` con un contexto local propio de 28 dígitos, independiente
-de la precisión y los límites de exponentes del llamador. La división para
-calcular la compra redondea hacia abajo. Existe un caso límite con entradas de
-más de 28 cifras significativas, registrado en el issue #34. No se
-redondea a centavos ni a litros de surtidor: son estimaciones, y el formato de
-presentación se resolverá en la interfaz. La autonomía final incluye la reserva;
-no equivale a distancia segura disponible antes de consumirla.
+Las restricciones de llegada, reserva y capacidad se comparan con fracciones
+exactas de las entradas decimales admitidas (`fractions.Fraction`, biblioteca
+estándar). La compra máxima es el menor entre presupuesto/precio y capacidad
+libre exacta. Se convierte a `Decimal` con 28 dígitos redondeando hacia abajo,
+por lo que los litros comprados no exceden ninguna de esas cotas. La reserva
+final se comprueba con esos litros y los consumos exactos, antes del redondeo de
+las métricas. Así se corrige el caso del issue #34 y también los límites que un
+producto de dos entradas de 28 dígitos podría redondear favorablemente.
+
+Las métricas conservan el contexto local `Decimal` de 28 dígitos, independiente
+del contexto del llamador. No se redondean a centavos ni a litros de surtidor;
+son estimaciones y la terminal solo redondea para mostrar. Una métrica final
+que se muestra igual a la reserva no implica factibilidad si el cálculo exacto
+queda por debajo: el motivo de descarte es el que determina la viabilidad.
+La autonomía final incluye la reserva; no equivale a distancia segura disponible
+antes de consumirla.
 
 ## Resultado y descartes
 

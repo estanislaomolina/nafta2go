@@ -121,5 +121,5 @@ no contiene las ubicaciones del conductor.
 
 Persisten las simplificaciones declaradas: diez candidatas, prefiltro geográfico
 en línea recta, rectángulo de CABA, ingesta manual, escenario fijo, sin ML ni web.
-El límite numérico de más de 28 cifras significativas sigue registrado en
-[#34](https://github.com/estanislaomolina/nafta2go/issues/34).
+Las entradas de más de 28 cifras significativas se rechazan por campo; la
+política y las comparaciones exactas de restricciones están en [MOTOR](MOTOR.md).
