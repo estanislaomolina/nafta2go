@@ -105,7 +105,7 @@ La Entrega 2 (POC) está en curso. Esta tabla declara qué partes existen, cuál
 | Persistencia e ingesta mínimas | POC-06 | Implementado: esquema, migraciones e ingesta trazable, conectada a la normalización de POC-01 |
 | Proveedor de rutas | POC-03 | Implementado, con prueba autenticada registrada en docs/evidencia/ |
 | Motor determinístico | POC-04 | Implementado y probado; PR #26 integrado |
-| Flujo de punta a punta | POC-05 | Pendiente |
+| Flujo de punta a punta | POC-05 | Parcial: normalización, base y conexión con rutas/motor probadas; rutas del caso y ranking pendientes |
 | Levantar el sistema completo con contenedores | POC-07 | Parcial: imagen y migraciones con `docker compose`. Falta la API (POC-05) |
 | Diagnóstico estadístico con ML | MVP | Fuera del alcance de la POC |
 

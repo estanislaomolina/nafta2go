@@ -3,4 +3,5 @@ requests>=2.32,<3
 sqlalchemy>=2.0,<3
 # 1.16 agrega path_separator, usado en alembic.ini para rutas con espacios.
 alembic>=1.16,<2
+tzdata>=2024.1
 pandas>=2.2,<3
