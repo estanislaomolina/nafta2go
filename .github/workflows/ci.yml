@@ -55,6 +55,7 @@ jobs:
   tests:
     name: Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -65,7 +66,9 @@ jobs:
       - name: Instalar dependencias
         run: python -m pip install -r requirements-dev.txt
       - name: Correr pytest
-        run: pytest -v --strict-markers
+        run: >-
+          pytest -v --strict-markers --cov=nafta2go
+          --cov-report=term-missing --cov-precision=2 --cov-fail-under=90
 
   secrets:
     name: Secretos
