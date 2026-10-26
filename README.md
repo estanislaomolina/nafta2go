@@ -2,7 +2,7 @@
 
 Nafta2Go es un recomendador de estaciones de servicio para conductores de CABA. Combina precio publicado, presupuesto, autonomía, capacidad del tanque y desvío del recorrido para mostrar alternativas explicadas.
 
-Este repositorio contiene el diseño de la **Entrega 1** y el desarrollo en curso de la **Entrega 2: POC y SRD** del Trabajo Práctico Integrador. El motor y el adaptador de rutas tienen pruebas automáticas; el flujo de punta a punta con datos reales todavía está pendiente.
+Este repositorio contiene el diseño de la **Entrega 1** y el desarrollo en curso de la **Entrega 2: POC y SRD** del Trabajo Práctico Integrador. El motor y el adaptador de rutas tienen pruebas automáticas; el flujo de punta a punta con datos y rutas reales se ejecuta desde un comando y conserva evidencia reproducible.
 
 ## Integrantes
 
@@ -20,6 +20,8 @@ Santiago Bunge
 - [Roadmap](docs/ROADMAP.md): hitos, dependencias, orden de construcción y vínculo con GitHub Projects.
 - [ADRs](adr/README.md): decisiones de diseño y comparación de alternativas.
 - [SRD](docs/SRD.md): especificación técnica de la POC: arquitectura y diagramas, stack, modelo de datos, contratos y estrategia de datos.
+- [Cierre de Entrega 2](docs/ENTREGA-2.md): guion del video y checklist de integración y entrega.
+- [Consulta completa de POC-05](docs/POC-05.md): ejecución, ranking, evidencia real y simplificaciones.
 - [Caso controlado de POC-05](docs/CASO-POC.md): preparación y procedencia del caso real.
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
@@ -97,7 +99,7 @@ Requiere Docker con Compose v2. Desde la raíz del repositorio:
 docker compose up --build
 ```
 
-Construye la imagen de la aplicación y corre las migraciones sobre una base SQLite guardada en el volumen `nafta2go-data`. El contenedor `migrate` termina cuando el esquema queda actualizado. Para borrar la base: `docker compose down --volumes`. La API se suma a `compose.yaml` con el flujo de punta a punta (POC-05).
+Construye la imagen de la aplicación y corre las migraciones sobre una base SQLite guardada en el volumen `nafta2go-data`. El contenedor `migrate` termina cuando el esquema queda actualizado. Para borrar la base: `docker compose down --volumes`. La consulta completa se ejecuta con `docker compose run --rm query`; ver [POC-05](docs/POC-05.md). La interfaz web y la API corresponden al MVP.
 
 ## Estado del desarrollo
 
@@ -111,11 +113,25 @@ La Entrega 2 (POC) está en curso. Esta tabla declara qué partes existen, cuál
 | Persistencia e ingesta mínimas | POC-06 | Implementado: esquema, migraciones e ingesta trazable, conectada a la normalización de POC-01 |
 | Proveedor de rutas | POC-03 | Implementado, con prueba autenticada registrada en docs/evidencia/ |
 | Motor determinístico | POC-04 | Implementado y probado; PR #26 integrado |
-| Flujo de punta a punta | POC-05 | Parcial: normalización, base y conexión con rutas/motor probadas; rutas del caso y ranking pendientes |
-| Levantar el sistema completo con contenedores | POC-07 | Parcial: imagen y migraciones con `docker compose`. Falta la API (POC-05) |
+| Flujo de punta a punta | POC-05 | Implementado: consulta explicada, ranking, rutas reales guardadas y registro trazable; ver docs/POC-05.md |
+| Levantar el sistema completo con contenedores | POC-07 | Implementado para la POC: migraciones y comando de consulta, con reproducción completa en CI |
 | Diagnóstico estadístico con ML | MVP | Fuera del alcance de la POC |
 
-## Demostración local de rutas y motor (POC-05 en desarrollo)
+## Consulta completa con datos reales (POC-05)
+
+Después de instalar las dependencias, se puede reproducir el caso sin red ni clave:
+
+```bash
+DATABASE_URL=sqlite:////tmp/nafta2go-demo-entrega2.db python -m nafta2go.query \
+  --origin=-34.6037,-58.3816 --destination=-34.5627,-58.4565 \
+  --matrix-file docs/evidencia/poc-05-flujo-2026-10-26/matrix.json
+```
+
+Con una base nueva utiliza el escenario histórico rotulado del 24/10/2026 y las
+rutas reales guardadas el 26/10. Para usar precios de la última ingesta y ORS en
+vivo, ver [instrucciones y evidencia de POC-05](docs/POC-05.md).
+
+## Ejemplo sintético de rutas y motor
 
 Requiere Python 3.12. Desde la raíz del repositorio:
 
@@ -128,8 +144,8 @@ python -m nafta2go.demo --help
 La demo usa estaciones, precios y rutas **ficticios**, sin red ni credenciales.
 Permite modificar presupuesto, combustible inicial, consumo, capacidad y reserva;
 imprime la compra posible, combustible final, desvío y motivos de descarte.
-Muestra las candidatas en orden de entrada, sin ranking. La ingesta de datos reales,
-la validación autenticada de rutas y la recomendación completa siguen pendientes.
+Muestra las candidatas en orden de entrada, sin ranking. Para ejecutar la consulta completa con datos reales y ranking, usar
+[el comando de POC-05](docs/POC-05.md).
 Los contratos y las fórmulas están en [docs/MOTOR.md](docs/MOTOR.md).
 
 ## Proveedor de rutas (POC-03)

@@ -1,8 +1,9 @@
 # Caso controlado: Obelisco → Cabildo y Juramento
 
-Preparación de POC-05 (#10), con una captura real de precios del **24/10/2026**.
-La ficha está lista para conectar datos y rutas; todavía no constituye una
-recomendación de punta a punta.
+Preparación preliminar de POC-05 (#10), con una captura real de precios del **24/10/2026**.
+Esta ficha conserva la selección inicial por recencia en toda CABA. La
+[consulta final de POC-05](POC-05.md) ya tiene rutas reales y ranking, y aplica
+además el corredor de POC-02: sus diez candidatas son diferentes.
 
 | Entrada | Valor |
 |---|---|
@@ -69,25 +70,10 @@ en la base de datos y no reemplaza el normalizador de Felipe.
 El caso sigue referenciado al 24/10/2026: no se deben presentar estos precios
 como actuales en otra ejecución sin volver a comprobar la vigencia y cobertura.
 
-## Trabajo para completar la consulta
+## Integración final
 
-1. **Datos (Felipe):** confirmar el contrato de normalización, las claves de
-   estación/producto/franja, el formato de fechas y los filtros de cobertura;
-   contrastar el resultado con las diez filas originales. La persistencia del
-   PR #29 todavía recibe un normalizador inyectado.
-2. **Rutas (Santiago):** capturar la matriz completa para el origen, destino y
-   coordenadas exactas de `case.json`, conservando el orden de sus candidatas.
-   El PR #32 aporta evidencia autenticada del proveedor, pero su JSON resume la
-   prueba y no incluye los tramos necesarios para evaluar estas estaciones.
-3. **Integración (Estanislao):** pasar esos precios y rutas al servicio del
-   PR #31, comprobar los descartes y construir el ranking explicado.
-
-La matriz solicitada por `trip_matrix` debe tener 11 filas y 11 columnas:
-`sources=[origen, *candidatas]`, `destinations=[*candidatas, destino]`. La captura
-de rutas debe conservar `distances_m`, `durations_s`, coordenadas de ambas listas,
-identificadores de estación en el mismo orden, proveedor, endpoint, fecha de
-consulta y referencia al identificador y hash de esta ficha. Los pares sin ruta
-se conservan como `null`; no se rellenan con distancias en línea recta.
-
-Hasta disponer de esa matriz no se calcula combustible final ni se elige una
-estación. Este documento no cierra POC-01, POC-02, POC-03 ni POC-05.
+Normalización, cobertura y rutas están integradas. [POC-05](POC-05.md) describe
+la ejecución completa y enlaza la matriz auténtica de 11 × 11 y sus resultados.
+El script y el recorte de este documento se conservan para reproducir la
+preparación original; la selección final usa el normalizador de POC-01 y el
+corredor de POC-02, no este script preliminar.

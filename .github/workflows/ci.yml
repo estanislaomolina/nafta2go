@@ -89,6 +89,15 @@ jobs:
         run: docker compose run --rm migrate
       - name: Verificar que el esquema quedó en la última versión
         run: docker compose run --rm migrate alembic current | tee current.txt && grep -q "(head)" current.txt
+      - name: Reproducir la consulta completa sin red ni credenciales
+        run: >-
+          docker compose run --rm query
+          --origin=-34.6037,-58.3816 --destination=-34.5627,-58.4565
+          --matrix-file docs/evidencia/poc-05-flujo-2026-10-26/matrix.json
+          --json > query.json && python -c
+          "import json; r=json.load(open('query.json')); assert r['status']=='historical_scenario';
+          assert r['outcome']=='recommended'; assert len(r['evaluations'])==10;
+          assert r['recommendation_id'] is not None; assert r['routes']['replayed']"
       - name: Bajar servicios y volúmenes
         if: always()
         run: docker compose down --volumes

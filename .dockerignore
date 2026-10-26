@@ -7,7 +7,13 @@
 .superpowers
 **/__pycache__
 data
-docs
+docs/*
+!docs/evidencia/
+docs/evidencia/*
+!docs/evidencia/escenario-vigente-2026-10-24/
+!docs/evidencia/poc-05-flujo-2026-10-26/
+docs/evidencia/poc-05-flujo-2026-10-26/*
+!docs/evidencia/poc-05-flujo-2026-10-26/matrix.json
 notebooks
 res
 scripts

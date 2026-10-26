@@ -1,5 +1,4 @@
-# Imagen de la aplicación. Por ahora ejecuta las migraciones; el servicio de la
-# API se agrega con el flujo de punta a punta (POC-05).
+# Imagen de la POC: migraciones, ingesta y consulta por comandos.
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -17,6 +16,8 @@ RUN pip install -r requirements.txt
 COPY alembic.ini .
 COPY migrations ./migrations
 COPY nafta2go ./nafta2go
+COPY docs/evidencia/escenario-vigente-2026-10-24 ./docs/evidencia/escenario-vigente-2026-10-24
+COPY docs/evidencia/poc-05-flujo-2026-10-26/matrix.json ./docs/evidencia/poc-05-flujo-2026-10-26/matrix.json
 
 RUN mkdir -p /app/data && chown app:app /app/data
 USER app

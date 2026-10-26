@@ -1,7 +1,8 @@
-"""Tablas de la base. La migración 0001 debe coincidir con estas definiciones."""
+"""Tablas de la base. Las migraciones hasta 0002 deben coincidir con estas definiciones."""
 
 from sqlalchemy import (
     JSON,
+    CheckConstraint,
     Column,
     DateTime,
     Float,
@@ -91,9 +92,15 @@ recommendations = Table(
     metadata,
     Column("id", Integer, primary_key=True),
     Column("created_at", DateTime, nullable=False),
-    Column("data_run_id", Integer, ForeignKey("ingestion_runs.id"), nullable=False),
+    Column("data_run_id", Integer, ForeignKey("ingestion_runs.id")),
+    Column("scenario", JSON(none_as_null=True)),
     Column("engine_version", String(40), nullable=False),
     Column("routing_provider", String(40), nullable=False),
     Column("request", JSON, nullable=False),
     Column("result", JSON, nullable=False),
+    CheckConstraint(
+        "(data_run_id IS NOT NULL AND scenario IS NULL) OR "
+        "(data_run_id IS NULL AND scenario IS NOT NULL)",
+        name="ck_recommendations_data_origin",
+    ),
 )

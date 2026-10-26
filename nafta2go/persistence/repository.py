@@ -5,6 +5,7 @@ Las funciones reciben una conexión: la transacción la decide quien llama.
 
 import math
 import numbers
+import re
 from collections.abc import Iterable, Mapping
 from datetime import datetime
 from decimal import Decimal
@@ -32,6 +33,7 @@ ALLOWED_REQUEST_KEYS = frozenset(
         "budget_ars",
         "reserve_l",
         "max_candidates",
+        "schedule_id",
     }
 )
 
@@ -95,6 +97,11 @@ def add_raw_capture(conn: Connection, run_id: int, capture: RawCapture) -> None:
             source_last_modified=capture.source_last_modified,
         )
     )
+
+
+def raw_capture_for_run(conn: Connection, run_id: int) -> dict | None:
+    row = conn.execute(select(raw_captures).where(raw_captures.c.run_id == run_id)).first()
+    return dict(row._mapping) if row else None
 
 
 def find_run_by_sha256(conn: Connection, source: str, sha256: str) -> int | None:
@@ -170,23 +177,30 @@ def rejections_for_run(conn: Connection, run_id: int) -> list[dict]:
 
 def record_recommendation(
     conn: Connection,
-    data_run_id: int,
+    data_run_id: int | None,
     engine_version: str,
     routing_provider: str,
     request: Mapping[str, object],
     result: Mapping[str, object],
     created_at: datetime,
+    scenario: Mapping[str, object] | None = None,
 ) -> int:
     forbidden = sorted(set(request) - ALLOWED_REQUEST_KEYS)
     if forbidden:
         raise ValueError(f"request: campos no permitidos {forbidden}; no se guardan ubicaciones")
-    run = get_run(conn, data_run_id)
-    if run is None or run["status"] != "succeeded":
-        raise ValueError(f"data_run_id: la ejecución {data_run_id} no está succeeded")
+    if data_run_id is None:
+        _validate_scenario(scenario)
+    else:
+        if scenario is not None:
+            raise ValueError("scenario: no puede mezclarse con una ingesta vigente")
+        run = get_run(conn, data_run_id)
+        if run is None or run["status"] != "succeeded":
+            raise ValueError(f"data_run_id: la ejecución {data_run_id} no está succeeded")
     inserted = conn.execute(
         recommendations.insert().values(
             created_at=created_at,
             data_run_id=data_run_id,
+            scenario=None if scenario is None else _json_safe(scenario),
             engine_version=engine_version,
             routing_provider=routing_provider,
             request=_json_safe(dict(request)),
@@ -194,6 +208,23 @@ def record_recommendation(
         )
     )
     return inserted.inserted_primary_key[0]
+
+
+def _validate_scenario(scenario: Mapping[str, object] | None) -> None:
+    keys = {"scenario_id", "reference_at", "extract_sha256", "source_sha256"}
+    if scenario is None or set(scenario) != keys:
+        raise ValueError("scenario: requiere identificación, fecha y hashes de origen")
+    if not isinstance(scenario["scenario_id"], str) or not scenario["scenario_id"].strip():
+        raise ValueError("scenario_id: se requiere un identificador")
+    try:
+        reference = datetime.fromisoformat(str(scenario["reference_at"]))
+        if reference.utcoffset() is None:
+            raise ValueError("fecha sin zona")
+    except ValueError as exc:
+        raise ValueError("scenario.reference_at: se requiere fecha con zona") from exc
+    for key in ("extract_sha256", "source_sha256"):
+        if not re.fullmatch(r"[0-9a-f]{64}", str(scenario[key])):
+            raise ValueError(f"scenario.{key}: SHA-256 inválido")
 
 
 def get_recommendation(conn: Connection, recommendation_id: int) -> dict | None:

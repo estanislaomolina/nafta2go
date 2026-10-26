@@ -37,7 +37,7 @@ erDiagram
     ingestion_runs ||--o| raw_captures : "referencia al original"
     ingestion_runs ||--o{ station_prices : "precios normalizados"
     ingestion_runs ||--o{ rejected_rows : "filas rechazadas"
-    ingestion_runs ||--o{ recommendations : "versión de datos usada"
+    ingestion_runs |o--o{ recommendations : "versión de datos usada"
 ```
 
 | Tabla | Qué guarda |
@@ -46,7 +46,7 @@ erDiagram
 | `raw_captures` | El archivo original: URL, SHA-256, tamaño, ruta local, fecha de descarga y `last_modified` de la fuente. No guarda el contenido: el histórico pesa unos 780 MB |
 | `station_prices` | Precios normalizados con los valores originales de fecha y precio (`valid_from_raw`, `price_raw`), la fila del archivo (`source_row`) y las alertas de calidad |
 | `rejected_rows` | Filas rechazadas: fila del archivo, motivo y valores crudos en JSON |
-| `recommendations` | Recomendación: ejecución de datos usada, versión del motor, proveedor de rutas, parámetros y resultado |
+| `recommendations` | Recomendación: ejecución de datos o escenario usado, versión del motor, proveedor de rutas, parámetros y resultado |
 
 Las fechas de la ejecución (`started_at` y `finished_at`) se guardan en UTC.
 `raw_captures.fetched_at` y `valid_from` quedan en hora local de Argentina sin
@@ -99,17 +99,22 @@ una lista de alertas se guarda separada por `; `.
 La versión de datos es el `id` de la última ejecución exitosa del origen usado
 (`latest_successful_run`). `record_recommendation` exige que esa ejecución esté
 en `succeeded` y guarda solo los parámetros del vehículo y el presupuesto
-(`ALLOWED_REQUEST_KEYS`). Rechaza cualquier otro campo, en particular origen,
+y el producto/franja (`ALLOWED_REQUEST_KEYS`). Rechaza cualquier otro campo, en particular origen,
 destino y coordenadas, porque las ubicaciones de los usuarios no se conservan (RNF03).
 
-## Pendiente
+## Registro desde la consulta completa
 
-La lectura para recomendar se conecta mediante
-`nafta2go.application.stored_query.evaluate_from_database`: toma una sola ingesta
-vigente exitosa, filtra precios utilizables y conserva `data_run_id` y los IDs de
-precio en el resultado. El contrato y los estados de cobertura están en
-[docs/MOTOR.md](MOTOR.md). Este recorrido sólo lee; no registra ubicaciones ni
-resultados en `recommendations`.
+`application.query.recommend` registra el resultado explicado de POC-05, con la
+versión del motor y la referencia de rutas. La migración `0002` permite dos
+orígenes excluyentes: `data_run_id` de una ingesta exitosa, o `scenario` con ID,
+fecha y hashes del original y del recorte. El escenario no se convierte en una
+ingesta vigente. Ver [ADR-007](../adr/ADR-007-trazabilidad-de-recomendaciones-historicas.md).
 
-- Verificar el caso completo con precios normalizados, rutas reales y motor (POC-05).
-- Registrar recomendaciones desde el flujo de punta a punta (POC-05).
+La migración conserva los registros anteriores. Volver a `0001` se rechaza si
+existen recomendaciones de escenarios. La consulta sin cobertura no escribe una
+recomendación; las candidatas sin rutas o inviables se conservan como descartes,
+sin inventar una ganadora. Los errores globales de rutas revierten la consulta.
+
+`evaluate_from_database` sigue siendo una función de lectura; el registro está
+en la orquestación de `recommend`. Ninguna de las dos conserva las ubicaciones
+del conductor. Las instrucciones y la evidencia están en [POC-05](POC-05.md).
