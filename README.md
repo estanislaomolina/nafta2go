@@ -20,9 +20,7 @@ Santiago Bunge
 - [Roadmap](docs/ROADMAP.md): hitos, dependencias, orden de construcción y vínculo con GitHub Projects.
 - [ADRs](adr/README.md): decisiones de diseño y comparación de alternativas.
 - [SRD](docs/SRD.md): especificación técnica de la POC: arquitectura y diagramas, stack, modelo de datos, contratos y estrategia de datos.
-- [Cierre de Entrega 2](docs/ENTREGA-2.md): guion del video y checklist de integración y entrega.
 - [Consulta completa de POC-05](docs/POC-05.md): ejecución, ranking, evidencia real y simplificaciones.
-- [Caso controlado de POC-05](docs/CASO-POC.md): preparación y procedencia del caso real.
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
 - [Normalización de precios](docs/NORMALIZACION.md): formato real de las fechas, reglas de rechazo y alertas, duplicados y corrida real (POC-01).
@@ -130,23 +128,6 @@ DATABASE_URL=sqlite:////tmp/nafta2go-demo-entrega2.db python -m nafta2go.query \
 Con una base nueva utiliza el escenario histórico rotulado del 24/10/2026 y las
 rutas reales guardadas el 26/10. Para usar precios de la última ingesta y ORS en
 vivo, ver [instrucciones y evidencia de POC-05](docs/POC-05.md).
-
-## Ejemplo sintético de rutas y motor
-
-Requiere Python 3.12. Desde la raíz del repositorio:
-
-```bash
-python -m nafta2go.demo
-python -m nafta2go.demo --presupuesto 6000 --sin-destino
-python -m nafta2go.demo --help
-```
-
-La demo usa estaciones, precios y rutas **ficticios**, sin red ni credenciales.
-Permite modificar presupuesto, combustible inicial, consumo, capacidad y reserva;
-imprime la compra posible, combustible final, desvío y motivos de descarte.
-Muestra las candidatas en orden de entrada, sin ranking. Para ejecutar la consulta completa con datos reales y ranking, usar
-[el comando de POC-05](docs/POC-05.md).
-Los contratos y las fórmulas están en [docs/MOTOR.md](docs/MOTOR.md).
 
 ## Proveedor de rutas (POC-03)
 

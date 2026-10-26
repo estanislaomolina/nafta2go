@@ -105,11 +105,6 @@ prioridades: precio publicado ARS 2189/L, compra estimada 5,482 L, consumo del
 recorrido 1,064 L, combustible final 14,418 L y desvío de 0,409 km. Son resultados
 del caso y fechas registrados; no acreditan precio ni stock para otra fecha.
 
-El [caso preliminar](CASO-POC.md) seleccionaba por recencia en toda CABA. La
-integración final aplica además el corredor aprobado en POC-02 y por eso cambia
-la lista de candidatas. Se conserva la preparación original como evidencia de
-trabajo, no como la entrada de la demo final.
-
 ## Verificación y límites
 
 ```bash
