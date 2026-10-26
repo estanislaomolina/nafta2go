@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "case_id": "poc-05-obelisco-cabildo-2026-10-24",
+  "status": "prices_prepared_routes_pending",
+  "mode": "real_price_snapshot",
+  "source": {
+    "retrieved_at_utc": "2026-10-24T20:31:11.071132+00:00",
+    "source_url": "http://datos.energia.gob.ar/dataset/1c181390-5045-475e-94dc-410429be4b17/resource/80ac25de-a44a-4445-9215-090cf55cfda5/download/precios-en-surtidor-resolucin-3142016.csv",
+    "resource_id": "80ac25de-a44a-4445-9215-090cf55cfda5",
+    "sha256": "e22e8009d41b5f2d0d6c7ff96d5b3966c826f85509c21f8a67116b66bf4a2c02",
+    "bytes": 9268946,
+    "catalog_url": "https://datos.energia.gob.ar/api/3/action/package_show?id=precios-en-surtidor",
+    "license_id": "CC-BY-4.0",
+    "requested_url": "https://datos.energia.gob.ar/dataset/1c181390-5045-475e-94dc-410429be4b17/resource/80ac25de-a44a-4445-9215-090cf55cfda5/download/precios-en-surtidor-resolucin-3142016.csv"
+  },
+  "query": {
+    "origin": {
+      "label": "Obelisco",
+      "lat": "-34.6037",
+      "lon": "-58.3816"
+    },
+    "destination": {
+      "label": "Cabildo y Juramento",
+      "lat": "-34.5627",
+      "lon": "-58.4565"
+    },
+    "reference_date": "2026-10-24",
+    "product_id": "2",
+    "schedule_id": "2",
+    "consumption_l_per_100km": "10",
+    "tank_capacity_l": "50",
+    "remaining_l": "10",
+    "budget_ars": "12000",
+    "reserve_l": "2",
+    "max_price_age_days": 30
+  },
+  "coverage": {
+    "source_rows": 36645,
+    "caba_super_daytime_rows": 184,
+    "recent_stations": 31,
+    "excluded_rows": {
+      "older_than_30_days": 153
+    }
+  },
+  "selection": {
+    "method": "latest_publication_then_numeric_station_id",
+    "max_candidates": 10,
+    "age_rule": "calendar_days_between_capture_date_and_publication_date",
+    "coordinate_check": "bounding_box_only_not_city_polygon_or_entrance_verification",
+    "route_ranked": false
+  },
+  "selected_prices": {
+    "file": "prices.csv",
+    "sha256": "9d31408b3e1aeac6005edd0d565c2a7ca49c41f75f288a8992cfcd663b5253e7"
+  },
+  "candidates": [
+    {
+      "station_id": "9930",
+      "brand": "PUMA",
+      "address": "VELEZ SARFIELD 522 0 ESQ. CORTEJARENA",
+      "lat": "-34.640861",
+      "lon": "-58.389601",
+      "price_ars_per_l": "2147.00",
+      "price_effective_at_raw": "2026-10-23 06:00:00",
+      "price_age_calendar_days": 1,
+      "source_record_number_including_header": 30053
+    },
+    {
+      "station_id": "1556",
+      "brand": "PUMA",
+      "address": "EMILIO CASTRO 7006",
+      "lat": "-34.652935",
+      "lon": "-58.517138",
+      "price_ars_per_l": "2147",
+      "price_effective_at_raw": "2026-10-23 00:00:00",
+      "price_age_calendar_days": 1,
+      "source_record_number_including_header": 4380
+    },
+    {
+      "station_id": "7944",
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "MONTES DE OCA 1885",
+      "lat": "-34.649138",
+      "lon": "-58.373083",
+      "price_ars_per_l": "2210",
+      "price_effective_at_raw": "2026-10-15 08:55:00",
+      "price_age_calendar_days": 9,
+      "source_record_number_including_header": 23494
+    },
+    {
+      "station_id": "9168",
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "AV SAN MARTIN 3500",
+      "lat": "-34.601257",
+      "lon": "-58.472184",
+      "price_ars_per_l": "2189",
+      "price_effective_at_raw": "2026-10-13 06:00:00",
+      "price_age_calendar_days": 11,
+      "source_record_number_including_header": 2288
+    },
+    {
+      "station_id": "1247",
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "NAZCA 2502",
+      "lat": "-34.606818",
+      "lon": "-58.485501",
+      "price_ars_per_l": "2189",
+      "price_effective_at_raw": "2026-10-11 22:01:00",
+      "price_age_calendar_days": 13,
+      "source_record_number_including_header": 12886
+    },
+    {
+      "station_id": "6824",
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "AV. GAONA 2886 Y CARACAS",
+      "lat": "-34.616842",
+      "lon": "-58.466406",
+      "price_ars_per_l": "2189",
+      "price_effective_at_raw": "2026-10-10 20:02:00",
+      "price_age_calendar_days": 14,
+      "source_record_number_including_header": 5468
+    },
+    {
+      "station_id": "3568",
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "AV. CORRIENTES 6535",
+      "lat": "-34.588672",
+      "lon": "-58.450495",
+      "price_ars_per_l": "2189.0000",
+      "price_effective_at_raw": "2026-10-10 00:00:00",
+      "price_age_calendar_days": 14,
+      "source_record_number_including_header": 9467
+    },
+    {
+      "station_id": "3708",
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "LINCOLN 3999",
+      "lat": "-34.599479",
+      "lon": "-58.510271",
+      "price_ars_per_l": "2189.0000",
+      "price_effective_at_raw": "2026-10-10 00:00:00",
+      "price_age_calendar_days": 14,
+      "source_record_number_including_header": 9583
+    },
+    {
+      "station_id": "3747",
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "Lima 835",
+      "lat": "-34.618063",
+      "lon": "-58.381766",
+      "price_ars_per_l": "2189.0000",
+      "price_effective_at_raw": "2026-10-10 00:00:00",
+      "price_age_calendar_days": 14,
+      "source_record_number_including_header": 13574
+    },
+    {
+      "station_id": "3762",
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "AV. CRAMER 1691",
+      "lat": "-34.568864",
+      "lon": "-58.457372",
+      "price_ars_per_l": "2189.0000",
+      "price_effective_at_raw": "2026-10-10 00:00:00",
+      "price_age_calendar_days": 14,
+      "source_record_number_including_header": 9475
+    }
+  ],
+  "pending": [
+    "confirm_normalization_contract_with_POC_01",
+    "capture_complete_route_matrix_for_exact_candidate_coordinates",
+    "evaluate_real_routes_and_prices_with_motor",
+    "ranking_and_explained_recommendation"
+  ]
+}

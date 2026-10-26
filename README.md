@@ -20,6 +20,7 @@ Santiago Bunge
 - [Roadmap](docs/ROADMAP.md): hitos, dependencias, orden de construcción y vínculo con GitHub Projects.
 - [ADRs](adr/README.md): decisiones de diseño y comparación de alternativas.
 - [SRD](docs/SRD.md): especificación técnica de la POC: arquitectura y diagramas, stack, modelo de datos, contratos y estrategia de datos.
+- [Caso controlado de POC-05](docs/CASO-POC.md): preparación y procedencia del caso real.
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
 - [Normalización de precios](docs/NORMALIZACION.md): formato real de las fechas, reglas de rechazo y alertas, duplicados y corrida real (POC-01).
