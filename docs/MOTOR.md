@@ -199,8 +199,10 @@ reemplaza un polígono ni verifica la entrada física de la estación.
 
 Entre las publicaciones utilizables de cada estación se conserva la más reciente.
 La preselección ordena por fecha descendente e identificador numérico ascendente
-y devuelve hasta diez estaciones distintas. No es un ranking de conveniencia ni
-de cercanía. Las alertas `precio_atipico` se conservan sin cambiar ni excluir por
+y devuelve hasta diez estaciones distintas. No es un ranking de conveniencia. Si se
+pasa `origin`, solo cuentan las estaciones dentro del corredor del recorrido
+(`MAX_DETOUR_KM` en línea recta; motivo `outside_corridor`), como se explica en
+[COBERTURA.md](COBERTURA.md). Las alertas `precio_atipico` se conservan sin cambiar ni excluir por
 sí solas el precio oficial.
 
 `CandidateSelection` informa `data_run_id`, fecha de referencia, precios elegidos
@@ -210,6 +212,12 @@ normalizados de exclusión con sus conteos. Sus estados son `ready`,
 con `minimum_candidates` (por defecto `MIN_RECENT_CANDIDATES` = 3); debe estar entre
 uno y el límite elegido. Los dos valores por defecto se definen una sola vez en
 `nafta2go/application/coverage_rules.py`. No certifica cobertura representativa de toda CABA.
+
+`evaluate_with_coverage` agrega el escenario histórico: si la captura actual no
+alcanza el mínimo en el corredor, usa la captura congelada con el estado
+`historical_scenario` y su rótulo, y si tampoco alcanza no consulta rutas. Los
+estados y la garantía de no presentar precios viejos como actuales están en
+[COBERTURA.md](COBERTURA.md).
 
 `evaluate_from_database` conecta esa selección con `evaluate_stations`, utilizando
 el `RoutingProvider` recibido. Si no se alcanza el mínimo no llama al proveedor y
