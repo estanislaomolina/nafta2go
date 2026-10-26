@@ -4,11 +4,13 @@ import json
 import os
 
 import pytest
+import requests
 
 from nafta2go.adapters.routing import Point
 from scripts.probe_openrouteservice import (
     load_env_file,
     load_stations,
+    run_minute_limit_probe,
     run_probe,
     summarize_latencies,
 )
@@ -132,3 +134,106 @@ def test_run_probe_records_the_queried_endpoint():
     assert evidence["endpoint"] == (
         "POST https://api.heigit.org/openrouteservice/v2/matrix/driving-car"
     )
+
+
+class LimitSession:
+    def __init__(self, successes=40, recover=True, remaining=450):
+        self.calls = 0
+        self.successes = successes
+        self.recover = recover
+        self.remaining = remaining
+
+    def post(self, url, json=None, headers=None, timeout=None):
+        self.calls += 1
+        limited = self.calls > self.successes
+        if self.calls == self.successes + 2 and self.recover:
+            limited = False
+        quota = {"x-ratelimit-limit": "500", "x-ratelimit-remaining": str(self.remaining)}
+        if limited:
+            return FakeResponse(429, {"error": "rate limit"}, quota)
+        return FakeResponse(200, {"distances": [[1000]], "durations": [[60]]}, quota)
+
+
+def test_minute_limit_requires_40_successes_429_and_recovery():
+    session = LimitSession()
+    waits = []
+    evidence = run_minute_limit_probe(
+        "clave-de-prueba", session, sleep=waits.append, clock=fake_clock()
+    )
+    assert evidence["verified"]
+    assert session.calls == evidence["requests_attempted"] == 42
+    assert waits == [30, 30, 5]
+    assert all(row["status"] == 200 for row in evidence["attempts"][:40])
+    assert evidence["attempts"][-1]["status"] == 429
+    assert evidence["recovery"]["status"] == 200
+    assert "clave-de-prueba" not in json.dumps(evidence)
+
+
+def test_early_rate_limit_is_not_claimed_as_40_per_minute():
+    evidence = run_minute_limit_probe(
+        "clave", LimitSession(successes=5), sleep=lambda s: None, clock=fake_clock()
+    )
+    assert not evidence["verified"]
+    assert len(evidence["attempts"]) == 6
+
+
+def test_no_recovery_is_not_claimed_as_verified():
+    evidence = run_minute_limit_probe(
+        "clave", LimitSession(recover=False), sleep=lambda s: None, clock=fake_clock()
+    )
+    assert not evidence["verified"]
+    assert evidence["recovery"]["status"] == 429
+
+
+def test_no_rejection_stops_at_41_without_waiting():
+    session = LimitSession(successes=100)
+    waits = []
+    evidence = run_minute_limit_probe("clave", session, sleep=waits.append, clock=fake_clock())
+    assert not evidence["verified"]
+    assert session.calls == 41
+    assert waits == []
+    assert evidence["stop_reason"] == "no_429_within_41_attempts"
+
+
+def test_daily_quota_is_checked_before_burst():
+    session = LimitSession(remaining=10)
+    evidence = run_minute_limit_probe("clave", session, clock=fake_clock())
+    assert session.calls == 1
+    assert not evidence["verified"]
+    assert evidence["stop_reason"] == "insufficient_daily_quota_or_missing_headers"
+
+
+def test_slow_requests_cannot_span_multiple_windows():
+    session = LimitSession()
+    ticks = iter(range(0, 1000, 30))
+    evidence = run_minute_limit_probe("clave", session, clock=lambda: next(ticks))
+    assert not evidence["verified"]
+    assert session.calls == 1
+    assert evidence["stop_reason"] == "burst_exceeded_55_seconds"
+
+
+def test_network_error_during_recovery_preserves_the_burst_evidence():
+    class Disconnecting(LimitSession):
+        def post(self, *args, **kwargs):
+            if self.calls == 41:
+                raise requests.ConnectionError("conexión interrumpida")
+            return super().post(*args, **kwargs)
+
+    evidence = run_minute_limit_probe(
+        "clave", Disconnecting(), sleep=lambda s: None, clock=fake_clock()
+    )
+    assert not evidence["verified"]
+    assert len(evidence["attempts"]) == 41
+    assert evidence["attempts"][-1]["status"] == 429
+    assert evidence["recovery"]["error"] == "ProviderUnavailable"
+
+
+def test_provider_error_during_burst_is_recorded_without_retry():
+    class Unavailable:
+        def post(self, *args, **kwargs):
+            raise requests.ConnectionError("conexión interrumpida")
+
+    evidence = run_minute_limit_probe("clave", Unavailable(), clock=fake_clock())
+    assert not evidence["verified"]
+    assert len(evidence["attempts"]) == 1
+    assert evidence["stop_reason"] == "provider_error_during_burst"
