@@ -1,7 +1,7 @@
 ---
-status: Propuesto
+status: Aceptado
 date: 2026-10-26
-decision-makers: Estanislao Molina Abeniacar, pendiente de revisión del equipo
+decision-makers: Estanislao Molina Abeniacar
 consulted: ADR-005, ADR-006, RF15, RNF03, RNF05
 ---
 
@@ -22,7 +22,7 @@ cuando usa ese respaldo, sin conservar las ubicaciones del conductor.
 | No registrar resultados históricos | No cambia el esquema | Pierde la evidencia y trazabilidad de esas recomendaciones |
 | Permitir un origen alternativo identificado | Conserva el historial sin mezclar fuentes; migración pequeña | El repositorio debe validar dos formas de procedencia |
 
-## Decisión propuesta
+## Decisión
 
 Usar la tercera opción. La migración `0002` permite `data_run_id` nulo y agrega
 `scenario` en JSON. Un CHECK exige exactamente uno de los dos orígenes. El
@@ -40,3 +40,9 @@ nulo. El escenario no crea una ingesta y nunca puede convertirse en la última
 captura vigente. Los tests cubren ambas procedencias, la migración con datos y
 el rechazo de un origen ausente o mezclado. La vuelta a `0001` se rechaza si hay
 recomendaciones históricas, para evitar perderlas o inventarles una ejecución.
+
+## Confirmación al cierre de Entrega 2
+
+Aceptado el 27/10/2026 al cerrar la entrega. La migración 0002, el registro de
+ambas procedencias y sus pruebas están integrados en #41. La consulta completa
+verifica la persistencia sin convertir el escenario en una ingesta vigente.

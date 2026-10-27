@@ -127,10 +127,15 @@ La tercera muestra qué pasa si la fuente no se actualiza: con la misma captura,
 tres semanas después ya no hay precios recientes en el corredor y la consulta
 pasa sola al escenario rotulado.
 
-## Pendiente
+## Registro e integración
 
-- Registrar recomendaciones hechas con el escenario en `recommendations`, que
-  hoy exige una ejecución `succeeded` (POC-05).
+La consulta completa registra las recomendaciones del escenario con su ID,
+fecha y hashes, sin crear una ingesta vigente ficticia. La migración 0002 exige
+exactamente un origen de datos por recomendación. Ver [POC-05](POC-05.md) y
+[PERSISTENCIA](PERSISTENCIA.md).
+
+## Pendiente para MVP
+
 - Configurar los parámetros sin modificar código (RF13, "Debería").
 - Si se usara el CSV histórico como escenario, revisar la selección por estación
   comentada en #37: con muchas filas por estación, una exclusión de calidad
