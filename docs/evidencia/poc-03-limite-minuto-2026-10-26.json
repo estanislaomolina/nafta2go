@@ -1,0 +1,468 @@
+{
+  "executed_at_utc": "2026-10-26T23:11:33.492925+00:00",
+  "provider": "openrouteservice",
+  "endpoint": "POST https://api.heigit.org/openrouteservice/v2/matrix/driving-car",
+  "matrix_elements_per_request": 1,
+  "expected_requests_per_minute": 40,
+  "attempts": [
+    {
+      "number": 1,
+      "elapsed_s": 0.954,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "458",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 2,
+      "elapsed_s": 1.261,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "457",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 3,
+      "elapsed_s": 1.534,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "456",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 4,
+      "elapsed_s": 1.809,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "455",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 5,
+      "elapsed_s": 2.119,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "454",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 6,
+      "elapsed_s": 2.389,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "453",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 7,
+      "elapsed_s": 2.68,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "452",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 8,
+      "elapsed_s": 2.953,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "451",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 9,
+      "elapsed_s": 3.226,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "450",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 10,
+      "elapsed_s": 3.5,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "449",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 11,
+      "elapsed_s": 3.773,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "448",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 12,
+      "elapsed_s": 4.073,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "447",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 13,
+      "elapsed_s": 4.349,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "446",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 14,
+      "elapsed_s": 4.746,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "445",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 15,
+      "elapsed_s": 5.026,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "444",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 16,
+      "elapsed_s": 5.301,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "443",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 17,
+      "elapsed_s": 5.572,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "442",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 18,
+      "elapsed_s": 5.844,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "441",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 19,
+      "elapsed_s": 6.333,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "440",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 20,
+      "elapsed_s": 6.61,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "439",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 21,
+      "elapsed_s": 6.888,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "438",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 22,
+      "elapsed_s": 7.196,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "437",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 23,
+      "elapsed_s": 7.503,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "436",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 24,
+      "elapsed_s": 7.777,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "435",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 25,
+      "elapsed_s": 8.323,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "434",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 26,
+      "elapsed_s": 8.629,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "433",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 27,
+      "elapsed_s": 8.899,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "432",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 28,
+      "elapsed_s": 9.173,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "431",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 29,
+      "elapsed_s": 9.447,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "430",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 30,
+      "elapsed_s": 9.754,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "429",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 31,
+      "elapsed_s": 10.028,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "428",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 32,
+      "elapsed_s": 10.472,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "427",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 33,
+      "elapsed_s": 10.777,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "426",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 34,
+      "elapsed_s": 11.084,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "425",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 35,
+      "elapsed_s": 11.395,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "424",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 36,
+      "elapsed_s": 11.698,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "423",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 37,
+      "elapsed_s": 12.005,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "422",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 38,
+      "elapsed_s": 12.317,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "421",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 39,
+      "elapsed_s": 12.62,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "420",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 40,
+      "elapsed_s": 12.93,
+      "status": 200,
+      "error": null,
+      "rate_limit": {
+        "x-ratelimit-limit": "500",
+        "x-ratelimit-remaining": "419",
+        "x-ratelimit-reset": "1793139652"
+      }
+    },
+    {
+      "number": 41,
+      "elapsed_s": 13.233,
+      "status": 429,
+      "error": "QuotaExceeded",
+      "rate_limit": {}
+    }
+  ],
+  "verified": true,
+  "recovery": {
+    "wait_s": 65,
+    "status": 200,
+    "error": null,
+    "rate_limit": {
+      "x-ratelimit-limit": "500",
+      "x-ratelimit-remaining": "418",
+      "x-ratelimit-reset": "1793139652"
+    }
+  },
+  "requests_attempted": 42
+}

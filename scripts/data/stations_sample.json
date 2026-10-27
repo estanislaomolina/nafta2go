@@ -1,0 +1,147 @@
+{
+  "source": "Precios vigentes en surtidor (Res. 314/2016), Secretaría de Energía, CC-BY-4.0",
+  "extracted_at": "2026-10-24",
+  "criteria": "CABA, nafta súper/premium, coordenadas dentro de CABA, las 20 estaciones con fecha_vigencia más reciente",
+  "stations": [
+    {
+      "station_id": 9930,
+      "brand": "PUMA",
+      "address": "VELEZ SARFIELD 522 0 ESQ. CORTEJARENA",
+      "lat": -34.640861,
+      "lon": -58.389601
+    },
+    {
+      "station_id": 1556,
+      "brand": "PUMA",
+      "address": "EMILIO CASTRO 7006",
+      "lat": -34.652935,
+      "lon": -58.517138
+    },
+    {
+      "station_id": 7944,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "MONTES DE OCA 1885",
+      "lat": -34.649138,
+      "lon": -58.373083
+    },
+    {
+      "station_id": 9168,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "AV SAN MARTIN 3500",
+      "lat": -34.601257,
+      "lon": -58.472184
+    },
+    {
+      "station_id": 1247,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "NAZCA 2502",
+      "lat": -34.606818,
+      "lon": -58.485501
+    },
+    {
+      "station_id": 6824,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "AV. GAONA 2886 Y CARACAS",
+      "lat": -34.616842,
+      "lon": -58.466406
+    },
+    {
+      "station_id": 3708,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "LINCOLN 3999",
+      "lat": -34.599479,
+      "lon": -58.510271
+    },
+    {
+      "station_id": 3765,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "AV. CORDOBA 3710",
+      "lat": -34.597953,
+      "lon": -58.419144
+    },
+    {
+      "station_id": 3825,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "AV. CABILDO 4701",
+      "lat": -34.54138,
+      "lon": -58.47375
+    },
+    {
+      "station_id": 3571,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "AUT. ILLIA ENTRE 7 Y PEAJE",
+      "lat": -34.57637,
+      "lon": -58.39094
+    },
+    {
+      "station_id": 3747,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "Lima 835",
+      "lat": -34.618063,
+      "lon": -58.381766
+    },
+    {
+      "station_id": 3568,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "AV. CORRIENTES 6535",
+      "lat": -34.588672,
+      "lon": -58.450495
+    },
+    {
+      "station_id": 3570,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "LIBERTADOR 550",
+      "lat": -34.589289,
+      "lon": -58.381423
+    },
+    {
+      "station_id": 11096,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "AU. DELLEPIANE 4187 (MANO PROVINCIA)",
+      "lat": -34.657941,
+      "lon": -58.470833
+    },
+    {
+      "station_id": 3614,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "AV. LIBERTADOR 7920",
+      "lat": -34.541892,
+      "lon": -58.463062
+    },
+    {
+      "station_id": 3559,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "AV. FIGUEROA ALCORTA 3099",
+      "lat": -34.5796,
+      "lon": -58.40003
+    },
+    {
+      "station_id": 3828,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "Av.Diaz Velez 4368",
+      "lat": -34.608906,
+      "lon": -58.429011
+    },
+    {
+      "station_id": 3759,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "AV. FIGUEROA ALCORTA 7786",
+      "lat": -34.546514,
+      "lon": -58.451933
+    },
+    {
+      "station_id": 3762,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "AV. CRAMER 1691",
+      "lat": -34.568864,
+      "lon": -58.457372
+    },
+    {
+      "station_id": 3815,
+      "brand": "SHELL C.A.P.S.A.",
+      "address": "AV. PASEO COLON 849",
+      "lat": -34.618076,
+      "lon": -58.369675
+    }
+  ]
+}

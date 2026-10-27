@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+# Un push nuevo cancela la corrida anterior de la misma rama.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Los nombres de los jobs son los checks requeridos del ruleset de dev y main:
+# renombrarlos exige actualizar el ruleset (ver docs/CALIDAD.md).
+jobs:
+  docs:
+    name: Docs y notebooks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Links relativos en Markdown
+        run: python .github/scripts/check_links.py
+      - name: Notebooks válidas
+        run: |
+          pip install nbformat
+          python -c "
+          import nbformat, pathlib, sys
+          nbs = list(pathlib.Path('.').rglob('*.ipynb'))
+          for nb in nbs:
+              nbformat.validate(nbformat.read(nb, as_version=4))
+              print('OK', nb)
+          "
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements-dev.txt
+      - name: Ruff check
+        run: ruff check .
+      - name: Ruff format
+        run: ruff format --check .
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements-dev.txt
+      - name: Correr pytest
+        run: >-
+          pytest -v --strict-markers --cov=nafta2go
+          --cov-report=term-missing --cov-precision=2 --cov-fail-under=90
+
+  secrets:
+    name: Secretos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  containers:
+    name: Contenedores
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir la imagen
+        run: docker compose build
+      - name: Migrar la base dentro del contenedor
+        run: docker compose run --rm migrate
+      - name: Verificar que el esquema quedó en la última versión
+        run: docker compose run --rm migrate alembic current | tee current.txt && grep -q "(head)" current.txt
+      - name: Reproducir la consulta completa sin red ni credenciales
+        run: >-
+          docker compose run --rm query
+          --origin=-34.6037,-58.3816 --destination=-34.5627,-58.4565
+          --matrix-file docs/evidencia/poc-05-flujo-2026-10-26/matrix.json
+          --json > query.json && python -c
+          "import json; r=json.load(open('query.json')); assert r['status']=='historical_scenario';
+          assert r['outcome']=='recommended'; assert len(r['evaluations'])==10;
+          assert r['recommendation_id'] is not None; assert r['routes']['replayed']"
+      - name: Bajar servicios y volúmenes
+        if: always()
+        run: docker compose down --volumes

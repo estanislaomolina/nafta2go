@@ -1,0 +1,5 @@
+# Dependencias de desarrollo: tests y lint. Incluye las de ejecución.
+-r requirements.txt
+pytest>=8
+pytest-cov==7.1.0
+ruff==0.17.2

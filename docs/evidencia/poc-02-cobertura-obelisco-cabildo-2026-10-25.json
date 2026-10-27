@@ -1,0 +1,116 @@
+{
+  "reference_at": "2026-10-26T00:18:04.690728+00:00",
+  "query": {
+    "origin": {
+      "lat": -34.6037,
+      "lon": -58.3816
+    },
+    "destination": {
+      "lat": -34.5627,
+      "lon": -58.4565
+    },
+    "fuel_type": "super",
+    "schedule_id": 2
+  },
+  "parameters": {
+    "max_price_age_days": 30,
+    "min_recent_candidates": 3,
+    "max_detour_km": 5.0
+  },
+  "current": {
+    "data_run_id": 3,
+    "status": "ready",
+    "eligible_in_corridor": 16,
+    "stations_by_age_days": {
+      "7": {
+        "caba": 2,
+        "corridor": 0
+      },
+      "30": {
+        "caba": 30,
+        "corridor": 16
+      },
+      "90": {
+        "caba": 60,
+        "corridor": 30
+      },
+      "365": {
+        "caba": 76,
+        "corridor": 34
+      }
+    },
+    "exclusions": {
+      "incompatible_product": 364,
+      "incompatible_schedule": 184,
+      "outside_corridor": 14,
+      "stale_price": 154
+    }
+  },
+  "historical": null,
+  "decision": {
+    "status": "ready",
+    "scenario": null,
+    "candidates": [
+      {
+        "station_id": "9168",
+        "price_ars_per_l": "2189.000",
+        "published_at_local": "2026-10-13T06:00:00",
+        "alerts": []
+      },
+      {
+        "station_id": "3568",
+        "price_ars_per_l": "2189.000",
+        "published_at_local": "2026-10-10T00:00:00",
+        "alerts": []
+      },
+      {
+        "station_id": "3747",
+        "price_ars_per_l": "2189.000",
+        "published_at_local": "2026-10-10T00:00:00",
+        "alerts": []
+      },
+      {
+        "station_id": "3762",
+        "price_ars_per_l": "2189.000",
+        "published_at_local": "2026-10-10T00:00:00",
+        "alerts": []
+      },
+      {
+        "station_id": "3765",
+        "price_ars_per_l": "2189.000",
+        "published_at_local": "2026-10-10T00:00:00",
+        "alerts": []
+      },
+      {
+        "station_id": "3815",
+        "price_ars_per_l": "2189.000",
+        "published_at_local": "2026-10-10T00:00:00",
+        "alerts": []
+      },
+      {
+        "station_id": "3828",
+        "price_ars_per_l": "2155.000",
+        "published_at_local": "2026-10-10T00:00:00",
+        "alerts": []
+      },
+      {
+        "station_id": "7820",
+        "price_ars_per_l": "2189.000",
+        "published_at_local": "2026-10-09T16:55:00",
+        "alerts": []
+      },
+      {
+        "station_id": "1819",
+        "price_ars_per_l": "2189.000",
+        "published_at_local": "2026-10-09T16:48:00",
+        "alerts": []
+      },
+      {
+        "station_id": "9269",
+        "price_ars_per_l": "2159.000",
+        "published_at_local": "2026-09-29T00:00:00",
+        "alerts": []
+      }
+    ]
+  }
+}
