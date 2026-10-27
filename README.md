@@ -2,7 +2,7 @@
 
 Nafta2Go es un recomendador de estaciones de servicio para conductores de CABA. Combina precio publicado, presupuesto, autonomía, capacidad del tanque y desvío del recorrido para mostrar alternativas explicadas.
 
-Este repositorio contiene el diseño de la **Entrega 1** y el desarrollo en curso de la **Entrega 2: POC y SRD** del Trabajo Práctico Integrador. El motor y el adaptador de rutas tienen pruebas automáticas; el flujo de punta a punta con datos y rutas reales se ejecuta desde un comando y conserva evidencia reproducible.
+Este repositorio contiene el diseño de la **Entrega 1** y la **Entrega 2: POC y SRD** del Trabajo Práctico Integrador. El motor y el adaptador de rutas tienen pruebas automáticas; el flujo de punta a punta con datos y rutas reales se ejecuta desde un comando y conserva evidencia reproducible.
 
 ## Integrantes
 
@@ -101,7 +101,7 @@ Construye la imagen de la aplicación y corre las migraciones sobre una base SQL
 
 ## Estado del desarrollo
 
-La Entrega 2 (POC) está en curso. Esta tabla declara qué partes existen, cuáles están simuladas y cuáles faltan; se actualiza en la misma PR que cambia el estado de un componente.
+La Entrega 2 (POC) incluye el flujo completo y su video de demostración. Esta tabla declara qué partes existen, cuáles están simuladas y cuáles faltan; se actualiza en la misma PR que cambia el estado de un componente.
 
 | Componente | Tarea | Estado |
 |---|---|---|
@@ -144,14 +144,26 @@ python scripts/probe_openrouteservice.py
 
 Los tests no usan red: reemplazan la API por una sesión HTTP simulada. Solo la prueba autenticada consulta OpenRouteService y necesita la API key.
 
-## Video de la entrega
+## Videos de las entregas
 
-Pendiente de completar:
+- **Entrega 2 — POC y SRD:** [Demostración funcional de Nafta2Go](https://youtu.be/3hBFj-BQNzA) (9 min 57 s).
+- **Entrega 1 — Diseño:** [PRD y Roadmap](https://youtu.be/zZpi70Od-EE).
 
-> **Video:** [Nafta2Go — Entrega 1: Diseño, PRD y Roadmap](https://youtu.be/zZpi70Od-EE)
+El video de Entrega 2 muestra la prueba de concepto y el diseño técnico. El video
+de Entrega 1 corresponde al problema, la exploración inicial y la planificación.
+Las fechas y simplificaciones del caso reproducible se detallan en
+[POC-05](docs/POC-05.md).
 
-## Entrega
+## Entrega 2
 
-- **Rama:** `main`
+- **Rama de entrega:** `main`, integrada desde `dev` mediante PR.
+- **Versión:** [entrega-2-poc](https://github.com/estanislaomolina/nafta2go/tree/entrega-2-poc), tag anotado del commit entregado.
+- **Video:** [POC y SRD](https://youtu.be/3hBFj-BQNzA).
+- **Diseño técnico:** [SRD](docs/SRD.md) y [ADRs](adr/README.md).
+- **Ejecución y evidencia:** [Consulta completa de POC-05](docs/POC-05.md).
 - **Repositorio:** https://github.com/estanislaomolina/nafta2go
 - **Project:** https://github.com/users/estanislaomolina/projects/1
+
+El repositorio se mantiene público por autorización de la cátedra, confirmada
+por el equipo al cerrar esta entrega. La presentación se identifica con el
+commit específico de `main` y la URL del video.

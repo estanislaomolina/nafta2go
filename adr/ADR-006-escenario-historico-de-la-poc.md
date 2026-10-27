@@ -1,7 +1,7 @@
 ---
-status: Propuesto
+status: Aceptado
 date: 2026-10-25
-decision-makers: Felipe Sidiropulos (POC-02), a revisar por el equipo
+decision-makers: Felipe Sidiropulos (POC-02), Estanislao Molina Abeniacar (cierre de entrega)
 consulted: PRD (RF09, RF15), ADR-001, issue POC-02 (#7), PR #35, PR #37
 informed: Cátedra
 ---
@@ -105,3 +105,9 @@ Los tests de `tests/application/test_stored_query.py` y
 * El plan de POC-01 reservaba el número 006 para un posible ADR sobre las reglas
   de normalización. Como ese ADR no se escribió, este usa el siguiente número
   libre. Si se escribe más adelante, le corresponde el ADR-007.
+
+## Confirmación al cierre de Entrega 2
+
+Aceptado el 27/10/2026 al cerrar la entrega. La selección y el escenario están
+integrados desde el PR #39 y el flujo completo desde #41. La demostración y las
+pruebas verifican activación, rótulo, hash y falta de cobertura sin inventar rutas.
