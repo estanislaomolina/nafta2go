@@ -369,9 +369,7 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
   el flujo completo; ver [POC-05](POC-05.md).
 - **Observabilidad:** las ingestas y las descargas registran logs con campos
   (`run_id`, filas, rechazos, SHA-256). El reporte de calidad queda en cada
-  ejecución. El monitor manual `python -m nafta2go.monitor` detecta fallos,
-  ejecuciones excedidas y ausencias; conserva detección y resolución mediante
-  `ingestion_alerts` (migración `0003`). Programación y alertas externas pendientes.
+  ejecución. Las métricas y alertas de RNF08 son del MVP.
 
 ## 9. Partes simplificadas en la POC
 
@@ -396,3 +394,7 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 | El proveedor de rutas cambia de host o de cuota (ya pasó con el host anterior) | Protocolo `RoutingProvider`; OSRM como alternativa; cuota diaria y límite por minuto verificados para la cuenta de la POC, con evidencia fechada ([RUTAS](RUTAS.md)) |
 | La fuente cambia columnas o formato | `UnexpectedSchema` falla nombrando lo que falta y la ejecución queda `failed` |
 | Coordenadas mal cargadas (dos estaciones con provincia CABA están fuera de la ciudad) | Alerta `fuera_de_caba`, que se excluye de la selección |
+
+El incremento de monitoreo de MVP-01 agrega `python -m nafta2go.monitor`: detecta
+fallos, ejecuciones excedidas y ausencias, y persiste detección y resolución en
+`ingestion_alerts` (migración `0003`). Programación y alertas externas pendientes.

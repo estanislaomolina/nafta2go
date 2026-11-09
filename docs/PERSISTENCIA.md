@@ -74,15 +74,6 @@ exitosa. Si el proceso se corta entre los pasos 1 y 3, la ejecución queda en
 `running`. Volver a ingerir una captura con el mismo SHA-256 crea una ejecución
 nueva y guarda `duplicate_of_run_id` en su reporte.
 
-## Monitor de ingesta (MVP-01)
-
-`python -m nafta2go.monitor` comprueba el vigente y emite JSON seguro: salida 0
-sin alertas, 1 con alertas y 2 si no puede consultar o registrar el estado. Detecta
-la última ejecución terminada con fallo, `running` de al menos dos horas y ausencia
-de intentos desde las 06:00 de Argentina al llegar las 08:00 (antes revisa el día
-anterior). Conserva detección y resolución en `ingestion_alerts` sin alterar las
-ingestas ni exportar mensajes sensibles. La programación automática va en otra PR.
-
 ## Contrato con la normalización (POC-01)
 
 El normalizador es una función `RawCapture -> NormalizationResult`. Así la
@@ -128,3 +119,12 @@ sin inventar una ganadora. Los errores globales de rutas revierten la consulta.
 `evaluate_from_database` sigue siendo una función de lectura; el registro está
 en la orquestación de `recommend`. Ninguna de las dos conserva las ubicaciones
 del conductor. Las instrucciones y la evidencia están en [POC-05](POC-05.md).
+
+## Monitor de ingesta (MVP-01)
+
+`python -m nafta2go.monitor` comprueba el vigente y emite JSON seguro: salida 0
+sin alertas, 1 con alertas y 2 si no puede consultar o registrar el estado. Detecta
+la última ejecución terminada con fallo, `running` de al menos dos horas y ausencia
+de intentos desde las 06:00 de Argentina al llegar las 08:00 (antes revisa el día
+anterior). Conserva detección y resolución en `ingestion_alerts` sin alterar las
+ingestas ni exportar mensajes sensibles. La programación automática va en otra PR.
