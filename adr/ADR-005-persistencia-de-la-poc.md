@@ -71,5 +71,10 @@ La decisión se confirma con los tests de `tests/persistence` y `tests/services`
 
 ## More Information
 
+En el incremento de monitoreo de MVP-01 se conserva este almacenamiento para
+`ingestion_alerts`: frente a usar solo el journal, permite consultar la primera
+detección y la resolución sin depender de su rotación, a cambio de depender de
+la disponibilidad de la base. Si la base falla, el monitor emite error local.
+
 * `docs/PERSISTENCIA.md`: esquema, ciclo de vida de una ejecución y contrato con la normalización (POC-01).
 * `nafta2go/persistence/` y `nafta2go/services/ingestion.py`.

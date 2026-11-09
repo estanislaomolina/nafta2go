@@ -369,7 +369,9 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
   el flujo completo; ver [POC-05](POC-05.md).
 - **Observabilidad:** las ingestas y las descargas registran logs con campos
   (`run_id`, filas, rechazos, SHA-256). El reporte de calidad queda en cada
-  ejecución. Las métricas y alertas de RNF08 son del MVP.
+  ejecución. El monitor manual `python -m nafta2go.monitor` detecta fallos,
+  ejecuciones excedidas y ausencias; conserva detección y resolución mediante
+  `ingestion_alerts` (migración `0003`). Programación y alertas externas pendientes.
 
 ## 9. Partes simplificadas en la POC
 

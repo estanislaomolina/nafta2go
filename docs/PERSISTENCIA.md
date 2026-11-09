@@ -43,6 +43,7 @@ erDiagram
 | Tabla | Qué guarda |
 |---|---|
 | `ingestion_runs` | Una ejecución: origen (`vigente` o `historico`), estado (`running`, `succeeded`, `failed`), inicio, fin, versión de las reglas, reporte de calidad (JSON) y error |
+| `ingestion_alerts` | Fuente, causa, ejecución cuando existe, primera detección, última observación y resolución; agregada por la migración `0003` |
 | `raw_captures` | El archivo original: URL, SHA-256, tamaño, ruta local, fecha de descarga y `last_modified` de la fuente. No guarda el contenido: el histórico pesa unos 780 MB |
 | `station_prices` | Precios normalizados con los valores originales de fecha y precio (`valid_from_raw`, `price_raw`), la fila del archivo (`source_row`) y las alertas de calidad |
 | `rejected_rows` | Filas rechazadas: fila del archivo, motivo y valores crudos en JSON |
@@ -72,6 +73,15 @@ Con esto, una ejecución fallida nunca deja datos parciales ni aparece como
 exitosa. Si el proceso se corta entre los pasos 1 y 3, la ejecución queda en
 `running`. Volver a ingerir una captura con el mismo SHA-256 crea una ejecución
 nueva y guarda `duplicate_of_run_id` en su reporte.
+
+## Monitor de ingesta (MVP-01)
+
+`python -m nafta2go.monitor` comprueba el vigente y emite JSON seguro: salida 0
+sin alertas, 1 con alertas y 2 si no puede consultar o registrar el estado. Detecta
+la última ejecución terminada con fallo, `running` de al menos dos horas y ausencia
+de intentos desde las 06:00 de Argentina al llegar las 08:00 (antes revisa el día
+anterior). Conserva detección y resolución en `ingestion_alerts` sin alterar las
+ingestas ni exportar mensajes sensibles. La programación automática va en otra PR.
 
 ## Contrato con la normalización (POC-01)
 
