@@ -2,7 +2,7 @@
 
 Nafta2Go es un recomendador de estaciones de servicio para conductores de CABA. Combina precio publicado, presupuesto, autonomía, capacidad del tanque y desvío del recorrido para mostrar alternativas explicadas.
 
-Este repositorio contiene el diseño de la **Entrega 1** y la **Entrega 2: POC y SRD** del Trabajo Práctico Integrador. El motor y el adaptador de rutas tienen pruebas automáticas; el flujo de punta a punta con datos y rutas reales se ejecuta desde un comando y conserva evidencia reproducible.
+Este repositorio contiene el diseño de la **Entrega 1**, la **Entrega 2: POC y SRD** y los primeros incrementos de la **Entrega 3: MVP** del Trabajo Práctico Integrador. El motor y el adaptador de rutas tienen pruebas automáticas; el flujo de punta a punta con datos y rutas reales se ejecuta desde un comando y conserva evidencia reproducible.
 
 ## Integrantes
 
@@ -24,6 +24,7 @@ Santiago Bunge
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
 - [Normalización de precios](docs/NORMALIZACION.md): formato real de las fechas, reglas de rechazo y alertas, duplicados y corrida real (POC-01).
+- [Ingesta diaria](docs/INGESTA.md): programación instalable, resumen JSON y monitor de fallos, interrupciones y ausencias con alertas locales persistidas.
 - [Cobertura de precios](docs/COBERTURA.md): mínimo de cobertura en el corredor del recorrido, escenario histórico rotulado y reporte (POC-02).
 - [Consigna del TP](res/%5BSHR%5D%5BS2%5D%20-%20Consigna%20TP%20I408.pdf): requisitos y formato de las entregas.
 - [GitHub Project](https://github.com/users/estanislaomolina/projects/1): seguimiento operativo del roadmap.
@@ -109,6 +110,7 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración. Esta t
 | Normalización de precios | POC-01 | Implementado: descarga verificada, reglas con rechazos y alertas, y corrida real documentada en docs/NORMALIZACION.md |
 | Cobertura de precios y escenario histórico | POC-02 | Implementado: mínimo de 3 estaciones recientes en el corredor, escenario congelado del 24/10 rotulado como histórico y reporte en docs/COBERTURA.md |
 | Persistencia e ingesta mínimas | POC-06 | Implementado: esquema, migraciones e ingesta trazable, conectada a la normalización de POC-01 |
+| Ingesta productiva | MVP-01 | Instalada y activada localmente: ingesta real exitosa, monitor horario y alertas locales persistidas; observación de ejecuciones programadas y supervisión sostenida pendientes; ver docs/INGESTA.md |
 | Proveedor de rutas | POC-03 | Implementado, con prueba autenticada registrada en docs/evidencia/ |
 | Motor determinístico | POC-04 | Implementado y probado; PR #26 integrado |
 | Flujo de punta a punta | POC-05 | Implementado: consulta explicada, ranking, rutas reales guardadas y registro trazable; ver docs/POC-05.md |

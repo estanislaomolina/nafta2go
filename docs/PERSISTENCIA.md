@@ -37,12 +37,14 @@ erDiagram
     ingestion_runs ||--o| raw_captures : "referencia al original"
     ingestion_runs ||--o{ station_prices : "precios normalizados"
     ingestion_runs ||--o{ rejected_rows : "filas rechazadas"
+    ingestion_runs |o--o{ ingestion_alerts : "fallo o ejecución excedida"
     ingestion_runs |o--o{ recommendations : "versión de datos usada"
 ```
 
 | Tabla | Qué guarda |
 |---|---|
 | `ingestion_runs` | Una ejecución: origen (`vigente` o `historico`), estado (`running`, `succeeded`, `failed`), inicio, fin, versión de las reglas, reporte de calidad (JSON) y error |
+| `ingestion_alerts` | Alerta por fuente y causa, ejecución cuando existe, primera detección, última observación y resolución; las ausencias no tienen ejecución asociada |
 | `raw_captures` | El archivo original: URL, SHA-256, tamaño, ruta local, fecha de descarga y `last_modified` de la fuente. No guarda el contenido: el histórico pesa unos 780 MB |
 | `station_prices` | Precios normalizados con los valores originales de fecha y precio (`valid_from_raw`, `price_raw`), la fila del archivo (`source_row`) y las alertas de calidad |
 | `rejected_rows` | Filas rechazadas: fila del archivo, motivo y valores crudos en JSON |
@@ -57,10 +59,12 @@ tiene horario de verano.
 
 ## Ciclo de vida de una ejecución
 
-`ingest(engine, capture, normalize)` hace lo siguiente:
+`ingest_from_source(engine, source, acquire, normalize)` hace lo siguiente
+(`ingest` conserva el contrato anterior para capturas ya disponibles):
 
 1. En una transacción propia, crea la ejecución en estado `running` y la confirma.
-2. Llama al normalizador y verifica que el reporte coincida con lo recibido
+2. Obtiene la captura con `acquire` (incluye catálogo y descarga), llama al
+   normalizador y verifica que el reporte coincida con lo recibido
    (`filas_validas` y `filas_rechazadas`).
 3. En **una sola** transacción guarda la captura, los precios y los rechazos, y
    cierra la ejecución como `succeeded`.
@@ -72,6 +76,9 @@ Con esto, una ejecución fallida nunca deja datos parciales ni aparece como
 exitosa. Si el proceso se corta entre los pasos 1 y 3, la ejecución queda en
 `running`. Volver a ingerir una captura con el mismo SHA-256 crea una ejecución
 nueva y guarda `duplicate_of_run_id` en su reporte.
+
+El comando ofrece `--json` con estado, fechas y duración. La programación diaria
+y las alertas locales persistidas por el monitor se describen en [INGESTA.md](INGESTA.md).
 
 ## Contrato con la normalización (POC-01)
 

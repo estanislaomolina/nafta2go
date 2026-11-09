@@ -139,11 +139,12 @@ flowchart LR
 
 ### Flujo de ingesta (implementado)
 
-1. `discover_resources` lee el catálogo y encuentra los CSV vigente e histórico.
-2. `download` baja el CSV a `data/raw/<origen>/`. Lo escribe primero como
+1. `ingest_from_source` abre la ejecución en estado `running`, en su propia
+   transacción, antes de consultar la fuente.
+2. `discover_resources` lee el catálogo y encuentra los CSV vigente e histórico.
+3. `download` baja el CSV a `data/raw/<origen>/`. Lo escribe primero como
    `.part` y lo renombra solo si el tamaño coincide con el del catálogo. Calcula
    el SHA-256.
-3. `ingest` abre la ejecución en estado `running`, en su propia transacción.
 4. `normalize_capture` lee por chunks, filtra CABA y nafta y aplica las reglas.
    Entrega las filas válidas, los rechazos con motivo y un reporte de calidad.
 5. En una segunda transacción se guardan la referencia a la captura, los
@@ -346,7 +347,7 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 | Versionado | Cada ingesta es una versión (`run_id`) con su captura, reglas (`rules_version`) y reporte. Las recomendaciones apuntan a esa versión |
 | Vigencia y cobertura | Un precio es reciente si tiene hasta 30 días. Se exigen 3 estaciones recientes en un corredor de 5 km del recorrido. Los parámetros están en `coverage_rules.py` ([COBERTURA](COBERTURA.md)) |
 | Respaldo | Escenario histórico congelado (vigente del 24/10/2026, 732 filas versionadas con su SHA-256), activado solo y rotulado ([ADR-006](../adr/ADR-006-escenario-historico-de-la-poc.md)) |
-| Frecuencia | En la POC, la ingesta se corre a mano con el comando. En el MVP será diaria y programada (RF08), con alerta si falla |
+| Frecuencia | Unidades systemd para el vigente diario a las 06:00 de Argentina y monitor horario con alertas locales persistidas; instaladas y activadas localmente, con primera ingesta real verificada ([INGESTA](INGESTA.md)) |
 | Privacidad | No se guardan ubicaciones de usuarios. Los datos de la fuente son públicos y de empresas |
 | Datos para ML | El histórico normalizado (80.008 filas válidas de CABA, 2015-2026) queda disponible para el diagnóstico de la entrega final. Su diseño no forma parte de este documento |
 
@@ -369,7 +370,11 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
   el flujo completo; ver [POC-05](POC-05.md).
 - **Observabilidad:** las ingestas y las descargas registran logs con campos
   (`run_id`, filas, rechazos, SHA-256). El reporte de calidad queda en cada
-  ejecución. Las métricas y alertas de RNF08 son del MVP.
+  ejecución. La ingesta ofrece estado, fechas y duración con `--json`, incluidos
+  fallos de adquisición. El monitor horario y `OnFailure` detectan fallos,
+  ejecuciones excedidas y ausencias, y conservan detección y resolución en
+  `ingestion_alerts` (migración `0003`). Las alertas se emiten localmente en
+  JSON y journal; falta validar su supervisión en operación ([INGESTA](INGESTA.md)).
 
 ## 9. Partes simplificadas en la POC
 
@@ -380,7 +385,7 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 | Candidatas | Hasta 10 en lugar de 20, preseleccionadas por recencia dentro del corredor | Evaluar si la cuota permite 20 |
 | Corredor | Desvío estimado en línea recta | Se mantiene como prefiltro; el desvío real ya lo calcula el motor |
 | Escenario histórico | Una sola captura congelada | Congelar capturas nuevas con el mismo script |
-| Ingesta | Manual | Programada y diaria, con alerta |
+| Ingesta | Programación diaria y monitor horario activados localmente, con alertas persistidas | Observar ejecuciones programadas y validar supervisión sostenida (MVP-01) |
 | Base | SQLite local | PostgreSQL si hace falta concurrencia (ADR-005) |
 | Parámetros | Constantes de código | Configurables y auditados (RF13) |
 | Caja de CABA | Rectángulo, no polígono | Polígono oficial de la ciudad |
