@@ -94,6 +94,39 @@ def test_successful_ingestion_is_used_and_recorded(engine):
         assert repo.get_recommendation(conn, result["recommendation_id"])["data_run_id"] == run_id
 
 
+@pytest.mark.parametrize("use_current", [False, True])
+def test_requested_limit_is_applied_and_recorded_for_both_data_sources(engine, use_current):
+    if use_current:
+        from nafta2go.persistence.schema import station_prices
+
+        with engine.begin() as conn:
+            run_id = repo.start_run(conn, "vigente", REFERENCE.replace(tzinfo=None))
+            conn.execute(
+                station_prices.insert(),
+                [{**row, "id": None, "run_id": run_id} for row in load_scenario().rows],
+            )
+            repo.finish_run(conn, run_id, "succeeded", REFERENCE.replace(tzinfo=None))
+    provider = Routes()
+    result = query(engine, provider, max_candidates=20)
+    assert (
+        len(result["evaluations"]) == 16
+    )  # Todas las elegibles de la fixture, sin inventar cuatro.
+    assert result["query"]["max_candidates"] == 20
+    assert result["engine_version"] == "mvp-02-v1"
+    assert provider.calls == 1
+    with engine.connect() as conn:
+        record = repo.get_recommendation(conn, result["recommendation_id"])
+    assert record["request"]["max_candidates"] == 20
+
+
+@pytest.mark.parametrize("limit", [0, 2, 21, True, 3.5])
+def test_invalid_candidate_limit_does_not_call_routes(engine, limit):
+    provider = Routes()
+    with pytest.raises(ValueError):
+        query(engine, provider, max_candidates=limit)
+    assert provider.calls == 0
+
+
 def test_without_coverage_no_api_and_no_recommendation(engine):
     provider = Routes()
     empty = ScenarioPrices("empty", REFERENCE, "a" * 64, "b" * 64, ())
