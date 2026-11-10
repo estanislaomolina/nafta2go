@@ -201,6 +201,11 @@ incluyen ingesta desde el CSV completo, matriz autenticada, ranking y registro.
 | GitHub Actions | Integración continua | Checks requeridos en `dev` y `main`: links, ruff, pytest, gitleaks y contenedores ([CALIDAD](CALIDAD.md)) | — |
 | pytest + pytest-cov + ruff | Calidad | Tests sin red y con bases temporales; cobertura de líneas ≥ 90% controlada en CI. Un único linter y formateador | flake8 + black |
 
+El incremento #55 incorpora caché volátil de matrices y cupo local por proceso y
+credencial en los adaptadores. Conserva fecha y hash, recalcula precios y no
+persiste ubicaciones. Configuración y limitaciones en [RUTAS](RUTAS.md) y
+[ADR-010](../adr/ADR-010-cache-volatil-y-cupo-de-rutas.md).
+
 ## 5. Modelo de datos
 
 ```mermaid
