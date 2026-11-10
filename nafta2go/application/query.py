@@ -3,7 +3,7 @@
 from dataclasses import asdict
 from datetime import UTC, datetime
 
-from sqlalchemy import Connection
+from sqlalchemy import Connection, Engine
 
 from nafta2go.adapters.routing import Point, RoutingProvider
 from nafta2go.application.scenario import load_scenario
@@ -19,6 +19,19 @@ SOURCE = {
     "url": "https://datos.energia.gob.ar/dataset/precios-en-surtidor",
     "license": "CC-BY-4.0",
 }
+
+
+def recommend_from_database(
+    engine: Engine,
+    request: FuelRequest,
+    origin: Point,
+    destination: Point | None,
+    provider: RoutingProvider,
+    **options,
+) -> dict:
+    """Límite transaccional para entradas que no administran una conexión."""
+    with engine.begin() as conn:
+        return recommend(conn, request, origin, destination, provider, **options)
 
 
 def recommend(
