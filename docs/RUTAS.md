@@ -16,19 +16,30 @@ El código vive en la capa de adaptadores definida en el
 El dominio no importa nada de OpenRouteService. Cambiar de proveedor implica
 escribir otro adaptador con el método `matrix(sources, destinations)`.
 
-## Base de caché y cupo local (MVP-02, #63)
+## Caché y control de cuota (MVP-02, #55)
 
-`adapters/route_cache.RouteCache` aporta LRU en RAM con TTL, tamaño acotado,
-copias defensivas, aislamiento por credencial y cupos móviles. Sus parámetros
-predeterminados son 300 s, 128 entradas, 30 intentos/minuto y 450/24 h. TTL 0
-desactiva retención. Los errores no se guardan ni se reintentan automáticamente;
-los aciertos no consumen cupo. `snapshot()` devuelve solo contadores sin claves
-ni ubicaciones. El TTL limita reutilización y se purga al consultar.
+`CapturedRoutes` comparte matrices validadas dentro del proceso; la reproducción
+explícita con `RecordedRoutes` conserva su contrato. Los valores por defecto son
+TTL de 300 s, hasta 128 entradas y cupos móviles de 30 intentos/minuto y 450/24 h
+por credencial. Se configuran con `ORS_CACHE_TTL_SECONDS`, `ORS_CACHE_MAX_ENTRIES`,
+`ORS_REQUESTS_PER_MINUTE` y `ORS_REQUESTS_PER_DAY` (ver `.env.example`). TTL 0
+desactiva la retención de respuestas, manteniendo el cupo. Ajustar los valores al
+plan real; no se descubre automáticamente el saldo consumido por otros clientes.
 
-La integración con el flujo principal y la configuración por entorno se completan
-en la PR dependiente de #55. Por sí solo este componente no cambia las solicitudes
-actuales de la CLI. No comparte cuota entre procesos ni conoce lo consumido por
-otros clientes. Alternativas y límites en
+Solo se guardan matrices válidas (los pares `null` conservan su significado de
+ruta ausente), sin redondear coordenadas. No se retienen errores, precios ni
+recomendaciones. Un acierto conserva la fecha y hash originales y se informa
+como `routes.cache_hit`; la CLI lo rotula como rutas reutilizadas. Un 429 detiene
+nuevos intentos hasta `Retry-After` o el reinicio de cuota anunciado; si no se
+puede interpretar, aplica 60 s. No hay reintentos automáticos ni uso de datos vencidos.
+
+Las coordenadas solo viven en RAM: TTL limita reutilización, las entradas vencidas
+se purgan al consultar y las expulsadas o el proceso terminado liberan su estado.
+No se escribe caché en archivos, base ni logs. `RouteCache.snapshot()` y el log
+estructurado `route_cache` exponen aciertos, faltantes, intentos, errores, rechazos
+por cupo, ocupación y cantidad de entradas, sin claves ni ubicaciones. No son
+métricas persistidas ni un endpoint público. Hace falta coordinación global antes
+de escalar a varios procesos. Alternativas y pruebas en
 [ADR-010](../adr/ADR-010-cache-volatil-y-cupo-de-rutas.md).
 
 ## Configuración
