@@ -25,5 +25,26 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  api:
+    image: nafta2go:local
+    build: .
+    profiles: [mvp]
+    command: ["uvicorn", "nafta2go.presentation.http:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports: ["127.0.0.1:8000:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; r=requests.get('http://127.0.0.1:8000/ready', timeout=2); r.raise_for_status()"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+    environment:
+      DATABASE_URL: sqlite:////app/data/nafta2go.db
+      ORS_API_KEY: ${ORS_API_KEY:-}
+      NAFTA2GO_API_TOKEN: ${NAFTA2GO_API_TOKEN:-}
+    volumes:
+      - nafta2go-data:/app/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
 volumes:
   nafta2go-data:
