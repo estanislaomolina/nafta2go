@@ -110,6 +110,7 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración. Esta t
 | Cobertura de precios y escenario histórico | POC-02 | Implementado: mínimo de 3 estaciones recientes en el corredor, escenario congelado del 24/10 rotulado como histórico y reporte en docs/COBERTURA.md |
 | Persistencia e ingesta mínimas | POC-06 | Implementado: esquema, migraciones e ingesta trazable, conectada a la normalización de POC-01 |
 | Proveedor de rutas | POC-03 | Implementado, con prueba autenticada registrada en docs/evidencia/ |
+| Caché y cupo de rutas | MVP-02 (#55) | Matrices en RAM con TTL y LRU, límites por proceso y credencial, y métricas sin ubicaciones; ver docs/RUTAS.md |
 | Motor determinístico | POC-04 | Implementado y probado; PR #26 integrado |
 | Flujo de punta a punta | POC-05 | Implementado: consulta explicada, ranking, rutas reales guardadas y registro trazable; ver docs/POC-05.md |
 | Levantar el sistema completo con contenedores | POC-07 | Implementado para la POC: migraciones y comando de consulta, con reproducción completa en CI |
