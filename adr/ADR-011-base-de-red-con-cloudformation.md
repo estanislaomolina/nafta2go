@@ -43,10 +43,11 @@ no resuelve la arquitectura completa del despliegue ni habilita gasto de servido
 
 ### Confirmation
 
-Tests locales de invariantes de costo/exposición y topología. Validar con AWS y
-crear/eliminar un stack de prueba quedan pendientes de ejecución por el titular;
-ver [procedimiento y límites](../docs/AWS.md). El dry-run reportado solo confirmó
-`CreateVpc`, no permisos para desplegar la plantilla completa.
+Tests locales de invariantes de costo/exposición y topología. El 11/11/2026 el
+titular reportó validación de AWS, revisión de ocho altas en el change set y
+creación del stack con `CREATE_COMPLETE`; ver [evidencia redactada](../docs/evidencia/aws-red-2026-11-11/README.md).
+Eliminar el stack sigue pendiente de prueba; ver [procedimiento y límites](../docs/AWS.md).
+No se han confirmado permisos para cómputo, IAM ni facturación.
 
 ## Pros and Cons of the Options
 

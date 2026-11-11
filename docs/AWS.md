@@ -4,10 +4,14 @@
 
 El 11/11/2026 el titular reportó un lease activo de **USD 17 totales**, con
 2976 horas de duración, acceso SSO y una sesión válida mediante
-`aws sts get-caller-identity`. Las consultas no devolvieron instancias ni VPCs en
+`aws sts get-caller-identity`. Las consultas iniciales no devolvieron instancias ni VPCs en
 Ohio, ni VPCs en Virginia del Norte. `CreateVpc --dry-run` devolvió
 `DryRunOperation`: confirma permiso para esa operación, sin crear la VPC.
-No confirma permisos de CloudFormation, subredes, rutas, EC2, IAM ni facturación.
+El dry-run aislado no confirma permisos para el resto del despliegue.
+Después el titular validó la plantilla, revisó un change set de ocho altas y
+ejecutó el stack `nafta2go-network` en Ohio: resultado `CREATE_COMPLETE`, con
+outputs de VPC, subred y security group. Ver [evidencia redactada](evidencia/aws-red-2026-11-11/README.md).
+Esto confirma la creación de esa red; no prueba permisos para cómputo, IAM ni facturación.
 No se guardan identificadores de cuenta, sesiones ni credenciales en el repo.
 
 ## Alcance de este incremento
@@ -21,9 +25,9 @@ sola internet a una futura instancia. Tampoco abre SSH ni publica la API.
 No incluye servidor, discos, direcciones públicas, NAT, balanceador ni secretos.
 Los recursos etiquetables identifican proyecto, stack y gestión por CloudFormation.
 
-La plantilla todavía **no fue validada por AWS ni desplegada**. Las pruebas
-locales revisan JSON e invariantes de exposición, CIDR, topología y recursos
-permitidos; no sustituyen la validación del servicio ni el despliegue real.
+La red fue **validada y creada por el titular en CloudShell el 11/11/2026**.
+Las pruebas locales revisan JSON e invariantes de exposición, CIDR, topología y
+recursos permitidos. La eliminación del stack todavía no fue probada.
 La API local se prepara en #67 y #68; esta base no depende de integrarlas.
 
 ## Validar desde CloudShell sin crear recursos
@@ -35,15 +39,16 @@ aws cloudformation validate-template --region us-east-2 \
   --template-body file://infra/aws/network.json
 ```
 
-Guardar la salida redactada como evidencia cuando se ejecute. Si devuelve
+Para repetir la verificación, guardar la salida redactada como evidencia. Si devuelve
 `AccessDenied`, solicitar el permiso indicado al administrador; la consola del
 sandbox y la del servicio pueden tener permisos distintos. Validar la plantilla
 no comprueba autorización ni cuotas para desplegar todos sus recursos.
 
-## Crear y comprobar la red después de revisar la PR
+## Reproducir la creación y comprobar la red
 
-Estos comandos **sí crean recursos**. Se documentan para una ejecución posterior;
-no se ejecutaron durante la preparación. Revisar cuenta y región en CloudShell:
+Estos comandos **sí crean recursos**. El titular ya ejecutó la creación mediante
+un change set revisado; los comandos siguientes permiten reproducir el proceso.
+Revisar cuenta y región en CloudShell:
 
 ```bash
 aws sts get-caller-identity
@@ -77,7 +82,8 @@ no conectar recursos manuales que impidan borrar esta red.
 AWS publica USD 0,005 por hora de IPv4 pública: 2976 horas equivalen a **USD 14,88
 solo de dirección**, sin servidor, discos, transferencia ni otros servicios.
 [Tarifa oficial](https://aws.amazon.com/vpc/pricing/), consultada el 11/11/2026.
-No se presupone Free Tier. Esto justifica planificar sesiones acotadas de prueba.
+No se presupone Free Tier. El titular eligió ejecutar la app solo durante
+pruebas y demo; falta fijar horas máximas y costo del servidor.
 Apagar EC2 no elimina todos los costos: EBS continúa facturando mientras exista;
 ver [ciclo de vida](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html).
 
