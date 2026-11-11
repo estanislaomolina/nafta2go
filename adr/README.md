@@ -20,3 +20,12 @@ Los Architecture Decision Records documentan decisiones de diseño relevantes, l
 | [ADR-007](ADR-007-trazabilidad-de-recomendaciones-historicas.md) | Origen de datos de recomendaciones históricas | Aceptado |
 
 La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de POC-03; el resultado está en [docs/RUTAS.md](../docs/RUTAS.md).
+
+## Decisiones de la Entrega 3
+
+La numeración 008 a 010 está reservada en las ramas de ingesta, API y caché,
+pendientes de integración a dev.
+
+| ADR | Decisión | Estado |
+|---|---|---|
+| [ADR-011](ADR-011-base-de-red-con-cloudformation.md) | Base de red reproducible con CloudFormation | Propuesto |

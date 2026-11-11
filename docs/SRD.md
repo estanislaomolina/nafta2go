@@ -394,3 +394,10 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 | El proveedor de rutas cambia de host o de cuota (ya pasó con el host anterior) | Protocolo `RoutingProvider`; OSRM como alternativa; cuota diaria y límite por minuto verificados para la cuenta de la POC, con evidencia fechada ([RUTAS](RUTAS.md)) |
 | La fuente cambia columnas o formato | `UnexpectedSchema` falla nombrando lo que falta y la ejecución queda `failed` |
 | Coordenadas mal cargadas (dos estaciones con provincia CABA están fuera de la ciudad) | Alerta `fuera_de_caba`, que se excluye de la selección |
+
+## Preparación del sandbox AWS (MVP-08)
+
+La base de red propuesta está versionada en `infra/aws/network.json`, sin cómputo
+ni aplicación desplegados. Acceso reportado, límites del presupuesto, validación
+y pendientes en [AWS](AWS.md); alternativas de IaC en
+[ADR-011](../adr/ADR-011-base-de-red-con-cloudformation.md).
