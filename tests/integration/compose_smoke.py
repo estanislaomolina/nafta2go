@@ -108,6 +108,15 @@ def main():
             assert result["status"] == "historical_scenario" and result["outcome"] == "recommended"
             assert len(result["evaluations"]) == 10 and result["recommendation_id"] is not None
             assert result["routes"]["replayed"] and result["navigation"]
+            cli_events = [
+                json.loads(line)
+                for line in output.stderr.splitlines()
+                if line.startswith('{"event":')
+            ]
+            assert len(cli_events) == 1
+            assert cli_events[0]["channel"] == "cli" and cli_events[0]["exit_code"] == 0
+            assert cli_events[0]["outcome"] == "recommended"
+            assert "-34.6037" not in output.stderr and "-58.4565" not in output.stderr
         finally:
             subprocess.run([*command, "down", "--volumes"], check=True, **options)
     print(

@@ -94,8 +94,9 @@ access log de Uvicorn: una URL arbitraria puede contener datos privados. Los
 eventos no incluyen URL, headers, cuerpo, mensajes de excepción ni ubicaciones.
 Otros servidores/proxies deben aplicar la misma política antes de exponerlos.
 Los contadores se reinician al reiniciar la aplicación/caché, no se agregan entre
-réplicas ni constituyen p95 o disponibilidad sostenida. No incluye aún consultas
-CLI, un panel, métricas de modelo ni alertas de consultas (#21).
+réplicas ni constituyen p95 o disponibilidad sostenida. El resumen HTTP no incluye consultas CLI; su evento separado se describe en
+[POC-05](POC-05.md#telemetría-cli-agregada-en-mvp). Faltan panel, métricas de
+modelo y alertas de consultas (#21).
 
 ## Estado de ingestas para operación
 

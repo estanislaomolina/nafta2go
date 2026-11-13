@@ -9,13 +9,40 @@ from pathlib import Path
 from sqlalchemy.exc import SQLAlchemyError
 
 from nafta2go.adapters.recorded_routes import CapturedRoutes, RecordedRoutes, matrix_bytes
-from nafta2go.adapters.routing import Point, RoutingError
+from nafta2go.adapters.routing import (
+    InvalidCredentials,
+    Point,
+    ProviderTimeout,
+    QuotaExceeded,
+    RoutingError,
+)
 from nafta2go.application.coverage_rules import MIN_RECENT_CANDIDATES
 from nafta2go.application.query import recommend
 from nafta2go.application.recommendation import DEFAULT_CANDIDATE_LIMIT, MAX_CANDIDATES
 from nafta2go.domain.engine import FuelRequest
 from nafta2go.persistence.database import create_db_engine, database_url, upgrade_to_head
+from nafta2go.presentation.cli_telemetry import CliObservation
 from nafta2go.presentation.navigation import present_recommendation
+
+
+class SafeArgumentParser(argparse.ArgumentParser):
+    def error(self, _message):
+        self.print_usage(sys.stderr)
+        self.exit(2, "Argumentos inválidos; consultá --help.\n")
+
+
+def error_code(exc):
+    for error, code in (
+        (InvalidCredentials, "routes_not_configured"),
+        (ProviderTimeout, "routes_timeout"),
+        (QuotaExceeded, "routes_quota_exceeded"),
+        (RoutingError, "routes_unavailable"),
+        (SQLAlchemyError, "data_unavailable"),
+        (OSError, "file_unavailable"),
+    ):
+        if isinstance(exc, error):
+            return code
+    return "invalid_request"
 
 
 def point(value: str) -> Point:
@@ -74,7 +101,32 @@ def render(payload: dict) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    observation = CliObservation()
+    emit = True
+    try:
+        observation.exit_code = run(argv, observation)
+        return observation.exit_code
+    except SystemExit as exc:
+        emit = exc.code != 0
+        observation.error_code = observation.outcome = "invalid_arguments"
+        raise SystemExit(2 if emit else 0) from None
+    except KeyboardInterrupt:
+        observation.exit_code, observation.outcome = 130, "interrupted"
+        observation.error_code = "interrupted"
+        print("Consulta interrumpida.", file=sys.stderr)
+        return 130
+    except Exception:
+        observation.exit_code, observation.outcome = 2, "error"
+        observation.error_code = "internal_error"
+        print("Consulta fallida (internal_error); revisá el estado operativo.", file=sys.stderr)
+        return 2
+    finally:
+        if emit:
+            observation.emit()
+
+
+def run(argv, observation) -> int:
+    parser = SafeArgumentParser(prog="nafta2go.query", description=__doc__)
     parser.add_argument("--origin", type=point, required=True)
     parser.add_argument("--destination", type=point, help="si falta, vuelve al origen")
     parser.add_argument("--fuel-type", choices=("super", "premium"), default="super")
@@ -132,9 +184,16 @@ def main(argv: list[str] | None = None) -> int:
                 args.save_matrix.write_bytes(matrix_bytes(evidence))
         payload = present_recommendation(payload)
         print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else render(payload))
+        observation.outcome = payload["outcome"]
+        observation.error_code = None
         return 0
     except (ValueError, OSError, RoutingError, SQLAlchemyError) as exc:
-        print(f"Consulta fallida ({type(exc).__name__}): {exc}", file=sys.stderr)
+        observation.error_code = error_code(exc)
+        print(
+            f"Consulta fallida ({observation.error_code}); "
+            "verificá entradas, configuración y dependencias.",
+            file=sys.stderr,
+        )
         return 2
     finally:
         if engine is not None:

@@ -451,3 +451,9 @@ La lectura administrativa de ingestas pasa por aplicación y repositorio, proyec
 versión exitosa, reutiliza las reglas del monitor para un diagnóstico actual y
 limita la respuesta a veinte condiciones con total explícito. No sincroniza
 alertas ni muta ingestas desde GET. Contrato: [API](API.md#estado-de-ingestas-para-operación).
+
+La CLI de consultas emite un evento JSON por ejecución en stderr mediante un
+logger aislado, con ID propio, fecha UTC, duración y resultado. stdout mantiene
+su contrato. Los errores y el parser usan mensajes seguros sin repetir valores
+ni excepciones originales. Los eventos CLI no se agregan a los contadores HTTP;
+contrato y retención en [POC-05](POC-05.md#telemetría-cli-agregada-en-mvp).
