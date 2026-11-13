@@ -471,3 +471,12 @@ selección siguen recibiendo parámetros explícitos. Configuración inválida
 desactiva readiness y devuelve error seguro, sin rutas. No habilita override
 público, precios mayores de treinta días ni cambios administrativos en vivo;
 [contrato](COBERTURA.md#vigencia-configurable-en-mvp).
+
+### Preparación temporal de ML (primer incremento de MVP-04)
+
+`ml.temporal` es un componente puro, separado del recomendador: recibe filas
+normalizadas, prepara features anteriores al objetivo y separa ejemplos por un
+corte temporal. No accede a la base ni entrena/serve modelos. Su mediana móvil
+es un baseline estadístico, con cobertura y abstención explícitas. No usa las
+alertas mensuales de normalización, que podrían incorporar información futura.
+Supuestos, alternativas y límites en [ADR-013](../adr/ADR-013-evaluacion-temporal-de-precios.md).
