@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 
+from nafta2go.adapters.acquisition import acquire_with_retries
 from nafta2go.adapters.energy_source import discover_resources, download
 from nafta2go.normalization.pipeline import normalize_capture
 from nafta2go.normalization.rules import LOCAL_TIMEZONE, SOURCES
@@ -33,6 +34,9 @@ def main(argv: list[str] | None = None) -> int:
     def acquire() -> RawCapture:
         if args.file is not None:
             return capture_from_file(args.file, args.source)
+        return acquire_with_retries(acquire_remote, args.source)
+
+    def acquire_remote() -> RawCapture:
         with requests.Session() as session:
             resource = discover_resources(session)[args.source]
             return download(resource, args.source, DATA_DIR, session)

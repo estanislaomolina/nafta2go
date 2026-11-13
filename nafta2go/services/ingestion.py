@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy import Engine
 
+from nafta2go.domain.acquisition import AcquisitionFailed
 from nafta2go.persistence import repository as repo
 from nafta2go.persistence.models import NormalizationResult, RawCapture
 
@@ -52,14 +53,16 @@ def ingest_from_source(
     with engine.begin() as conn:
         run_id = repo.start_run(conn, source, started_at)
 
+    attempts = 1
     try:
         capture = acquire()
+        attempts = capture.acquisition_attempts
         if capture.source != source:
             raise ValueError("El origen de la captura no coincide con el de la ejecución")
         result = normalize(capture)
         _check_report(result)
         with engine.begin() as conn:
-            report = dict(result.report)
+            report = dict(result.report, acquisition_attempts=attempts)
             previous = repo.find_run_by_sha256(conn, capture.source, capture.sha256)
             if previous is not None:
                 report["duplicate_of_run_id"] = previous
@@ -76,10 +79,19 @@ def ingest_from_source(
                 rules_version=result.rules_version,
             )
     except Exception as exc:
+        if isinstance(exc, AcquisitionFailed):
+            attempts = exc.attempts
         error = f"{type(exc).__name__}: {exc}"[:MAX_ERROR_LENGTH]
         finished_at = clock()
         with engine.begin() as conn:
-            repo.finish_run(conn, run_id, "failed", finished_at, error=error)
+            repo.finish_run(
+                conn,
+                run_id,
+                "failed",
+                finished_at,
+                error=error,
+                report={"acquisition_attempts": attempts},
+            )
         logger.error(
             "ingesta fallida",
             extra={
@@ -88,6 +100,7 @@ def ingest_from_source(
                 "status": "failed",
                 "duration_seconds": (finished_at - started_at).total_seconds(),
                 "error_type": type(exc).__name__,
+                "acquisition_attempts": attempts,
             },
         )
         raise IngestionFailed(run_id, f"La ejecución {run_id} falló: {error}") from exc
@@ -101,6 +114,7 @@ def ingest_from_source(
             "duration_seconds": (finished_at - started_at).total_seconds(),
             "rows": len(result.rows),
             "rejections": len(result.rejections),
+            "acquisition_attempts": attempts,
         },
     )
     return run_id

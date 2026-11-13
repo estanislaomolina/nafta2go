@@ -35,6 +35,12 @@ limitar su duración y consultar su salida sin incorporar un proceso planificado
 Se programa el vigente diariamente a las 06:00 de Argentina. El histórico sigue
 bajo demanda. Las unidades se entregan sin activarlas automáticamente.
 `Persistent` recupera omisiones; no reintenta fallos de DNS o adquisición.
+El comando implementa tres intentos de adquisición remota con esperas de 60 y
+120 s, dentro de una sola ejecución trazable. Se prefiere esto a `Restart` del
+servicio, que reiniciaría el ciclo completo y generaría otra ingesta. Solo se
+repiten fallos transitorios de red/descarga o HTTP 502/503/504 sin `Retry-After`;
+los demás errores fallan sin reintento. Normalización y persistencia se ejecutan
+una vez. Ver [política y límites](../docs/INGESTA.md).
 
 Se agrega un monitor horario, invocado también mediante `OnFailure`, que detecta
 la última ingesta fallida, procesos en `running` por dos horas y ausencia diaria
