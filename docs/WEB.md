@@ -27,8 +27,11 @@ El acceso por código es **local/demo**, no autenticación de usuarios para uso 
 No se desplegó en AWS ni se incorporó hosting externo.
 
 Incluye etiquetas, enlace para saltar al formulario, foco visible y regiones de
-estado/error. Las pruebas de navegador de UC01/UC02/UC06 y accesibilidad se
-entregan en una PR dependiente; no se declara conformidad completa con WCAG.
+estado/error. Las [pruebas de navegador](../tests/browser/README.md) verifican UC01/UC02 con
+teclado y los descartes de UC06, errores, privacidad y layouts de escritorio/móvil
+emulado. Axe-core registró cero violaciones e incompletos en siete estados de
+la corrida local; no se declara conformidad completa con WCAG. Falta teléfono
+físico, otros navegadores y lector de pantalla.
 El diagnóstico ML, ranking conservador, perfiles y autenticación pública siguen
 pendientes en sus respectivos issues. La web conserva diez candidatas hasta
 integrar el incremento de veinte; no completa por sí sola MVP-03.

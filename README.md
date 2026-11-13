@@ -109,7 +109,7 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración. Esta t
 | Componente | Tarea | Estado |
 |---|---|---|
 | Integración continua: links, lint, tests y secretos | POC-07 | Implementado |
-| Aplicación web local | MVP-03 | Formulario y resultados explicados con acceso de demo; pruebas de navegador en PR dependiente; ver docs/WEB.md |
+| Aplicación web local | MVP-03 | Formulario y resultados explicados con acceso de demo; flujos de teclado y navegador automatizados; validación física de móvil pendiente; ver docs/WEB.md |
 | API del recomendador | MVP-02 | Implementada localmente con token y tests HTTP; caché y despliegue público pendientes; ver docs/API.md |
 | Normalización de precios | POC-01 | Implementado: descarga verificada, reglas con rechazos y alertas, y corrida real documentada en docs/NORMALIZACION.md |
 | Cobertura de precios y escenario histórico | POC-02 | Implementado: mínimo de 3 estaciones recientes en el corredor, escenario congelado del 24/10 rotulado como histórico y reporte en docs/COBERTURA.md |
