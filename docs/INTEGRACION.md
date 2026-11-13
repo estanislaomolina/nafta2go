@@ -78,3 +78,24 @@ La validación no reemplaza revisión ni integración individual de #65 y #98, n
 permite integrar primero toda la cadena acumulada mediante squash. La PR #86
 se actualizará con dev después de integrar sus bases para conservar sólo su
 incremento propio. El tag anotado de la evidencia de ingesta preserva `4325d79`.
+
+### Correcciones de review verificadas juntas
+
+Las correcciones se publicaron primero en sus PRs originales: #74 conserva la
+evidencia mediante tag; #84 comparte el mínimo de candidatas con la CLI; #88
+registra sólo la clase de una excepción inesperada; #92 explica validaciones
+locales sin repetir valores sensibles y #94 normaliza espacios en el código de
+acceso del panel. Luego se incorporaron aquí para comprobar su compatibilidad.
+La separación de credenciales de conductor y administración comentada en #90
+sigue pendiente; esta validación no habilita un despliegue público.
+
+Resultado conjunto posterior a esas correcciones: 598 tests y 148 subtests,
+cobertura 98,35 %, y 17 pruebas de navegador aprobadas. Ruff, formato y links
+válidos. La imagen Docker construye y el smoke test verifica API/web, rechazo
+sin credencial, configuración de caché y diez evaluaciones históricas; retira
+sus contenedores, red y volumen temporales. No se usó AWS ni ORS real.
+
+La rama de validación es acumulativa y permanece en borrador: después de integrar
+las PRs fuente se debe reconstruir sobre dev actualizado, conservando sólo sus
+tests y documentación propios. No reemplaza las aprobaciones de otro integrante
+ni el CI de cada PR fuente.
