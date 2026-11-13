@@ -64,6 +64,10 @@ cerrar MVP-01, registrar evidencia de los temporizadores instalados y su supervi
 Los tests con reloj controlado verifican las marcas de detección, la deduplicación,
 la recuperación y el aislamiento entre fuentes.
 
+La evidencia de [instalación y operación](../docs/INGESTA.md) incluye el ensayo
+con fixture y la instalación del 09/11, fallos de DNS del 11 y 12/11 y recuperación
+manual del 12/11. No demuestra disponibilidad continua ni éxito diario del timer.
+
 ## Pros and Cons of the Options
 
 ### Systemd
