@@ -178,3 +178,6 @@ Las fechas y simplificaciones del caso reproducible se detallan en
 El repositorio se mantiene público por autorización de la cátedra, confirmada
 por el equipo al cerrar esta entrega. La presentación se identifica con el
 commit específico de `main` y la URL del video.
+
+Preparación offline y baseline temporal de precios (MVP-04 en progreso):
+[ML](docs/ML.md). No modifica el recomendador ni constituye todavía un modelo entrenado.
