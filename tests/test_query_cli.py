@@ -24,12 +24,12 @@ def test_missing_key_is_reported_without_faking_routes(tmp_path, monkeypatch, ca
     monkeypatch.delenv("ORS_API_KEY", raising=False)
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'query.db'}")
     assert main([ORIGIN, DESTINATION]) == 2
-    assert "InvalidCredentials" in capsys.readouterr().err
+    assert "routes_not_configured" in capsys.readouterr().err
 
 
 def test_missing_matrix_is_reported(tmp_path, capsys):
     assert main([ORIGIN, "--matrix-file", str(tmp_path / "missing.json")]) == 2
-    assert "FileNotFoundError" in capsys.readouterr().err
+    assert "file_unavailable" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize("limit", [10, 20])
@@ -47,7 +47,7 @@ def test_origin_outside_caba_is_rejected_before_routing(tmp_path, monkeypatch, c
     monkeypatch.delenv("ORS_API_KEY", raising=False)
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'query.db'}")
     assert main(["--origin=0,0"]) == 2
-    assert "origin: fuera del área" in capsys.readouterr().err
+    assert "invalid_request" in capsys.readouterr().err
 
 
 def test_reproduces_the_real_case_without_credentials(tmp_path, monkeypatch, capsys):

@@ -434,3 +434,11 @@ corte temporal. No accede a la base ni entrena/serve modelos. Su mediana móvil
 es un baseline estadístico, con cobertura y abstención explícitas. No usa las
 alertas mensuales de normalización, que podrían incorporar información futura.
 Supuestos, alternativas y límites en [ADR-013](../adr/ADR-013-evaluacion-temporal-de-precios.md).
+
+## Telemetría CLI
+
+La CLI de consultas emite un evento JSON por ejecución en stderr mediante un
+logger aislado, con ID propio, fecha UTC, duración y resultado. stdout mantiene
+su contrato. Los errores y el parser usan mensajes seguros sin repetir valores
+ni excepciones originales. Los eventos CLI no se agregan a los contadores HTTP;
+contrato y retención en [POC-05](POC-05.md#telemetría-cli-agregada-en-mvp).

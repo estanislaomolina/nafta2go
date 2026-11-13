@@ -62,3 +62,9 @@ Antes del uso público faltan coordinación entre réplicas, HTTPS,
 autenticación apropiada para usuarios y observabilidad completa (#21). El token
 local no debe incrustarse en JavaScript público. AWS y la web no se despliegan en
 este incremento. Los tests usan bases temporales y rutas grabadas, sin red.
+
+## Telemetría CLI
+
+La CLI emite eventos seguros separados del resultado; contrato y límites en
+[POC-05](POC-05.md#telemetría-cli-agregada-en-mvp). Sus eventos no se agregan
+a los contadores HTTP cuando éstos se habilitan.
