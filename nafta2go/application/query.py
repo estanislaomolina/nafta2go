@@ -146,4 +146,9 @@ def recommend(
             datetime.now(UTC).replace(tzinfo=None),
             scenario=scenario,
         )
+    # Coordenadas públicas de las estaciones elegidas, solo para la presentación.
+    # Se agregan después de persistir: nunca incluyen el origen ni el destino del viaje.
+    payload["navigation_destinations"] = {
+        choice.station_id: asdict(rows[choice.station_id].candidate.location) for choice in choices
+    }
     return payload
