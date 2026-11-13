@@ -19,10 +19,17 @@ El workflow [ci.yml](../.github/workflows/ci.yml) corre en cada push y PR hacia
 
 `Docs y notebooks`, `Lint`, `Tests` y `Secretos` son **checks requeridos** en el
 ruleset de `dev` y `main`: una PR con cualquiera en rojo no se puede mergear.
-`Contenedores` corre en todas las PRs y falta sumarlo al ruleset. El ruleset
+`Contenedores` y `Web y accesibilidad` corren en todas las PRs de este incremento;
+falta sumarlos al ruleset. Para entregar se verifican los seis checks, aunque el
+ruleset siga exigiendo cuatro. El ruleset
 identifica los checks por el `name` de cada job. **Si se renombra un job, hay que actualizar el ruleset en el
 mismo momento**; si no, el check requerido queda esperando un resultado que
 nunca llega y bloquea todas las PRs.
+
+El check `Web y accesibilidad` ejecuta once pruebas con Chromium/Playwright y
+axe-core, sin APIs reales. Revisa flujos, teclado y estados de UI; reportes,
+versiones y límites en [QA web](../tests/browser/README.md). `Contenedores` también
+comprueba que las variables de caché/cupo lleguen a API y CLI mediante Compose.
 
 Las notebooks quedan fuera del lint: son exploración, y la lógica reutilizable
 vive en módulos con tests.
@@ -65,8 +72,9 @@ cada ejecución parcial.
 
 ## Credenciales y configuración sensible
 
-- La configuración sensible se lee de variables de entorno. Localmente se cargan
-  desde `.env`, que está en `.gitignore`; `.env.example` lista las claves sin valores.
+- La configuración sensible se lee de variables de entorno. CLI/API no cargan
+  `.env` automáticamente; Compose lo puede interpolar. `.env` está en `.gitignore`
+  y `.env.example` lista las claves sin valores.
 - En CI no hay credenciales: los tests reemplazan los servicios externos por
   dobles de prueba. Si un job llegara a necesitar una, se guarda como
   *GitHub Secret* y nunca en el workflow.

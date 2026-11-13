@@ -26,7 +26,8 @@ Santiago Bunge
 - [Preparación AWS](docs/AWS.md): acceso del sandbox, plantilla de red, validación y límites; aplicación aún sin desplegar.
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
-- [Enlaces de Google Maps](docs/MAPS.md): navegación por alternativa en API/CLI; integración visual y pruebas de teclado/móvil pendientes.
+- [Enlaces de Google Maps](docs/MAPS.md): navegación por alternativa en API/CLI/web; pruebas en navegador y móvil emulado; teléfono físico pendiente.
+- [Validación conjunta local](docs/INTEGRACION.md): pruebas de ingesta, caché, API, web y Docker; alcances pendientes de MVP-09.
 - [Aplicación web local](docs/WEB.md): formulario y resultados explicados sobre la API, con acceso de demo.
 - [API local](docs/API.md): consulta HTTP autenticada, OpenAPI, validaciones, errores y ejecución con Python o Docker (incremento de MVP-02).
 - [Normalización de precios](docs/NORMALIZACION.md): formato real de las fechas, reglas de rechazo y alertas, duplicados y corrida real (POC-01).
@@ -113,7 +114,7 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración. Esta t
 |---|---|---|
 | Integración continua: links, lint, tests y secretos | POC-07 | Implementado |
 | Aplicación web local | MVP-03 | Formulario y resultados explicados con acceso de demo; flujos de teclado y navegador automatizados; validación física de móvil pendiente; ver docs/WEB.md |
-| API del recomendador | MVP-02 | Implementada localmente con token y tests HTTP; caché y despliegue público pendientes; ver docs/API.md |
+| API del recomendador | MVP-02 | Implementada localmente con token, caché por proceso y tests HTTP; despliegue público pendiente; ver docs/API.md |
 | Normalización de precios | POC-01 | Implementado: descarga verificada, reglas con rechazos y alertas, y corrida real documentada en docs/NORMALIZACION.md |
 | Cobertura de precios y escenario histórico | POC-02 | Implementado: mínimo de 3 estaciones recientes en el corredor, escenario congelado del 24/10 rotulado como histórico y reporte en docs/COBERTURA.md |
 | Persistencia e ingesta mínimas | POC-06 | Implementado: esquema, migraciones e ingesta trazable, conectada a la normalización de POC-01 |
