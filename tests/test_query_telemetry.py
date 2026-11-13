@@ -134,3 +134,11 @@ def test_invalid_reference_has_safe_actionable_message(capsys):
     captured = capsys.readouterr()
     assert "reference_at: usar fecha ISO 8601 con zona horaria" in captured.err
     assert event(captured.err)["error_code"] == "invalid_request"
+
+
+def test_cli_rejects_invalid_coverage_configuration_without_echo(monkeypatch, capsys):
+    monkeypatch.setenv("NAFTA2GO_MAX_PRICE_AGE_DAYS", "secreto")
+    assert cli.main([ORIGIN, "--json"]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert event(captured.err)["error_code"] == "coverage_not_configured"

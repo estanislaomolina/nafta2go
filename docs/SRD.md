@@ -472,3 +472,11 @@ logger aislado, con ID propio, fecha UTC, duración y resultado. stdout mantiene
 su contrato. Los errores y el parser usan mensajes seguros sin repetir valores
 ni excepciones originales. Los eventos CLI no se agregan a los contadores HTTP;
 contrato y retención en [POC-05](POC-05.md#telemetría-cli-agregada-en-mvp).
+
+La vigencia máxima de la consulta es configuración operativa por entorno
+(1–30 días, 30 predeterminado). Aplicación la lee una vez, la propaga a ambos
+orígenes y conserva el valor efectivo con cada recomendación; las capas de
+selección siguen recibiendo parámetros explícitos. Configuración inválida
+desactiva readiness y devuelve error seguro, sin rutas. No habilita override
+público, precios mayores de treinta días ni cambios administrativos en vivo;
+[contrato](COBERTURA.md#vigencia-configurable-en-mvp).
