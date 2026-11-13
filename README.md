@@ -116,6 +116,7 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración. Esta t
 | Flujo de punta a punta | POC-05 | Implementado: consulta explicada, ranking, rutas reales guardadas y registro trazable; ver docs/POC-05.md |
 | Levantar el sistema completo con contenedores | POC-07 | Implementado para la POC: migraciones y comando de consulta, con reproducción completa en CI |
 | Diagnóstico estadístico con ML | MVP | Fuera del alcance de la POC |
+| Recomendador completo | MVP-02 | Primer incremento: límite explícito de hasta veinte candidatas, conservado en el resultado y la recomendación; API e integración completa pendientes; ver docs/MOTOR.md |
 
 ## Consulta completa con datos reales (POC-05)
 

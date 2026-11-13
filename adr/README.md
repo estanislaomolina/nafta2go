@@ -28,3 +28,4 @@ ADR-008 está reservado para la programación de ingesta de MVP-01.
 | ADR | Decisión | Estado |
 |---|---|---|
 | [ADR-009](ADR-009-api-http-con-fastapi.md) | API HTTP con FastAPI sobre la capa de aplicación | Aceptado |
+| [ADR-010](ADR-010-cache-volatil-y-cupo-de-rutas.md) | Caché volátil y cupo por proceso para matrices de rutas | Aceptado |

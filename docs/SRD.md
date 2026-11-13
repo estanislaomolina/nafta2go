@@ -39,7 +39,7 @@ resuelto en POC-02 de esta forma:
 |---|---|---|
 | RF01 Validar la consulta | `domain/engine.FuelRequest`, validaciones de `application/stored_query` | Implementado: rechaza valores faltantes, no numéricos, no finitos o inconsistentes nombrando el campo |
 | RF02 Filtrar CABA y nafta compatible | `normalization/reading` (alcance), `stored_query` (producto, franja y caja de CABA) | Implementado |
-| RF03 Preseleccionar y enrutar candidatas | `stored_query` (hasta 10 en el corredor), `application/recommendation.evaluate_stations` | Implementado con un máximo de 10 (el PRD admite hasta 20); se recorta por la cuota del proveedor |
+| RF03 Preseleccionar y enrutar candidatas | `stored_query`, `application/recommendation.evaluate_stations` | Admite hasta 20 mediante límite explícito; diez por defecto para reproducir la POC. Veinte probado con proveedor simulado |
 | RF04 Cálculos de alcanzabilidad, reserva, consumo, capacidad, litros y desvío | `domain/engine.evaluate_candidate` | Implementado, determinístico |
 | RF05 Descartar alternativas inviables con motivo | `domain/engine.DiscardReason`, exclusiones de `stored_query` | Implementado |
 | RF06 Hasta tres alternativas diferenciadas | `domain/ranking`, `application/query` | Implementado: combustible neto, menor desvío y equilibrio; agrupa prioridades que eligen la misma estación |
@@ -144,11 +144,12 @@ flowchart LR
 
 ### Flujo de ingesta (implementado)
 
-1. `discover_resources` lee el catálogo y encuentra los CSV vigente e histórico.
-2. `download` baja el CSV a `data/raw/<origen>/`. Lo escribe primero como
+1. `ingest_from_source` abre la ejecución en estado `running`, en su propia
+   transacción, antes de consultar la fuente.
+2. `discover_resources` lee el catálogo y encuentra los CSV vigente e histórico.
+3. `download` baja el CSV a `data/raw/<origen>/`. Lo escribe primero como
    `.part` y lo renombra solo si el tamaño coincide con el del catálogo. Calcula
    el SHA-256.
-3. `ingest` abre la ejecución en estado `running`, en su propia transacción.
 4. `normalize_capture` lee por chunks, filtra CABA y nafta y aplica las reglas.
    Entrega las filas válidas, los rechazos con motivo y un reporte de calidad.
 5. En una segunda transacción se guardan la referencia a la captura, los
@@ -170,7 +171,7 @@ sequenceDiagram
     A->>DB: precios de la última ingesta vigente exitosa
     A->>A: filtra vigencia, calidad y corredor
     alt ≥ 3 estaciones recientes en el corredor
-        A->>R: una matriz con origen, hasta 10 candidatas y destino
+        A->>R: una matriz con origen, hasta 20 candidatas y destino (10 por defecto)
     else no alcanza
         A->>E: carga el recorte (verifica su SHA-256)
         A->>A: filtra contra la fecha del escenario
@@ -375,7 +376,8 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
   el flujo completo; ver [POC-05](POC-05.md).
 - **Observabilidad:** las ingestas y las descargas registran logs con campos
   (`run_id`, filas, rechazos, SHA-256). El reporte de calidad queda en cada
-  ejecución. Las métricas y alertas de RNF08 son del MVP.
+  ejecución. El comando de ingesta ofrece estado, fechas y duración con `--json`,
+  incluidos fallos de adquisición. Las alertas automáticas de RNF08 siguen pendientes.
 
 ## 9. Partes simplificadas y evolución al MVP
 
@@ -383,7 +385,7 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 |---|---|---|
 | Interfaz | Base HTTP local con salud; consulta autenticada y web pendientes | Caché, interfaz web y despliegue público |
 | Ranking | Tres prioridades determinísticas; equilibrio con igual peso a ganancia neta y km extra normalizados | Comparación general/conservadora con diagnóstico ML |
-| Candidatas | Hasta 10 en lugar de 20, preseleccionadas por recencia dentro del corredor | Evaluar si la cuota permite 20 |
+| Candidatas | Límite configurable hasta 20; diez por defecto para reproducir la POC | Validar cuota y latencia de veinte candidatas en vivo |
 | Corredor | Desvío estimado en línea recta | Se mantiene como prefiltro; el desvío real ya lo calcula el motor |
 | Escenario histórico | Una sola captura congelada | Congelar capturas nuevas con el mismo script |
 | Ingesta | Manual | Programada y diaria, con alerta |
@@ -400,3 +402,7 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 | El proveedor de rutas cambia de host o de cuota (ya pasó con el host anterior) | Protocolo `RoutingProvider`; OSRM como alternativa; cuota diaria y límite por minuto verificados para la cuenta de la POC, con evidencia fechada ([RUTAS](RUTAS.md)) |
 | La fuente cambia columnas o formato | `UnexpectedSchema` falla nombrando lo que falta y la ejecución queda `failed` |
 | Coordenadas mal cargadas (dos estaciones con provincia CABA están fuera de la ciudad) | Alerta `fuera_de_caba`, que se excluye de la selección |
+
+El incremento de monitoreo de MVP-01 agrega `python -m nafta2go.monitor`: detecta
+fallos, ejecuciones excedidas y ausencias, y persiste detección y resolución en
+`ingestion_alerts` (migración `0003`). Programación y alertas externas pendientes.
