@@ -140,3 +140,28 @@ exactamente un origen de datos por recomendación. Ver [POC-05](POC-05.md) y
 - Si se usara el CSV histórico como escenario, revisar la selección por estación
   comentada en #37: con muchas filas por estación, una exclusión de calidad
   podría dejar pasar un precio más viejo de la misma estación.
+
+## Vigencia configurable en MVP
+
+`NAFTA2GO_MAX_PRICE_AGE_DAYS` fija la antigüedad máxima, entero ASCII entre 1 y
+30; si no está definido se usa 30. Permite exigir mayor frescura sin habilitar
+precios de más de treinta días como actuales ni cambiar la política de
+estimaciones de #57. No se modifica desde el cuerpo HTTP ni desde una opción de
+la consulta; el operador configura el entorno y reinicia el servicio. Compose
+lo reenvía a API y CLI, incluso vacío para poder rechazarlo. Python no carga
+`.env` automáticamente.
+
+La consulta y el reporte leen la política; la selección aplica el mismo valor a
+la ingesta y al escenario respecto de sus fechas de referencia. Las ventanas
+7/30/90/365 del reporte siguen siendo diagnósticas, no criterios para recomendar.
+Un precio justo en el límite se admite; uno más antiguo se excluye. El valor se
+expone como `query.max_price_age_days` y se conserva en request/result persistidos
+con motor `mvp-02-v2`. CLI y web lo muestran junto al resultado. No se cambian
+registros anteriores ni se les asigna retroactivamente una política.
+
+Vacío, decimal, signo, espacios, texto o fuera de rango son error de
+configuración, sin repetir el valor. La consulta HTTP devuelve 503 con
+`coverage_not_configured`, readiness 503 y CLI/reporte salida 2; no hay sustitución
+silenciosa ni petición de rutas. Un cuerpo HTTP que intenta cambiarlo devuelve
+422. El valor efectivo por recomendación aporta trazabilidad; no es una auditoría
+de quién cambió el entorno ni implementa la administración completa de RF13.
