@@ -15,13 +15,14 @@ from zoneinfo import ZoneInfo
 
 import requests
 
+from nafta2go.adapters.acquisition import acquire_with_retries
 from nafta2go.adapters.energy_source import discover_resources, download
 from nafta2go.normalization.pipeline import normalize_capture
 from nafta2go.normalization.rules import LOCAL_TIMEZONE, SOURCES
 from nafta2go.persistence import repository as repo
 from nafta2go.persistence.database import ROOT, create_db_engine, database_url, upgrade_to_head
 from nafta2go.persistence.models import RawCapture
-from nafta2go.services.ingestion import IngestionFailed, ingest
+from nafta2go.services.ingestion import IngestionFailed, ingest_from_source
 
 DATA_DIR = ROOT / "data"
 HASH_CHUNK = 1024 * 1024
@@ -29,29 +30,48 @@ HASH_CHUNK = 1024 * 1024
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
-    if args.file is None:
-        session = requests.Session()
-        resource = discover_resources(session)[args.source]
-        capture = download(resource, args.source, DATA_DIR, session)
-    else:
-        capture = capture_from_file(args.file, args.source)
+
+    def acquire() -> RawCapture:
+        if args.file is not None:
+            return capture_from_file(args.file, args.source)
+        return acquire_with_retries(acquire_remote, args.source)
+
+    def acquire_remote() -> RawCapture:
+        with requests.Session() as session:
+            resource = discover_resources(session)[args.source]
+            return download(resource, args.source, DATA_DIR, session)
 
     url = database_url()
     upgrade_to_head(url)
     engine = create_db_engine(url)
+    exit_code = 0
     try:
-        run_id = ingest(engine, capture, normalize_capture)
+        try:
+            run_id = ingest_from_source(engine, args.source, acquire, normalize_capture)
+        except IngestionFailed as exc:
+            run_id = exc.run_id
+            exit_code = 1
+            if not args.json:
+                print(exc, file=sys.stderr)
         with engine.connect() as conn:
-            report = repo.get_run(conn, run_id)["report"]
-    except IngestionFailed as exc:
-        print(exc, file=sys.stderr)
-        return 1
+            run = repo.get_run(conn, run_id)
     finally:
         engine.dispose()
 
-    print(f"run_id: {run_id}")
-    print(json.dumps(report, ensure_ascii=False, indent=2))
-    return 0
+    if args.json:
+        # No exportar mensajes arbitrarios de excepciones: pueden incluir URLs o secretos.
+        summary = {key: run[key] for key in ("source", "status", "rules_version", "report")}
+        summary.update(
+            run_id=run_id,
+            started_at=run["started_at"].isoformat() + "Z",
+            finished_at=run["finished_at"].isoformat() + "Z",
+            duration_seconds=(run["finished_at"] - run["started_at"]).total_seconds(),
+        )
+        print(json.dumps(summary, ensure_ascii=False))
+    elif exit_code == 0:
+        print(f"run_id: {run_id}")
+        print(json.dumps(run["report"], ensure_ascii=False, indent=2))
+    return exit_code
 
 
 def capture_from_file(path: Path, source: str) -> RawCapture:
@@ -77,6 +97,7 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="python -m nafta2go.normalization", description=__doc__)
     parser.add_argument("--source", required=True, choices=SOURCES)
     parser.add_argument("--file", type=Path, help="CSV ya descargado; si falta, se descarga")
+    parser.add_argument("--json", action="store_true", help="Estado, duración y calidad en JSON")
     return parser
 
 
