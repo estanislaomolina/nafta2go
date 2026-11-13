@@ -1,0 +1,10 @@
+[Unit]
+Description=Programar la ingesta diaria de Nafta2Go
+
+[Timer]
+OnCalendar=*-*-* 06:00:00 America/Argentina/Buenos_Aires
+Persistent=true
+Unit=nafta2go-ingestion.service
+
+[Install]
+WantedBy=timers.target
