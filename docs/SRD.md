@@ -405,7 +405,10 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 
 El incremento de monitoreo de MVP-01 agrega `python -m nafta2go.monitor`: detecta
 fallos, ejecuciones excedidas y ausencias, y persiste detección y resolución en
-`ingestion_alerts` (migración `0003`). Programación y alertas externas pendientes.
+`ingestion_alerts` (migración `0003`). La programación local usa systemd (vigente a las 06:00 de Argentina y monitor
+horario); instalación y límites en [INGESTA](INGESTA.md) y alternativas en
+[ADR-008](../adr/ADR-008-programacion-de-ingesta.md). Las notificaciones externas
+y la supervisión continua siguen pendientes.
 
 ## Preparación del sandbox AWS (MVP-08)
 
