@@ -46,6 +46,22 @@ async function accessible(page) {
   assert.deepEqual(result.violations.map(v => ({id: v.id, impact: v.impact, nodes: v.nodes.map(n => n.target)})), []);
 }
 accessible.count = 0;
+test('los descartes explican la falta de dirección sin mostrar null', async () => {
+  const page = await pageFor();
+  try {
+    await ready(page); await page.locator('[name=remaining_l]').fill('0');
+    await page.route('**/api/v1/recommendations', async route => {
+      const response = await route.fetch(), payload = await response.json();
+      for (const row of payload.evaluations) row.address = null;
+      await route.fulfill({json: payload});
+    });
+    await send(page);
+    const discarded = page.locator('details li');
+    assert.ok(await discarded.count() > 0);
+    assert.match(await discarded.first().textContent(), /Dirección no informada/);
+    assert.doesNotMatch(await page.locator('#results').textContent(), /\bnull\b/);
+  } finally { await page.context().close(); }
+});
 async function reach(page, selector) {
   for (let i = 0; i < 45; i++) {
     if (await page.locator(selector).first().evaluate(el => el === document.activeElement)) return;

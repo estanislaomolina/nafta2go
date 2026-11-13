@@ -99,3 +99,15 @@ La rama de validación es acumulativa y permanece en borrador: después de integ
 las PRs fuente se debe reconstruir sobre dev actualizado, conservando sólo sus
 tests y documentación propios. No reemplaza las aprobaciones de otro integrante
 ni el CI de cada PR fuente.
+
+La regresión de direcciones ausentes de #82 también se incorporó aquí: los
+descartes muestran «Dirección no informada» si `address` es nulo. Fallaba antes
+del arreglo; con él pasan 18 pruebas de navegador junto con 598 tests y 148
+subtests Python (cobertura 98,35 %). No cambian los límites de esta evidencia.
+
+Las bases #52, #53, #64, #65, #67 y #70 se integraron individualmente por squash
+en dev, con aprobación de Felipe, sin threads abiertos y con sus checks verdes;
+dev quedó en `cec2c8f`. #73 se actualizó contra esa base y quedó lista para una
+aprobación formal. #98 sigue siendo de Felipe y espera que su autor la actualice
+sobre dev, además de revisión y CI. Esta rama de validación conserva sus otras
+dependencias pendientes y no se integra antes que ellas.
