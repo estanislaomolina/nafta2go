@@ -95,4 +95,29 @@ eventos no incluyen URL, headers, cuerpo, mensajes de excepción ni ubicaciones.
 Otros servidores/proxies deben aplicar la misma política antes de exponerlos.
 Los contadores se reinician al reiniciar la aplicación/caché, no se agregan entre
 réplicas ni constituyen p95 o disponibilidad sostenida. No incluye aún consultas
-CLI, un panel, métricas integradas de ingesta/modelo ni alertas de consultas (#21).
+CLI, un panel, métricas de modelo ni alertas de consultas (#21).
+
+## Estado de ingestas para operación
+
+`GET /api/v1/operations/ingestion?source=vigente` requiere el Bearer administrativo;
+`source` sólo acepta `vigente` (predeterminado) o `historico`. Responde con
+`Cache-Control: no-store` y hora UTC del servidor. Separa `latest_attempt` de
+`latest_successful`: un fallo posterior no oculta la última versión exitosa.
+Incluye ID, estado, fechas UTC, duración en segundos, reglas, hash/tamaño de
+captura y conteos de filas normalizadas, estaciones distintas y rechazos. Si no
+hay captura o versión exitosa, sus campos son nulos; un intento running muestra
+duración transcurrida. No se exportan mensajes de error, reportes arbitrarios,
+URLs, rutas locales, filas, precios ni coordenadas.
+
+`conditions` recalcula las reglas existentes del monitor (falta diaria, fallo
+terminado o running de dos horas), hasta veinte condiciones ordenadas por clave;
+`condition_count` y `conditions_truncated` explicitan el total y el recorte.
+`healthy` sólo significa que no se detectaron esas condiciones al leer: no
+garantiza disponibilidad, cobertura ni precios actuales. `historico` aplica las
+mismas reglas si se selecciona, sin implicar que esa fuente esté programada.
+
+La lectura usa la capa de aplicación y proyecciones SQL explícitas, sin leer los
+campos privados ni escribir en la base. No ejecuta ingestas ni sincroniza alertas: las
+marcas persistidas de detección/resolución siguen siendo tarea del monitor
+programado. Una lectura saludable no resuelve una alerta previa. Base/esquema no
+disponibles producen 503 seguro. No reemplaza supervisión sostenida ni un panel.

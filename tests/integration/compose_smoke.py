@@ -24,6 +24,11 @@ assert denied.status_code == 401 and denied.headers['x-request-id']
 metrics = requests.get(base + '/api/v1/operations', timeout=3,
     headers={'Authorization': 'Bearer ' + os.environ['NAFTA2GO_API_TOKEN']}).json()
 assert metrics['queries']['http_status'] == {'401': 1}
+assert requests.get(base + '/api/v1/operations/ingestion', timeout=3).status_code == 401
+ingestion = requests.get(base + '/api/v1/operations/ingestion', timeout=3,
+    headers={'Authorization': 'Bearer ' + os.environ['NAFTA2GO_API_TOKEN']}).json()
+assert ingestion['status'] == 'alerting' and ingestion['latest_successful'] is None
+assert ingestion['conditions'][0]['kind'] == 'missing'
 schema = requests.get(base + '/openapi.json', timeout=3).json()
 field = schema['components']['schemas']['RecommendationInput']['properties']['max_candidates']
 assert field['maximum'] == 20

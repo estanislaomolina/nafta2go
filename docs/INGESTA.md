@@ -204,3 +204,12 @@ y URLs. Los datos y el journal pueden cambiar o rotar después de esta captura.
 fallo. Restan supervisión sostenida, observar los nuevos reintentos en operación y
 resolver la disponibilidad del equipo/catálogo; no hay notificaciones a un receptor externo.
 No cambiar de rama ni mover el checkout operativo sin revisar sus servicios.
+
+## Lectura administrativa por HTTP
+
+La API local ofrece `GET /api/v1/operations/ingestion` con Bearer para consultar
+el último intento, la última versión exitosa y sus conteos, captura y reglas.
+Recalcula las condiciones del monitor sin escribir ni cambiar alertas; una
+lectura no constituye una ejecución del monitor ni demuestra que el timer haya
+corrido. No expone errores originales, URLs, archivos ni filas. Contrato y
+límites en [API](API.md#estado-de-ingestas-para-operación).

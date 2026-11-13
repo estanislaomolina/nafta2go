@@ -6,7 +6,7 @@ from collections.abc import Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from secrets import compare_digest
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -22,6 +22,7 @@ from nafta2go.adapters.routing import (
     QuotaExceeded,
     RoutingError,
 )
+from nafta2go.application.ingestion_status import ingestion_status
 from nafta2go.application.query import recommend_from_database
 from nafta2go.application.scenario import ScenarioIntegrityError
 from nafta2go.persistence.database import create_db_engine, database_is_ready
@@ -155,6 +156,13 @@ def create_app(
             "queries": telemetry.snapshot(),
             "routes": shared_cache().snapshot(),
         }
+
+    @application.get("/api/v1/operations/ingestion", dependencies=[Depends(authorize)])
+    def ingestion(source: Literal["vigente", "historico"] = "vigente"):
+        return JSONResponse(
+            content=ingestion_status(application.state.engine, source, clock()),
+            headers={"Cache-Control": "no-store"},
+        )
 
     return application
 
