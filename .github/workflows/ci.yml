@@ -101,6 +101,10 @@ jobs:
           "import json; r=json.load(open('query.json')); assert r['status']=='historical_scenario';
           assert r['outcome']=='recommended'; assert len(r['evaluations'])==10;
           assert r['recommendation_id'] is not None; assert r['routes']['replayed']"
+      - name: Verificar readiness de la API dentro del contenedor
+        env:
+          NAFTA2GO_API_TOKEN: token-descartable-del-job-ci
+        run: docker compose --profile mvp up --wait --wait-timeout 30 api
       - name: Bajar servicios y volúmenes
         if: always()
-        run: docker compose down --volumes
+        run: docker compose --profile mvp down --volumes

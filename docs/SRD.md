@@ -81,6 +81,11 @@ Las reglas de dependencia son estas:
   nunca con OpenRouteService directamente.
 - Ninguna capa de negocio escribe SQL: todo pasa por `repository`.
 
+El primer incremento HTTP de MVP-02 agrega `presentation/`, con FastAPI sobre
+la capa de aplicación. Esta base expone salud y readiness; la consulta HTTP se
+incorpora en una PR dependiente. Configuración en [API](API.md); decisión en
+[ADR-009](../adr/ADR-009-api-http-con-fastapi.md). La web sigue pendiente.
+
 En el MVP se suman una capa de **presentación** (API HTTP y web) por encima de
 la aplicación, y el **diagnóstico ML** como un componente separado que la
 aplicación consulta (ver el [ADR-002](../adr/ADR-002-recomendador-deterministico-y-diagnostico-ml.md)).
@@ -193,6 +198,7 @@ incluyen ingesta desde el CSV completo, matriz autenticada, ranking y registro.
 | Tecnología | Uso | Por qué | Alternativa considerada |
 |---|---|---|---|
 | Python 3.12 | Todo el sistema | Un solo lenguaje para datos, reglas y servicios. El equipo ya lo usa en la exploración. Tipado moderno y `zoneinfo` | — |
+| FastAPI + Pydantic + Uvicorn | API local de MVP-02 | Contrato tipado y OpenAPI sin duplicar el caso de uso; versiones en requirements.txt | Flask o Django/DRF ([ADR-009](../adr/ADR-009-api-http-con-fastapi.md)) |
 | pandas 2 | Normalización | El histórico tiene 3,4 millones de filas (780 MB). Se lee por chunks con operaciones vectorizadas: unos 2 minutos y 630 MB de memoria | Leer con el módulo `csv` fila por fila (más lento y más código) |
 | `decimal.Decimal` | Motor y precios | Entradas limitadas a 28 cifras significativas, métricas Decimal y restricciones exactas con Fraction; compra redondeada hacia abajo | `float` |
 | requests | Catálogo, descarga y rutas | Sesión inyectable: los tests reemplazan la red por una sesión falsa | httpx (no hace falta asincronía en la POC) |
@@ -373,11 +379,11 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
   ejecución. El comando de ingesta ofrece estado, fechas y duración con `--json`,
   incluidos fallos de adquisición. Las alertas automáticas de RNF08 siguen pendientes.
 
-## 9. Partes simplificadas en la POC
+## 9. Partes simplificadas y evolución al MVP
 
 | Parte | Simplificación | Plan para el MVP |
 |---|---|---|
-| Interfaz | No hay API ni web: comandos y código | API HTTP y web por encima de la capa de aplicación |
+| Interfaz | Base HTTP local con salud; consulta autenticada y web pendientes | Caché, interfaz web y despliegue público |
 | Ranking | Tres prioridades determinísticas; equilibrio con igual peso a ganancia neta y km extra normalizados | Comparación general/conservadora con diagnóstico ML |
 | Candidatas | Límite configurable hasta 20; diez por defecto para reproducir la POC | Validar cuota y latencia de veinte candidatas en vivo |
 | Corredor | Desvío estimado en línea recta | Se mantiene como prefiltro; el desvío real ya lo calcula el motor |
