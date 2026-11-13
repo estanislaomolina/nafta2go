@@ -1,0 +1,30 @@
+* { box-sizing: border-box; }
+:root { font-family: system-ui, -apple-system, sans-serif; color: #172d30; background: #f5f6f2; line-height: 1.5; }
+body { margin: 0; } header, main, footer { max-width: 1240px; margin: auto; padding: 24px 36px; }
+header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #d9e1dc; }
+.brand { color: #172d30; font-size: 26px; font-weight: 850; letter-spacing: -1px; text-decoration: none; } .brand span { color: #08634f; }
+.scope { font-size: 13px; background: #e0ede5; border-radius: 30px; padding: 6px 12px; }
+.intro { margin: 20px 0 36px; } h1 { font-size: clamp(30px, 4vw, 48px); line-height: 1.12; letter-spacing: -1.5px; margin: 10px 0 18px; }
+h2 { font-size: 23px; margin: 0 0 6px; } h3 { font-size: 19px; margin: 12px 0; } p { margin: 8px 0 16px; }
+.eyebrow { color: #08634f; font-size: 12px; font-weight: 750; text-transform: uppercase; letter-spacing: 1.5px; margin: 0; }
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 32px; align-items: start; }
+.panel, article { background: white; border: 1px solid #d9e1dc; border-radius: 18px; padding: 26px; box-shadow: 0 6px 24px #172d3005; }
+.muted, .hint, footer { color: #526564; } .hint { font-size: 13px; margin: 4px 0 12px; } .results-top { padding: 8px 0; }
+fieldset { padding: 0; margin: 24px 0 0; border: 0; min-width: 0; } legend { font-size: 16px; font-weight: 750; margin-bottom: 12px; }
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 12px; } input, select, button { font: inherit; }
+input:not([type=checkbox]), select { display: block; width: 100%; min-height: 46px; border: 1px solid #8d9f99; border-radius: 9px; padding: 10px 12px; margin-top: 6px; background: white; color: #172d30; }
+.check { display: flex; align-items: center; gap: 10px; margin: 18px 0 0; } input[type=checkbox] { width: 20px; height: 20px; accent-color: #08634f; }
+button { cursor: pointer; border: 0; border-radius: 10px; padding: 13px 18px; font-weight: 700; background: #08634f; color: white; min-height: 46px; }
+button[type=submit] { width: 100%; margin-top: 26px; } .secondary { background: #e5efe9; color: #174e40; padding: 9px 14px; font-size: 13px; }
+button:disabled { opacity: .6; cursor: wait; } :focus-visible { outline: 3px solid #a04b00; outline-offset: 4px; }
+.skip { position: absolute; top: -100px; background: #172d30; color: white; padding: 12px; z-index: 2; } .skip:focus { top: 0; }
+.empty { border: 1px dashed #aabbb2; border-radius: 18px; text-align: center; padding: 56px 28px; margin-top: 20px; color: #526564; }
+.compass { display: inline-grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: #e0ede5; color: #08634f; font-size: 32px; }
+.notice { padding: 16px; border-radius: 12px; background: #e5efe9; } .warning { background: #fff1ce; color: #66420b; border-left: 4px solid #a36b00; } .error { background: #ffede8; color: #8c291b; }
+article { margin: 18px 0; } .priorities { font-size: 12px; font-weight: 750; color: #08634f; } .address { color: #526564; }
+dl { display: grid; grid-template-columns: 1fr auto; gap: 9px 20px; margin: 20px 0; font-size: 14px; } dt { color: #526564; } dd { margin: 0; font-weight: 650; text-align: right; overflow-wrap: anywhere; }
+a.navigate { display: block; color: #07523f; padding: 12px 0; font-weight: 700; } .source, details { font-size: 13px; overflow-wrap: anywhere; } summary { cursor: pointer; padding: 12px 0; font-weight: 700; }
+li { margin: 8px 0; } footer { font-size: 12px; padding-top: 40px; padding-bottom: 32px; } [hidden] { display: none !important; }
+@media (max-width: 760px) { header, main, footer { padding-left: 18px; padding-right: 18px; } .workspace { grid-template-columns: minmax(0, 1fr); gap: 24px; } .panel, article { padding: 20px; } .scope { max-width: 145px; text-align: center; } .intro { margin-top: 8px; } }
+@media (max-width: 360px) { .pair { grid-template-columns: minmax(0, 1fr); } dl { gap: 8px; font-size: 13px; } }

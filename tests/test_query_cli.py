@@ -61,6 +61,10 @@ def test_reproduces_the_real_case_without_credentials(tmp_path, monkeypatch, cap
     assert payload["alternatives"] == original["alternatives"]
     assert payload["evaluations"] == original["evaluations"]
     assert payload["routes"]["replayed"]
+    assert {link["station_id"] for link in payload["navigation"]} == {
+        row["station_id"] for row in payload["alternatives"]
+    }
+    assert "navigation_destinations" not in payload
 
 
 def test_budget_variant_discards_instead_of_inventing_a_recommendation(
@@ -77,3 +81,14 @@ def test_budget_variant_discards_instead_of_inventing_a_recommendation(
     assert payload["outcome"] == "no_feasible_stations"
     assert payload["alternatives"] == []
     assert all("no_budget" in row["reasons"] for row in payload["evaluations"])
+
+
+def test_text_result_shows_maps_and_keeps_historical_label(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'query.db'}")
+    matrix = (
+        Path(__file__).resolve().parents[1] / "docs/evidencia/poc-05-flujo-2026-10-26/matrix.json"
+    )
+    assert main([ORIGIN, DESTINATION, "--matrix-file", str(matrix)]) == 0
+    text = capsys.readouterr().out
+    assert "Cómo llegar a " in text and "https://www.google.com/maps/dir/" in text
+    assert "Google Maps recalcula" in text and "ESCENARIO HISTÓRICO" in text
