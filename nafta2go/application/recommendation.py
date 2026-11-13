@@ -13,7 +13,8 @@ from nafta2go.adapters.routing import (
 )
 from nafta2go.domain.engine import Evaluation, FuelRequest, Route, evaluate_candidate
 
-MAX_POC_CANDIDATES = 10
+MAX_CANDIDATES = 20
+DEFAULT_CANDIDATE_LIMIT = 10
 
 
 @dataclass(frozen=True)
@@ -91,15 +92,15 @@ def evaluate_stations(
     destination: Point | None,
     provider: RoutingProvider,
 ) -> tuple[StationEvaluation, ...]:
-    """Pide una matriz y evalúa hasta diez candidatas, conservando su orden.
+    """Pide una matriz y evalúa hasta veinte candidatas, conservando su orden.
 
     El llamador valida producto, CABA, precio, vigencia y cobertura antes de llamar.
     Los errores globales del proveedor se propagan como RoutingError; un par sin
     ruta descarta sólo las candidatas que necesitan ese par. No realiza ranking.
     """
     candidates = tuple(candidates)
-    if len(candidates) > MAX_POC_CANDIDATES:
-        raise ValueError("candidates: la POC admite hasta diez estaciones por consulta")
+    if len(candidates) > MAX_CANDIDATES:
+        raise ValueError("candidates: se admiten hasta veinte estaciones por consulta")
     if not candidates:
         return ()
     locations = [item.location for item in candidates]
