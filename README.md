@@ -21,6 +21,7 @@ Santiago Bunge
 - [ADRs](adr/README.md): decisiones de diseño y comparación de alternativas.
 - [SRD](docs/SRD.md): especificación técnica de la POC: arquitectura y diagramas, stack, modelo de datos, contratos y estrategia de datos.
 - [Consulta completa de POC-05](docs/POC-05.md): ejecución, ranking, evidencia real y simplificaciones.
+- [Preparación AWS](docs/AWS.md): acceso del sandbox, plantilla de red, validación y límites; aplicación aún sin desplegar.
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
 - [API local](docs/API.md): base HTTP, controles de salud, OpenAPI y ejecución con Python o Docker (incremento de MVP-02).

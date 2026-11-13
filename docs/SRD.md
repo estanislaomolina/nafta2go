@@ -406,3 +406,10 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 El incremento de monitoreo de MVP-01 agrega `python -m nafta2go.monitor`: detecta
 fallos, ejecuciones excedidas y ausencias, y persiste detección y resolución en
 `ingestion_alerts` (migración `0003`). Programación y alertas externas pendientes.
+
+## Preparación del sandbox AWS (MVP-08)
+
+La base de red propuesta está versionada en `infra/aws/network.json`, sin cómputo
+ni aplicación desplegados. Acceso reportado, límites del presupuesto, validación
+y pendientes en [AWS](AWS.md); alternativas de IaC en
+[ADR-011](../adr/ADR-011-base-de-red-con-cloudformation.md).
