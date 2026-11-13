@@ -21,7 +21,7 @@ Santiago Bunge
 - [ADRs](adr/README.md): decisiones de diseño y comparación de alternativas.
 - [SRD](docs/SRD.md): especificación técnica de la POC: arquitectura y diagramas, stack, modelo de datos, contratos y estrategia de datos.
 - [Consulta completa de POC-05](docs/POC-05.md): ejecución, ranking, evidencia real y simplificaciones.
-- [Ingesta diaria y monitor](docs/INGESTA.md): unidades systemd, instalación, calendario y alertas locales (MVP-01).
+- [Ingesta diaria y monitor](docs/INGESTA.md): unidades systemd, alertas locales y evidencia de fallos/recuperación; supervisión sostenida pendiente (MVP-01).
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
 - [Normalización de precios](docs/NORMALIZACION.md): formato real de las fechas, reglas de rechazo y alertas, duplicados y corrida real (POC-01).

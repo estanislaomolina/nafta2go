@@ -123,3 +123,47 @@ el operador puede iniciar el servicio manualmente y luego consultar el monitor.
 Los precios anteriores se conservan y su vigencia se evalúa por fecha original.
 No se garantiza disponibilidad continua ni actualización exitosa diaria por
 instalar los temporizadores. La evidencia de operación se incorpora por separado.
+
+## Evidencia local y recuperación observada
+
+El [ensayo del 09/11](evidencia/mvp-01-monitor-2026-11-09.json) conserva dos
+invocaciones transitorias: alerta con base vacía y recuperación tras ingerir una
+fixture. No prueba una descarga actual ni operación programada.
+La [instalación del 09/11](evidencia/mvp-01-instalacion-local-2026-11-09.json)
+registra timers habilitados, `Linger=yes`, ingesta real mediante el servicio y
+monitor saludable. Los calendarios de ese archivo son históricos, no estado vivo.
+
+La [observación del 12/11, hora de Argentina](evidencia/mvp-01-operacion-2026-11-12.json)
+registra fallos de DNS en las ejecuciones 6 y 7 (11 y 12/11), sus alertas
+persistidas y una **recuperación manual**: ejecución 8, iniciada el 12/11 a las
+23:50 de Argentina (13/11 02:50 UTC). El monitor terminó después sin alertas activas.
+El archivo original coincide con el SHA-256 y tamaño de su captura, y las cuatro
+unidades instaladas coinciden con las versionadas. El checkout operativo observado
+fue `4325d79`, conservado en `feat/15-ingesta-productiva`.
+
+El último disparo observado del timer de ingesta coincide en horario con el
+inicio de la ejecución 7. La base no registra el disparador de cada ejecución:
+no se atribuyen todos los intentos al timer solo por sus fechas. La alerta del
+fallo 6 se resolvió al aparecer un fallo posterior (7), reemplazada por su alerta;
+no significa que se hubiese recuperado entonces la ingesta. La resolución del
+fallo 7 y el monitor saludable sí fueron posteriores al éxito manual 8.
+
+Para contrastar la evidencia, desde el checkout operativo y con la misma base:
+
+```bash
+systemctl --user list-timers 'nafta2go-*'
+systemctl --user show nafta2go-ingestion.service nafta2go-monitor.service -p Result -p ExecMainStatus
+journalctl --user -u nafta2go-ingestion.service -u nafta2go-monitor.service --since '2026-11-11' --no-pager
+```
+
+En SQLite, consultar `ingestion_runs` (IDs 6 a 8), `raw_captures` (`run_id=8`) e
+`ingestion_alerts` (`run_id` 6 y 7); comparar el original con su SHA-256 y tamaño.
+Las marcas de la base son UTC sin zona y el journal explicita su zona. La fecha
+`observed_at` del archivo está en UTC; el nombre usa el día local de la observación.
+La ruta del original se normalizó como relativa y se omitieron errores completos
+y URLs. Los datos y el journal pueden cambiar o rotar después de esta captura.
+
+**MVP-01 sigue abierto:** no hubo actualización automática exitosa los días del
+fallo. Restan supervisión sostenida, política de reintentos acotados y resolver la
+disponibilidad del equipo/catálogo; no hay notificaciones a un receptor externo.
+No cambiar de rama ni mover el checkout operativo sin revisar sus servicios.
