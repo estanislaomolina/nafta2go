@@ -107,6 +107,7 @@ def recommend(
         "routes": (
             {
                 "replayed": routing_provider == "openrouteservice-recorded",
+                "cache_hit": getattr(provider, "cache_hit", False),
                 "captured_at_utc": provider.evidence["captured_at_utc"],
                 "sha256": provider.sha256,
             }

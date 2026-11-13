@@ -37,6 +37,8 @@ def render(payload: dict) -> str:
     lines.append(f"Referencia de precios: {payload['price_reference_at']}")
     if (payload.get("routes") or {}).get("replayed"):
         lines.append("Rutas REPRODUCIDAS de " + payload["routes"]["captured_at_utc"])
+    elif (payload.get("routes") or {}).get("cache_hit"):
+        lines.append("Rutas REUTILIZADAS de " + payload["routes"]["captured_at_utc"])
     lines.append("Consulta: " + json.dumps(payload["query"], ensure_ascii=False))
     navigation = {link["station_id"]: link for link in payload.get("navigation", [])}
     evaluations = {row["station_id"]: row for row in payload["evaluations"]}
