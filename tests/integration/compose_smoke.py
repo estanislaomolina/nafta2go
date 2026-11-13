@@ -11,6 +11,8 @@ from pathlib import Path
 PROBE = """
 import os
 import requests
+from nafta2go.application.coverage_rules import configured_max_price_age_days
+assert configured_max_price_age_days() == 14
 from nafta2go.adapters.recorded_routes import shared_cache
 cache = shared_cache()
 assert (cache.ttl, cache.capacity, cache.per_minute, cache.per_day) == (19, 17, 2, 9)
@@ -49,6 +51,7 @@ def main():
         "ORS_CACHE_MAX_ENTRIES": "17",
         "ORS_REQUESTS_PER_MINUTE": "2",
         "ORS_REQUESTS_PER_DAY": "9",
+        "NAFTA2GO_MAX_PRICE_AGE_DAYS": "14",
     }
     with tempfile.TemporaryDirectory(prefix="nafta2go-compose-qa-") as directory:
         override = Path(directory) / "override.yaml"
@@ -88,12 +91,24 @@ def main():
             ).stdout
             assert '"event": "query_completed"' in logs and "private-probe" not in logs
             assert environment["NAFTA2GO_API_TOKEN"] not in logs
+            policy_query = subprocess.run(
+                [*command, "run", "--rm", "--no-deps", "query", "--origin=-34.71,-58.33", "--json"],
+                check=True,
+                text=True,
+                capture_output=True,
+                **options,
+            )
+            policy_result = json.loads(policy_query.stdout)
+            assert policy_result["query"]["max_price_age_days"] == 14
+            assert policy_result["outcome"] == "insufficient_coverage"
             output = subprocess.run(
                 [
                     *command,
                     "run",
                     "--rm",
                     "--no-deps",
+                    "-e",
+                    "NAFTA2GO_MAX_PRICE_AGE_DAYS=30",
                     "query",
                     "--origin=-34.6037,-58.3816",
                     "--destination=-34.5627,-58.4565",
@@ -110,6 +125,7 @@ def main():
             assert result["status"] == "historical_scenario" and result["outcome"] == "recommended"
             assert len(result["evaluations"]) == 10 and result["recommendation_id"] is not None
             assert result["routes"]["replayed"] and result["navigation"]
+            assert result["query"]["max_price_age_days"] == 30
             cli_events = [
                 json.loads(line)
                 for line in output.stderr.splitlines()

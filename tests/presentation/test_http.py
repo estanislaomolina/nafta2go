@@ -422,3 +422,36 @@ def test_query_telemetry_isolated_and_counts_concurrent_requests(clients):
         assert len(identifiers) == 24
         assert client.get("/api/v1/operations", headers=AUTH).json()["queries"]["completed"] == 24
         assert other.get("/api/v1/operations", headers=AUTH).json()["queries"]["completed"] == 0
+
+
+@pytest.mark.parametrize("value", ["", "31", "secreto"])
+def test_bad_coverage_policy_disables_readiness_and_returns_safe_503(
+    clients, monkeypatch, caplog, value
+):
+    class NoRoutes:
+        def matrix(self, sources, destinations):
+            pytest.fail("No debe consultar rutas con política inválida")
+
+    monkeypatch.setenv("NAFTA2GO_MAX_PRICE_AGE_DAYS", value)
+    with clients(provider_factory=NoRoutes) as client:
+        assert client.get("/ready").status_code == 503
+        response = client.post("/api/v1/recommendations", json=BODY, headers=AUTH)
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "coverage_not_configured"
+    assert "secreto" not in response.text + caplog.text
+
+
+def test_server_controls_age_policy_and_client_cannot_override_it(clients, monkeypatch):
+    monkeypatch.setenv("NAFTA2GO_MAX_PRICE_AGE_DAYS", "14")
+    with clients() as client:
+        response = client.post(
+            "/api/v1/recommendations", json={**BODY, "max_price_age_days": 90}, headers=AUTH
+        )
+        assert response.status_code == 422
+        response = client.post(
+            "/api/v1/recommendations",
+            headers=AUTH,
+            json={**BODY, "origin": {"lat": -34.71, "lon": -58.33}, "destination": None},
+        )
+        assert response.status_code == 200
+        assert response.json()["query"]["max_price_age_days"] == 14

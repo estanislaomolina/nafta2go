@@ -122,3 +122,8 @@ campos privados ni escribir en la base. No ejecuta ingestas ni sincroniza alerta
 marcas persistidas de detección/resolución siguen siendo tarea del monitor
 programado. Una lectura saludable no resuelve una alerta previa. Base/esquema no
 disponibles producen 503 seguro. El [panel local](WEB.md#panel-local-de-operación) consume esta lectura; no reemplaza supervisión sostenida.
+
+La vigencia se configura con `NAFTA2GO_MAX_PRICE_AGE_DAYS` (1–30, predeterminado
+30); ver [COBERTURA](COBERTURA.md#vigencia-configurable-en-mvp). El cliente no
+puede enviarla en el cuerpo. La respuesta registra `query.max_price_age_days`;
+configuración inválida produce 503/`coverage_not_configured` y readiness 503.

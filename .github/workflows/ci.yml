@@ -94,9 +94,12 @@ jobs:
           ORS_CACHE_MAX_ENTRIES: "17"
           ORS_REQUESTS_PER_MINUTE: "2"
           ORS_REQUESTS_PER_DAY: "9"
+          NAFTA2GO_MAX_PRICE_AGE_DAYS: "14"
         run: |
           docker compose --profile mvp --profile poc config --format json > compose-config.json
-          python -c "import json, os; services=json.load(open('compose-config.json'))['services']; names=('ORS_CACHE_TTL_SECONDS','ORS_CACHE_MAX_ENTRIES','ORS_REQUESTS_PER_MINUTE','ORS_REQUESTS_PER_DAY'); assert all(services[s]['environment'][k] == os.environ[k] for s in ('api','query') for k in names)"
+          python -c "import json, os; services=json.load(open('compose-config.json'))['services']; names=('ORS_CACHE_TTL_SECONDS','ORS_CACHE_MAX_ENTRIES','ORS_REQUESTS_PER_MINUTE','ORS_REQUESTS_PER_DAY','NAFTA2GO_MAX_PRICE_AGE_DAYS'); assert all(services[s]['environment'][k] == os.environ[k] for s in ('api','query') for k in names)"
+          NAFTA2GO_MAX_PRICE_AGE_DAYS='' docker compose --profile mvp --profile poc config --format json > empty-policy.json
+          python -c "import json; services=json.load(open('empty-policy.json'))['services']; assert all(services[s]['environment']['NAFTA2GO_MAX_PRICE_AGE_DAYS'] == '' for s in ('api','query'))"
       - name: Construir la imagen
         run: docker compose build
       - name: Migrar la base dentro del contenedor

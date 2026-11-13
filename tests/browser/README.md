@@ -41,3 +41,6 @@ El caso visual de fallo posterior a éxito, reglas maliciosas y condiciones
 truncadas usa respuestas sintéticas interceptadas. Capturas adicionales:
 `operacion-escritorio.png` y `operacion-movil-emulado.png`; no son evidencia de
 operación real ni de un teléfono físico.
+
+El servidor de QA fija `NAFTA2GO_MAX_PRICE_AGE_DAYS=29` para comprobar una política
+no predeterminada y su presentación; sigue usando rutas sintéticas explícitas.

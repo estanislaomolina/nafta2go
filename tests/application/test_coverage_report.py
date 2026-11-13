@@ -109,3 +109,20 @@ def test_cli_rejects_reference_without_timezone(tmp_path, monkeypatch, capsys):
     argv = ["--origin=-34.6037,-58.3816", "--reference-at", "2026-10-24T18:00"]
     assert main(argv) == 2
     assert "zona horaria" in capsys.readouterr().err
+
+
+def test_report_uses_configured_policy_without_changing_diagnostic_windows(engine, monkeypatch):
+    monkeypatch.setenv("NAFTA2GO_MAX_PRICE_AGE_DAYS", "1")
+    put_run(engine, ROWS)
+    result = report(engine)
+    assert result["parameters"]["max_price_age_days"] == 1
+    assert result["current"]["eligible_in_corridor"] == 0
+    assert result["current"]["stations_by_age_days"]["7"]["caba"] == 2
+
+
+def test_coverage_cli_rejects_bad_policy_safely(monkeypatch, capsys):
+    monkeypatch.setenv("NAFTA2GO_MAX_PRICE_AGE_DAYS", "secreto")
+    assert main(["--origin=-34.6037,-58.3816"]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == "" and "coverage_not_configured" in captured.err
+    assert "secreto" not in captured.err

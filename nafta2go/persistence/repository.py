@@ -34,6 +34,7 @@ ALLOWED_REQUEST_KEYS = frozenset(
         "budget_ars",
         "reserve_l",
         "max_candidates",
+        "max_price_age_days",
         "schedule_id",
     }
 )

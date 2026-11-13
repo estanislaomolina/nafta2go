@@ -18,6 +18,7 @@ function date(value) {
 }
 function show(data) {
   output.replaceChildren();
+  output.append(node("p", "Vigencia máxima aplicada: " + data.query.max_price_age_days + " días respecto de la referencia de precios.", "hint"));
   if (data.status === "historical_scenario") output.append(node("p", "ESCENARIO HISTÓRICO · Precios del " + date(data.scenario.reference_at) + ". No son precios actuales.", "notice warning"));
   if (data.outcome !== "recommended") {
     const missing = data.outcome === "insufficient_coverage";

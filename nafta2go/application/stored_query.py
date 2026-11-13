@@ -363,6 +363,7 @@ def select_with_coverage(
     schedule_id: int,
     reference_at: datetime,
     limit: int = DEFAULT_CANDIDATE_LIMIT,
+    max_age_days: int = MAX_PRICE_AGE_DAYS,
     scenario_loader: Callable[[], ScenarioPrices] = load_scenario,
 ) -> CoverageQueryResult:
     """Elige la captura actual si alcanza la cobertura; si no, el escenario histórico rotulado.
@@ -371,7 +372,12 @@ def select_with_coverage(
     coverage_rules. En el escenario, la vigencia se mide contra su fecha de referencia
     y la selección lleva el rótulo `scenario`.
     """
-    options = {"fuel_type": fuel_type, "schedule_id": schedule_id, "limit": limit}
+    options = {
+        "fuel_type": fuel_type,
+        "schedule_id": schedule_id,
+        "limit": limit,
+        "max_age_days": max_age_days,
+    }
     corridor = {"origin": origin, "destination": destination}
     current = select_stored_candidates(conn, reference_at=reference_at, **options, **corridor)
     if current.status == CoverageStatus.READY:
@@ -409,6 +415,7 @@ def evaluate_with_coverage(
     schedule_id: int,
     reference_at: datetime,
     limit: int = DEFAULT_CANDIDATE_LIMIT,
+    max_age_days: int = MAX_PRICE_AGE_DAYS,
     scenario_loader: Callable[[], ScenarioPrices] = load_scenario,
 ) -> CoverageQueryResult:
     """Como select_with_coverage, y enruta y evalúa solo si hay cobertura en algún origen."""
@@ -420,6 +427,7 @@ def evaluate_with_coverage(
         schedule_id=schedule_id,
         reference_at=reference_at,
         limit=limit,
+        max_age_days=max_age_days,
         scenario_loader=scenario_loader,
     )
     if result.status == CoverageStatus.INSUFFICIENT_COVERAGE:

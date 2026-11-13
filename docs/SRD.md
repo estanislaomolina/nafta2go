@@ -463,3 +463,11 @@ autenticadas del mismo origen. No consulta al cargar ni escribe datos; actualiza
 manual y conjuntamente las vistas, descarta lecturas parciales/anteriores ante
 fallos y cancela al limpiar o salir. Código sólo en memoria de pestaña. No hay
 roles nuevos ni despliegue público; [contrato y QA](WEB.md#panel-local-de-operación).
+
+La vigencia máxima de la consulta es configuración operativa por entorno
+(1–30 días, 30 predeterminado). Aplicación la lee una vez, la propaga a ambos
+orígenes y conserva el valor efectivo con cada recomendación; las capas de
+selección siguen recibiendo parámetros explícitos. Configuración inválida
+desactiva readiness y devuelve error seguro, sin rutas. No habilita override
+público, precios mayores de treinta días ni cambios administrativos en vivo;
+[contrato](COBERTURA.md#vigencia-configurable-en-mvp).

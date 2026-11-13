@@ -110,3 +110,11 @@ def test_keyboard_interrupt_has_safe_message_and_exit_130(monkeypatch, capsys):
     captured = capsys.readouterr()
     record = event(captured.err)
     assert record["exit_code"] == 130 and record["outcome"] == "interrupted"
+
+
+def test_cli_rejects_invalid_coverage_configuration_without_echo(monkeypatch, capsys):
+    monkeypatch.setenv("NAFTA2GO_MAX_PRICE_AGE_DAYS", "secreto")
+    assert cli.main([ORIGIN, "--json"]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert event(captured.err)["error_code"] == "coverage_not_configured"

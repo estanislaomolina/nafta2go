@@ -63,6 +63,7 @@ test('formulario, respuesta del backend con fixtures y accesibilidad en escritor
     assert.deepEqual(sent.destination, {lat: -34.5627, lon: -58.4565}); assert.equal(typeof sent.budget_ars, 'string');
     assert.match(await page.locator('#status').innerText(), /Encontramos/);
     assert.match(await page.locator('#results').innerText(), /ESCENARIO HISTÓRICO/);
+    assert.match(await page.locator('#results').innerText(), /Vigencia máxima aplicada: 29 días/);
     assert.ok(await page.locator('article').count() > 0);
     assert.equal(await page.locator('a.navigate').count(), await page.locator('article').count());
     assert.match(await page.locator('article').first().innerText(), /Autonomía final/);

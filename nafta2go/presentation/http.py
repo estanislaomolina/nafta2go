@@ -22,6 +22,10 @@ from nafta2go.adapters.routing import (
     QuotaExceeded,
     RoutingError,
 )
+from nafta2go.application.coverage_rules import (
+    CoverageConfigurationError,
+    configured_max_price_age_days,
+)
 from nafta2go.application.ingestion_status import ingestion_status
 from nafta2go.application.query import recommend_from_database
 from nafta2go.application.scenario import ScenarioIntegrityError
@@ -51,6 +55,8 @@ def authorize(
 
 def dependency_error(_request, exc: Exception) -> JSONResponse:
     status, code = 503, "data_unavailable"
+    if isinstance(exc, CoverageConfigurationError):
+        code = "coverage_not_configured"
     if isinstance(exc, RoutingError):
         status, code = 502, "routes_unavailable"
         if isinstance(exc, ProviderTimeout):
@@ -100,7 +106,13 @@ def create_app(
     application.add_middleware(QueryTelemetryMiddleware, telemetry=telemetry)
     install_web(application)
     application.add_exception_handler(RequestValidationError, validation_error)
-    for error in (RoutingError, SQLAlchemyError, ScenarioIntegrityError, OSError):
+    for error in (
+        RoutingError,
+        SQLAlchemyError,
+        ScenarioIntegrityError,
+        OSError,
+        CoverageConfigurationError,
+    ):
         application.add_exception_handler(error, dependency_error)
 
     @application.get("/health")
@@ -110,6 +122,10 @@ def create_app(
     @application.get("/ready")
     def ready():
         configured = bool(os.environ.get("NAFTA2GO_API_TOKEN", "").strip())
+        try:
+            configured_max_price_age_days()
+        except CoverageConfigurationError:
+            configured = False
         available = configured and database_is_ready(application.state.engine)
         return JSONResponse(
             status_code=200 if available else 503,

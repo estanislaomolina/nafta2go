@@ -16,7 +16,11 @@ from nafta2go.adapters.routing import (
     QuotaExceeded,
     RoutingError,
 )
-from nafta2go.application.coverage_rules import MIN_RECENT_CANDIDATES
+from nafta2go.application.coverage_rules import (
+    MIN_RECENT_CANDIDATES,
+    CoverageConfigurationError,
+    configured_max_price_age_days,
+)
 from nafta2go.application.query import recommend
 from nafta2go.application.recommendation import DEFAULT_CANDIDATE_LIMIT, MAX_CANDIDATES
 from nafta2go.domain.engine import FuelRequest
@@ -33,6 +37,7 @@ class SafeArgumentParser(argparse.ArgumentParser):
 
 def error_code(exc):
     for error, code in (
+        (CoverageConfigurationError, "coverage_not_configured"),
         (InvalidCredentials, "routes_not_configured"),
         (ProviderTimeout, "routes_timeout"),
         (QuotaExceeded, "routes_quota_exceeded"),
@@ -62,6 +67,7 @@ def render(payload: dict) -> str:
             + "; no son precios actuales."
         )
     lines.append(f"Referencia de precios: {payload['price_reference_at']}")
+    lines.append(f"Vigencia máxima aplicada: {payload['query']['max_price_age_days']} días")
     if (payload.get("routes") or {}).get("replayed"):
         lines.append("Rutas REPRODUCIDAS de " + payload["routes"]["captured_at_utc"])
     elif (payload.get("routes") or {}).get("cache_hit"):
@@ -159,6 +165,7 @@ def run(argv, observation) -> int:
         )
         if reference.utcoffset() is None:
             raise ValueError("reference_at: se requiere zona horaria")
+        configured_max_price_age_days()
         provider = RecordedRoutes(args.matrix_file) if args.matrix_file else CapturedRoutes()
         url = database_url()
         upgrade_to_head(url)
@@ -187,7 +194,7 @@ def run(argv, observation) -> int:
         observation.outcome = payload["outcome"]
         observation.error_code = None
         return 0
-    except (ValueError, OSError, RoutingError, SQLAlchemyError) as exc:
+    except (ValueError, OSError, RoutingError, SQLAlchemyError, CoverageConfigurationError) as exc:
         observation.error_code = error_code(exc)
         print(
             f"Consulta fallida ({observation.error_code}); "

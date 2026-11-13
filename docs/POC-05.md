@@ -148,3 +148,9 @@ la retención es responsabilidad del operador. Una terminación forzada del proc
 no garantiza un evento final. No mide p95, supervisión sostenida ni métricas ML.
 La opción explícita `--save-matrix` sigue pudiendo guardar coordenadas en el
 archivo de evidencia solicitado: no es un log y requiere cuidar su retención.
+
+En MVP, `query.max_price_age_days` registra el umbral efectivo configurado por
+entorno (1–30 días); CLI y web lo muestran. La reproducción original usa 30 y
+conserva su matriz grabada; otra política puede cambiar las estaciones elegidas
+y requerir otra matriz verificable, sin inventar recorridos. Ver
+[COBERTURA](COBERTURA.md#vigencia-configurable-en-mvp).
