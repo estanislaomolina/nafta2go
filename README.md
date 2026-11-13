@@ -22,6 +22,8 @@ Santiago Bunge
 - [SRD](docs/SRD.md): especificación técnica de la POC: arquitectura y diagramas, stack, modelo de datos, contratos y estrategia de datos.
 - [Consulta completa de POC-05](docs/POC-05.md): ejecución, ranking, evidencia real y simplificaciones.
 - [Ingesta diaria y monitor](docs/INGESTA.md): unidades systemd, alertas locales y evidencia de fallos/recuperación; supervisión sostenida pendiente (MVP-01).
+
+- [Preparación AWS](docs/AWS.md): acceso del sandbox, plantilla de red, validación y límites; aplicación aún sin desplegar.
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
 - [Enlaces de Google Maps](docs/MAPS.md): navegación por alternativa en API/CLI; integración visual y pruebas de teclado/móvil pendientes.

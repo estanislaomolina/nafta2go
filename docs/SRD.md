@@ -428,3 +428,10 @@ y la supervisión continua siguen pendientes.
 La adquisición remota incorpora hasta tres intentos dentro de una ingesta, con
 esperas acotadas y conteo en el reporte. No repite normalización ni persistencia;
 ver [política de reintentos](INGESTA.md). No requiere cambiar el esquema de datos.
+
+## Preparación del sandbox AWS (MVP-08)
+
+La base de red propuesta está versionada en `infra/aws/network.json`, sin cómputo
+ni aplicación desplegados. Acceso reportado, límites del presupuesto, validación
+y pendientes en [AWS](AWS.md); alternativas de IaC en
+[ADR-011](../adr/ADR-011-base-de-red-con-cloudformation.md).
