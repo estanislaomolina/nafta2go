@@ -144,11 +144,12 @@ flowchart LR
 
 ### Flujo de ingesta (implementado)
 
-1. `discover_resources` lee el catálogo y encuentra los CSV vigente e histórico.
-2. `download` baja el CSV a `data/raw/<origen>/`. Lo escribe primero como
+1. `ingest_from_source` abre la ejecución en estado `running`, en su propia
+   transacción, antes de consultar la fuente.
+2. `discover_resources` lee el catálogo y encuentra los CSV vigente e histórico.
+3. `download` baja el CSV a `data/raw/<origen>/`. Lo escribe primero como
    `.part` y lo renombra solo si el tamaño coincide con el del catálogo. Calcula
    el SHA-256.
-3. `ingest` abre la ejecución en estado `running`, en su propia transacción.
 4. `normalize_capture` lee por chunks, filtra CABA y nafta y aplica las reglas.
    Entrega las filas válidas, los rechazos con motivo y un reporte de calidad.
 5. En una segunda transacción se guardan la referencia a la captura, los
@@ -380,7 +381,8 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
   el flujo completo; ver [POC-05](POC-05.md).
 - **Observabilidad:** las ingestas y las descargas registran logs con campos
   (`run_id`, filas, rechazos, SHA-256). El reporte de calidad queda en cada
-  ejecución. Las métricas y alertas de RNF08 son del MVP.
+  ejecución. El comando de ingesta ofrece estado, fechas y duración con `--json`,
+  incluidos fallos de adquisición. Las alertas automáticas de RNF08 siguen pendientes.
 
 ## 9. Partes simplificadas y evolución al MVP
 
@@ -415,3 +417,14 @@ rutas. API y CLI comparten esa presentación; contrato y pendientes en [MAPS](MA
 La web local de MVP-03 sirve HTML/CSS/JS propios desde FastAPI, comparte origen
 con la API y no duplica reglas del motor. Contrato, acceso de demo y límites en
 [WEB](WEB.md); alternativas en [ADR-012](../adr/ADR-012-web-local-con-assets-propios.md).
+
+El incremento de monitoreo de MVP-01 agrega `python -m nafta2go.monitor`: detecta
+fallos, ejecuciones excedidas y ausencias, y persiste detección y resolución en
+`ingestion_alerts` (migración `0003`). La programación local usa systemd (vigente a las 06:00 de Argentina y monitor
+horario); instalación y límites en [INGESTA](INGESTA.md) y alternativas en
+[ADR-008](../adr/ADR-008-programacion-de-ingesta.md). Las notificaciones externas
+y la supervisión continua siguen pendientes.
+
+La adquisición remota incorpora hasta tres intentos dentro de una ingesta, con
+esperas acotadas y conteo en el reporte. No repite normalización ni persistencia;
+ver [política de reintentos](INGESTA.md). No requiere cambiar el esquema de datos.

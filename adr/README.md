@@ -23,10 +23,11 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 
 ## Decisiones de la Entrega 3
 
-ADR-008 y ADR-011 están reservados para ingesta y red AWS en sus ramas.
+ADR-011 está reservado para la preparación de red AWS.
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| [ADR-008](ADR-008-programacion-de-ingesta.md) | Programación local de la ingesta diaria con systemd | Aceptado |
 | [ADR-009](ADR-009-api-http-con-fastapi.md) | API HTTP con FastAPI sobre la capa de aplicación | Aceptado |
 | [ADR-010](ADR-010-cache-volatil-y-cupo-de-rutas.md) | Caché volátil y cupo por proceso para matrices de rutas | Aceptado |
 | [ADR-012](ADR-012-web-local-con-assets-propios.md) | Web local con assets propios y API del mismo origen | Propuesto |
