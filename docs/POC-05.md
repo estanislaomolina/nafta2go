@@ -136,8 +136,8 @@ en el evento. El logger aislado evita duplicar el evento por configuración glob
 
 Los fallos usan código 2 y mensajes fijos: `invalid_request`, `file_unavailable`,
 `data_unavailable`, `routes_not_configured`, `routes_timeout`,
-`routes_quota_exceeded`, `routes_unavailable` o `internal_error`. No repiten
-excepciones originales ni sus trazas. Los errores de argumentos usan
+`routes_quota_exceeded`, `routes_unavailable` o `internal_error`. Los errores externos no repiten
+mensajes ni trazas. Las validaciones locales indican el campo sin repetir valores. Los errores de argumentos usan
 `invalid_arguments` y salida 2 sin repetir valores ingresados; consultar
 `--help` para el formato. Ayuda termina en 0 sin evento. Una interrupción por
 teclado devuelve 130 y evento `interrupted` con mensaje fijo.

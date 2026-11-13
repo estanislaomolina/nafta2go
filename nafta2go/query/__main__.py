@@ -25,10 +25,40 @@ from nafta2go.presentation.cli_telemetry import CliObservation
 from nafta2go.presentation.navigation import present_recommendation
 
 
+class _UserInputError(ValueError):
+    """Mensaje curado de validación local, sin valores ni errores de terceros."""
+
+
 class SafeArgumentParser(argparse.ArgumentParser):
-    def error(self, _message):
+    def error(self, message):
         self.print_usage(sys.stderr)
-        self.exit(2, "Argumentos inválidos; consultá --help.\n")
+        detail = "Consultá --help."
+        for option, action in self._option_string_actions.items():
+            if message.startswith(f"argument {option}:"):
+                detail = f"Revisá {option}."
+                if action.choices is not None:
+                    detail += " Opciones permitidas: " + ", ".join(map(str, action.choices)) + "."
+                break
+        self.exit(2, "Argumentos inválidos. " + detail + "\n")
+
+
+def _request(args):
+    try:
+        return FuelRequest(
+            args.consumo, args.capacidad, args.litros_iniciales, args.presupuesto, args.reserva
+        )
+    except ValueError as exc:
+        raise _UserInputError(str(exc)) from None
+
+
+def _reference(value):
+    try:
+        result = datetime.fromisoformat(value) if value else datetime.now(UTC)
+    except ValueError:
+        raise _UserInputError("reference_at: usar fecha ISO 8601 con zona horaria") from None
+    if result.utcoffset() is None:
+        raise _UserInputError("reference_at: se requiere zona horaria")
+    return result
 
 
 def error_code(exc):
@@ -151,14 +181,8 @@ def run(argv, observation) -> int:
     args = parser.parse_args(argv)
     engine = None
     try:
-        request = FuelRequest(
-            args.consumo, args.capacidad, args.litros_iniciales, args.presupuesto, args.reserva
-        )
-        reference = (
-            datetime.fromisoformat(args.reference_at) if args.reference_at else datetime.now(UTC)
-        )
-        if reference.utcoffset() is None:
-            raise ValueError("reference_at: se requiere zona horaria")
+        request = _request(args)
+        reference = _reference(args.reference_at)
         provider = RecordedRoutes(args.matrix_file) if args.matrix_file else CapturedRoutes()
         url = database_url()
         upgrade_to_head(url)
@@ -189,11 +213,12 @@ def run(argv, observation) -> int:
         return 0
     except (ValueError, OSError, RoutingError, SQLAlchemyError) as exc:
         observation.error_code = error_code(exc)
-        print(
-            f"Consulta fallida ({observation.error_code}); "
-            "verificá entradas, configuración y dependencias.",
-            file=sys.stderr,
+        detail = (
+            str(exc)
+            if isinstance(exc, _UserInputError)
+            else "Verificá entradas, configuración y dependencias."
         )
+        print(f"Consulta fallida ({observation.error_code}): {detail}", file=sys.stderr)
         return 2
     finally:
         if engine is not None:
