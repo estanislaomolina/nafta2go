@@ -118,3 +118,27 @@ def test_cli_rejects_invalid_coverage_configuration_without_echo(monkeypatch, ca
     captured = capsys.readouterr()
     assert captured.out == ""
     assert event(captured.err)["error_code"] == "coverage_not_configured"
+
+
+def test_curated_vehicle_error_identifies_field_without_changing_telemetry(capsys):
+    assert cli.main([ORIGIN, "--litros-iniciales=60"]) == 2
+    captured = capsys.readouterr()
+    assert "remaining_l: supera la capacidad del tanque" in captured.err
+    record = event(captured.err)
+    assert record["error_code"] == "invalid_request" and "remaining_l" not in str(record)
+
+
+def test_parser_identifies_known_field_and_choices_without_echo(capsys):
+    with pytest.raises(SystemExit) as caught:
+        cli.main([ORIGIN, "--schedule-id=secreto"])
+    assert caught.value.code == 2
+    captured = capsys.readouterr()
+    assert "Revisá --schedule-id" in captured.err and "Opciones permitidas: 2, 3" in captured.err
+    assert event(captured.err)["outcome"] == "invalid_arguments"
+
+
+def test_invalid_reference_has_safe_actionable_message(capsys):
+    assert cli.main([ORIGIN, "--reference-at=secreto"]) == 2
+    captured = capsys.readouterr()
+    assert "reference_at: usar fecha ISO 8601 con zona horaria" in captured.err
+    assert event(captured.err)["error_code"] == "invalid_request"
