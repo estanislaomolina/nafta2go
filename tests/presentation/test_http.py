@@ -407,6 +407,7 @@ def test_unexpected_failure_is_recorded_once_without_exception_text(clients, cap
         assert client.get("/api/v1/operations", headers=AUTH).json()["queries"]["completed"] == 1
     (event,) = query_events(caplog)
     assert event["http_status"] == 500 and event["outcome"] == "http_error"
+    assert event["error_type"] == "RuntimeError"
     assert "secreto" not in caplog.text
 
 
