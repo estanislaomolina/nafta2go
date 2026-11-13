@@ -7,6 +7,8 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import func, select
 
+from nafta2go.adapters.recorded_routes import CapturedRoutes
+from nafta2go.adapters.route_cache import RouteCache
 from nafta2go.adapters.routing import DistanceMatrix, Point, ProviderTimeout
 from nafta2go.application.query import recommend
 from nafta2go.application.scenario import ScenarioPrices, load_scenario
@@ -94,6 +96,39 @@ def test_successful_ingestion_is_used_and_recorded(engine):
         assert repo.get_recommendation(conn, result["recommendation_id"])["data_run_id"] == run_id
 
 
+@pytest.mark.parametrize("use_current", [False, True])
+def test_requested_limit_is_applied_and_recorded_for_both_data_sources(engine, use_current):
+    if use_current:
+        from nafta2go.persistence.schema import station_prices
+
+        with engine.begin() as conn:
+            run_id = repo.start_run(conn, "vigente", REFERENCE.replace(tzinfo=None))
+            conn.execute(
+                station_prices.insert(),
+                [{**row, "id": None, "run_id": run_id} for row in load_scenario().rows],
+            )
+            repo.finish_run(conn, run_id, "succeeded", REFERENCE.replace(tzinfo=None))
+    provider = Routes()
+    result = query(engine, provider, max_candidates=20)
+    assert (
+        len(result["evaluations"]) == 16
+    )  # Todas las elegibles de la fixture, sin inventar cuatro.
+    assert result["query"]["max_candidates"] == 20
+    assert result["engine_version"] == "mvp-02-v2"
+    assert provider.calls == 1
+    with engine.connect() as conn:
+        record = repo.get_recommendation(conn, result["recommendation_id"])
+    assert record["request"]["max_candidates"] == 20
+
+
+@pytest.mark.parametrize("limit", [0, 2, 21, True, 3.5])
+def test_invalid_candidate_limit_does_not_call_routes(engine, limit):
+    provider = Routes()
+    with pytest.raises(ValueError):
+        query(engine, provider, max_candidates=limit)
+    assert provider.calls == 0
+
+
 def test_without_coverage_no_api_and_no_recommendation(engine):
     provider = Routes()
     empty = ScenarioPrices("empty", REFERENCE, "a" * 64, "b" * 64, ())
@@ -125,3 +160,106 @@ def test_timeout_is_propagated_without_writing_a_recommendation(engine):
 def test_untraceable_scenario_is_rejected(engine, scenario):
     with pytest.raises(ValueError, match="scenario"), engine.begin() as conn:
         repo.record_recommendation(conn, None, "test", "fake", {}, {}, REFERENCE, scenario=scenario)
+
+
+def test_cache_reduces_calls_without_caching_prices_or_recommendations(engine, monkeypatch):
+    class Client(Routes):
+        matrix_url = "https://proveedor.invalid/matrix/driving-car"
+        credential_scope = b"credencial-de-prueba"
+
+        def close(self):
+            pass
+
+    client = Client()
+    monkeypatch.setattr("nafta2go.adapters.recorded_routes.client_from_env", lambda: client)
+    cache = RouteCache()
+    baseline = query(engine, Routes())
+    first = query(engine, CapturedRoutes(cache))
+    second = query(engine, CapturedRoutes(cache))
+    assert baseline["evaluations"] == first["evaluations"] == second["evaluations"]
+    assert baseline["alternatives"] == first["alternatives"] == second["alternatives"]
+    assert second["routes"]["cache_hit"] and client.calls == 1
+
+    from nafta2go.persistence.schema import station_prices
+
+    with engine.begin() as conn:
+        run_id = repo.start_run(conn, "vigente", REFERENCE.replace(tzinfo=None))
+        conn.execute(
+            station_prices.insert(),
+            [
+                {**row, "id": None, "run_id": run_id, "price": row["price"] * 2}
+                for row in load_scenario().rows
+            ],
+        )
+        repo.finish_run(conn, run_id, "succeeded", REFERENCE.replace(tzinfo=None))
+    changed = query(engine, CapturedRoutes(cache))
+    assert client.calls == 1 and changed["routes"]["cache_hit"]
+    assert changed["data_run_id"] == run_id
+    assert (
+        changed["evaluations"][0]["price_ars_per_l"] != first["evaluations"][0]["price_ars_per_l"]
+    )
+
+
+@pytest.mark.parametrize("current", [False, True])
+def test_configured_age_boundary_is_applied_and_saved_for_both_sources(
+    engine, monkeypatch, current
+):
+    from datetime import timedelta
+    from zoneinfo import ZoneInfo
+
+    from nafta2go.persistence.schema import station_prices
+
+    monkeypatch.setenv("NAFTA2GO_MAX_PRICE_AGE_DAYS", "14")
+    base = next(
+        row for row in load_scenario().rows if row["product_id"] == 2 and row["schedule_id"] == 2
+    )
+    local = REFERENCE.astimezone(ZoneInfo("America/Argentina/Buenos_Aires")).replace(tzinfo=None)
+    ages = (
+        timedelta(days=14),
+        timedelta(days=14, microseconds=1),
+        timedelta(days=13),
+        timedelta(days=12),
+    )
+    rows = tuple(
+        {
+            **base,
+            "id": None,
+            "station_id": 100 + index,
+            "source_row": 100 + index,
+            "valid_from": local - age,
+            "lat": -34.60,
+            "lon": -58.40,
+        }
+        for index, age in enumerate(ages)
+    )
+    scenario = ScenarioPrices("synthetic-vigencia", REFERENCE, "a" * 64, "b" * 64, rows)
+    if current:
+        with engine.begin() as conn:
+            run_id = repo.start_run(conn, "vigente", REFERENCE.replace(tzinfo=None))
+            conn.execute(station_prices.insert(), [{**row, "run_id": run_id} for row in rows])
+            repo.finish_run(conn, run_id, "succeeded", REFERENCE.replace(tzinfo=None))
+    result = query(engine, scenario_loader=lambda: scenario)
+    assert result["status"] == ("ready" if current else "historical_scenario")
+    assert {row["station_id"] for row in result["evaluations"]} == {"100", "102", "103"}
+    assert result["exclusions"]["stale_price"] == 1
+    assert result["query"]["max_price_age_days"] == 14
+    with engine.connect() as conn:
+        saved = repo.get_recommendation(conn, result["recommendation_id"])
+    assert (
+        saved["request"]["max_price_age_days"]
+        == saved["result"]["query"]["max_price_age_days"]
+        == 14
+    )
+    monkeypatch.setenv("NAFTA2GO_MAX_PRICE_AGE_DAYS", "1")
+    provider = Routes()
+    tighter = query(engine, provider, scenario_loader=lambda: scenario)
+    assert tighter["outcome"] == "insufficient_coverage" and provider.calls == 0
+
+
+def test_stricter_policy_can_abstain_on_the_real_frozen_scenario(engine, monkeypatch):
+    monkeypatch.setenv("NAFTA2GO_MAX_PRICE_AGE_DAYS", "14")
+    provider = Routes()
+    result = query(engine, provider)
+    assert result["outcome"] == "insufficient_coverage"
+    assert result["selected_eligible_count"] == 1
+    assert result["recommendation_id"] is None and provider.calls == 0
