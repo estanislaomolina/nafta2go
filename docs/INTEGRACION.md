@@ -59,3 +59,22 @@ CABA ni utilidad con usuarios. La web se probó en Chromium y móvil emulado, no
 en teléfono físico ni lector de pantalla. ML/ranking conservador, autenticación
 de usuarios y despliegue público siguen pendientes. El checkout operativo de
 las ingestas no se modificó. MVP-09 y la entrega final siguen abiertos.
+
+## Validación de la corrección de concurrencia #98
+
+Se incorporó en una rama aislada el commit `9500a38` de `felisl30`, conservando
+su autoría. El conflicto en RUTAS.md se resolvió manteniendo la integración de
+caché y sumando la coordinación por clave. No se modificó la rama de Felipe.
+
+`tests/integration/test_concurrent_http.py` reproduce el bloqueo previo con dos
+POST de rutas distintas. Con #98, ambos transportes sintéticos entran antes de
+liberar el primero; consultas idénticas sólo hacen una llamada. Las dos
+respuestas son exitosas y persisten recomendaciones distintas sin coordenadas
+del conductor. El test falló antes del cambio y pasa con él.
+
+Suite conjunta: 595 tests y 148 subtests, cobertura 98,33 %. Son pruebas con
+matrices sintéticas, sin ORS real; no prueban p95 ni disponibilidad del proveedor.
+La validación no reemplaza revisión ni integración individual de #65 y #98, ni
+permite integrar primero toda la cadena acumulada mediante squash. La PR #86
+se actualizará con dev después de integrar sus bases para conservar sólo su
+incremento propio. El tag anotado de la evidencia de ingesta preserva `4325d79`.
