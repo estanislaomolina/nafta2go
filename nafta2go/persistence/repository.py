@@ -15,6 +15,7 @@ from sqlalchemy import Connection, select
 
 from nafta2go.persistence.models import RawCapture
 from nafta2go.persistence.schema import (
+    ingestion_alerts,
     ingestion_runs,
     raw_captures,
     recommendations,
@@ -74,6 +75,42 @@ def finish_run(
 def get_run(conn: Connection, run_id: int) -> dict | None:
     row = conn.execute(select(ingestion_runs).where(ingestion_runs.c.id == run_id)).first()
     return dict(row._mapping) if row else None
+
+
+def runs_for_monitoring(conn: Connection, source: str) -> list[dict]:
+    # No cargar mensajes de error, parámetros ni URLs en el monitor.
+    columns = ("id", "status", "started_at", "finished_at")
+    query = select(*(ingestion_runs.c[key] for key in columns)).where(
+        ingestion_runs.c.source == source
+    )
+    return [dict(row._mapping) for row in conn.execute(query)]
+
+
+def sync_ingestion_alerts(
+    conn: Connection, source: str, alerts: list[dict], checked_at: datetime
+) -> list[dict]:
+    table = ingestion_alerts
+    keys = []
+    for alert in alerts:
+        key = f"{source}:{alert['key']}"
+        keys.append(key)
+        previous = conn.execute(select(table.c.key).where(table.c.key == key)).scalar()
+        values = {"last_seen_at": checked_at, "resolved_at": None}
+        if previous is None:
+            conn.execute(
+                table.insert().values(
+                    **{**alert, "key": key}, source=source, detected_at=checked_at, **values
+                )
+            )
+        else:
+            conn.execute(table.update().where(table.c.key == key).values(**values))
+    conn.execute(
+        table.update()
+        .where(table.c.source == source, table.c.resolved_at.is_(None), table.c.key.not_in(keys))
+        .values(resolved_at=checked_at)
+    )
+    query = select(table).where(table.c.source == source, table.c.resolved_at.is_(None))
+    return [dict(row._mapping) for row in conn.execute(query.order_by(table.c.key))]
 
 
 def latest_successful_run(conn: Connection, source: str) -> int | None:
