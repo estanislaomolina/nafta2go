@@ -7,7 +7,7 @@ from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[2]
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
-SKIPPED_DIRS = {".git", ".venv"}
+SKIPPED_DIRS = {".git", ".venv", "node_modules"}
 
 
 def find_broken_links(root: Path) -> list[str]:

@@ -71,7 +71,7 @@ Si no puede obtener una ruta completa, debe pasar `None`.
 El servicio de integración debe filtrar previamente CABA, producto compatible,
 vigencia del precio y cobertura, y conservar identificadores de estación, fuente,
 fechas y versiones de datos/rutas. Este motor no certifica esos atributos: evalúa
-una sola candidata normalizada. La selección de hasta diez estaciones y el ranking
+una sola candidata normalizada. La selección de hasta veinte estaciones y el ranking
 se implementan en la capa de aplicación de [POC-05](POC-05.md), con evidencia real.
 
 ## Cálculos y decisiones de negocio
@@ -148,7 +148,7 @@ No constituyen evidencia de cobertura ni validación de un proveedor externo.
 ## Conexión con la matriz de rutas
 
 `nafta2go.application.recommendation.evaluate_stations` recibe la consulta del
-motor, hasta diez `Candidate` (identificador, ubicación y precio ya validado),
+motor, hasta veinte `Candidate` (identificador, ubicación y precio ya validado),
 origen, destino opcional y un `RoutingProvider`. Pide una única matriz usando
 `trip_matrix` y devuelve un `StationEvaluation` por candidata, en el mismo orden.
 Cada resultado conserva la candidata y su evaluación explicada por el motor.
@@ -195,11 +195,21 @@ reemplaza un polígono ni verifica la entrada física de la estación.
 
 Entre las publicaciones utilizables de cada estación se conserva la más reciente.
 La preselección ordena por fecha descendente e identificador numérico ascendente
-y devuelve hasta diez estaciones distintas. No es un ranking de conveniencia. Si se
+y devuelve hasta el límite solicitado (máximo veinte, diez por defecto).
+No es un ranking de conveniencia. Si se
 pasa `origin`, solo cuentan las estaciones dentro del corredor del recorrido
 (`MAX_DETOUR_KM` en línea recta; motivo `outside_corridor`), como se explica en
 [COBERTURA.md](COBERTURA.md). Las alertas `precio_atipico` se conservan sin cambiar ni excluir por
 sí solas el precio oficial.
+
+El primer incremento de MVP-02 incorpora `--max-candidates` al comando de consulta,
+entre 3 y 20: el mínimo de cobertura sigue siendo tres. La selección recibe el
+mismo límite tanto para datos vigentes como para el escenario histórico, y el
+resultado y la recomendación persistida conservan `max_candidates`. La versión
+del flujo pasa a `mvp-02-v1`. El valor predeterminado de diez permite reproducir
+la matriz grabada de la POC; una consulta de veinte necesita rutas correspondientes
+a esa selección. Los tests de veinte usan un proveedor simulado, no una llamada
+autenticada que demuestre cuota o latencia en vivo.
 
 `CandidateSelection` informa `data_run_id`, fecha de referencia, precios elegidos
 con sus IDs/filas/fechas/alertas, cantidad de estaciones elegibles y motivos
