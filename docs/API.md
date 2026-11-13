@@ -55,9 +55,11 @@ servidor configurado, conexión y esquema en la revisión esperada; si no, devue
 503 sin aplicar migraciones. Ambos controles y OpenAPI son públicos y no exponen
 precios, ubicaciones ni credenciales. La consulta requiere `Authorization: Bearer`.
 
-Esta rama independiente conserva diez candidatas, como `dev`. La ampliación a
-veinte está en `feat/16-limite-candidatas` y se incorporará tras integrar ambos
-incrementos. Antes del uso público faltan caché y control de cuota (#55), HTTPS,
+La API acepta `max_candidates` como entero estricto entre 3 y 20. Si se omite,
+usa 10, igual que la CLI y el caso de uso. El límite se propaga a la selección y
+queda registrado en la consulta persistida; puede haber menos evaluaciones si
+la cobertura disponible es menor. La web local omite el campo y mantiene 10.
+Antes del uso público faltan caché y control de cuota (#55), HTTPS,
 autenticación apropiada para usuarios y observabilidad completa (#21). El token
 local no debe incrustarse en JavaScript público. La [web local](WEB.md) se sirve en `/` del mismo proceso. AWS y el despliegue
 público siguen pendientes. Los tests usan bases temporales y rutas grabadas, sin red.

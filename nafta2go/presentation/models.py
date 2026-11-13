@@ -6,6 +6,7 @@ from typing import Any, Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from nafta2go.adapters.routing import Point
+from nafta2go.application.recommendation import DEFAULT_CANDIDATE_LIMIT, MAX_CANDIDATES
 from nafta2go.domain.engine import FuelRequest
 
 
@@ -24,6 +25,9 @@ class RecommendationInput(BaseModel):
     destination: Coordinates | None = None
     fuel_type: Literal["super", "premium"]
     schedule_id: int = Field(default=2, strict=True, ge=2, le=3)
+    max_candidates: int = Field(
+        default=DEFAULT_CANDIDATE_LIMIT, strict=True, ge=3, le=MAX_CANDIDATES
+    )
     consumption_l_per_100km: Decimal
     tank_capacity_l: Decimal
     remaining_l: Decimal
