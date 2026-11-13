@@ -32,13 +32,15 @@ def test_missing_matrix_is_reported(tmp_path, capsys):
     assert "FileNotFoundError" in capsys.readouterr().err
 
 
-def test_no_coverage_requires_no_key(tmp_path, monkeypatch, capsys):
+@pytest.mark.parametrize("limit", [10, 20])
+def test_no_coverage_requires_no_key(tmp_path, monkeypatch, capsys, limit):
     monkeypatch.delenv("ORS_API_KEY", raising=False)
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'query.db'}")
-    assert main(["--origin=-34.71,-58.33", "--json"]) == 0
+    assert main(["--origin=-34.71,-58.33", f"--max-candidates={limit}", "--json"]) == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["outcome"] == "insufficient_coverage"
     assert payload["recommendation_id"] is None
+    assert payload["query"]["max_candidates"] == limit
 
 
 def test_origin_outside_caba_is_rejected_before_routing(tmp_path, monkeypatch, capsys):
@@ -61,6 +63,13 @@ def test_reproduces_the_real_case_without_credentials(tmp_path, monkeypatch, cap
     assert payload["alternatives"] == original["alternatives"]
     assert payload["evaluations"] == original["evaluations"]
     assert payload["routes"]["replayed"]
+
+
+@pytest.mark.parametrize("limit", [2, 21])
+def test_cli_rejects_candidate_limit_outside_supported_range(limit):
+    with pytest.raises(SystemExit) as exc:
+        main([ORIGIN, f"--max-candidates={limit}"])
+    assert exc.value.code == 2
 
 
 def test_budget_variant_discards_instead_of_inventing_a_recommendation(

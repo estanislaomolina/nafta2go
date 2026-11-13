@@ -306,7 +306,7 @@ def test_real_normalizer_fixture_connects_to_database_selection_and_motor(engine
         ({"schedule_id": 2.0}, "schedule_id"),
         ({"schedule_id": True}, "schedule_id"),
         ({"reference_at": LOCAL_REFERENCE}, "reference_at"),
-        ({"limit": 11}, "limit"),
+        ({"limit": 21}, "limit"),
         ({"limit": True}, "limit"),
         ({"minimum_candidates": 0}, "minimum_candidates"),
         ({"minimum_candidates": 11}, "minimum_candidates"),
@@ -318,6 +318,18 @@ def test_real_normalizer_fixture_connects_to_database_selection_and_motor(engine
 def test_invalid_query_options_fail_before_loading_data(engine, changes, field):
     with pytest.raises(ValueError, match=field):
         select(engine, **changes)
+
+
+def test_twenty_candidates_are_selected_and_routed_from_one_version(engine):
+    run_id = put_run(engine, [price_row(index) for index in range(1, 26)])
+    provider = FakeProvider()
+    result = evaluate(engine, provider, limit=20)
+    assert result.selection.data_run_id == run_id
+    assert result.selection.eligible_station_count == 25
+    assert len(result.evaluations) == 20
+    assert len({row.candidate.station_id for row in result.evaluations}) == 20
+    assert len(provider.calls) == 1
+    assert len(provider.calls[0][0]) == 21
 
 
 # Dentro de la caja de CABA pero a más de 20 km de desvío del recorrido ORIGIN → DESTINATION.

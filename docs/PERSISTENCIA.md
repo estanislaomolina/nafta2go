@@ -43,6 +43,7 @@ erDiagram
 | Tabla | Qué guarda |
 |---|---|
 | `ingestion_runs` | Una ejecución: origen (`vigente` o `historico`), estado (`running`, `succeeded`, `failed`), inicio, fin, versión de las reglas, reporte de calidad (JSON) y error |
+| `ingestion_alerts` | Fuente, causa, ejecución cuando existe, primera detección, última observación y resolución; agregada por la migración `0003` |
 | `raw_captures` | El archivo original: URL, SHA-256, tamaño, ruta local, fecha de descarga y `last_modified` de la fuente. No guarda el contenido: el histórico pesa unos 780 MB |
 | `station_prices` | Precios normalizados con los valores originales de fecha y precio (`valid_from_raw`, `price_raw`), la fila del archivo (`source_row`) y las alertas de calidad |
 | `rejected_rows` | Filas rechazadas: fila del archivo, motivo y valores crudos en JSON |
@@ -57,10 +58,12 @@ tiene horario de verano.
 
 ## Ciclo de vida de una ejecución
 
-`ingest(engine, capture, normalize)` hace lo siguiente:
+`ingest_from_source(engine, source, acquire, normalize)` hace lo siguiente
+(`ingest` conserva el contrato anterior para capturas ya disponibles):
 
 1. En una transacción propia, crea la ejecución en estado `running` y la confirma.
-2. Llama al normalizador y verifica que el reporte coincida con lo recibido
+2. Obtiene la captura con `acquire` (incluye catálogo y descarga), llama al
+   normalizador y verifica que el reporte coincida con lo recibido
    (`filas_validas` y `filas_rechazadas`).
 3. En **una sola** transacción guarda la captura, los precios y los rechazos, y
    cierra la ejecución como `succeeded`.
@@ -72,6 +75,13 @@ Con esto, una ejecución fallida nunca deja datos parciales ni aparece como
 exitosa. Si el proceso se corta entre los pasos 1 y 3, la ejecución queda en
 `running`. Volver a ingerir una captura con el mismo SHA-256 crea una ejecución
 nueva y guarda `duplicate_of_run_id` en su reporte.
+
+El comando `python -m nafta2go.normalization --source vigente --json` expone
+identificador, estado, fechas UTC, duración, reglas y reporte, incluso ante un
+fallo de adquisición. Devuelve 0 al terminar correctamente y 1 si falla la
+adquisición o ingesta. Los mensajes originales de error quedan en la base y se
+omiten del JSON para evitar exportar URLs o credenciales. Un error de conexión
+a la base puede impedir crear la ejecución y produce salida no cero.
 
 ## Contrato con la normalización (POC-01)
 
@@ -118,3 +128,12 @@ sin inventar una ganadora. Los errores globales de rutas revierten la consulta.
 `evaluate_from_database` sigue siendo una función de lectura; el registro está
 en la orquestación de `recommend`. Ninguna de las dos conserva las ubicaciones
 del conductor. Las instrucciones y la evidencia están en [POC-05](POC-05.md).
+
+## Monitor de ingesta (MVP-01)
+
+`python -m nafta2go.monitor` comprueba el vigente y emite JSON seguro: salida 0
+sin alertas, 1 con alertas y 2 si no puede consultar o registrar el estado. Detecta
+la última ejecución terminada con fallo, `running` de al menos dos horas y ausencia
+de intentos desde las 06:00 de Argentina al llegar las 08:00 (antes revisa el día
+anterior). Conserva detección y resolución en `ingestion_alerts` sin alterar las
+ingestas ni exportar mensajes sensibles. La programación automática va en otra PR.
