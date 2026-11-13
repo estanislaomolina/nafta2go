@@ -11,10 +11,11 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
-from sqlalchemy import Connection, select
+from sqlalchemy import Connection, func, select
 
 from nafta2go.persistence.models import RawCapture
 from nafta2go.persistence.schema import (
+    ingestion_alerts,
     ingestion_runs,
     raw_captures,
     recommendations,
@@ -76,6 +77,42 @@ def get_run(conn: Connection, run_id: int) -> dict | None:
     return dict(row._mapping) if row else None
 
 
+def runs_for_monitoring(conn: Connection, source: str) -> list[dict]:
+    # No cargar mensajes de error, parámetros ni URLs en el monitor.
+    columns = ("id", "status", "started_at", "finished_at")
+    query = select(*(ingestion_runs.c[key] for key in columns)).where(
+        ingestion_runs.c.source == source
+    )
+    return [dict(row._mapping) for row in conn.execute(query)]
+
+
+def sync_ingestion_alerts(
+    conn: Connection, source: str, alerts: list[dict], checked_at: datetime
+) -> list[dict]:
+    table = ingestion_alerts
+    keys = []
+    for alert in alerts:
+        key = f"{source}:{alert['key']}"
+        keys.append(key)
+        previous = conn.execute(select(table.c.key).where(table.c.key == key)).scalar()
+        values = {"last_seen_at": checked_at, "resolved_at": None}
+        if previous is None:
+            conn.execute(
+                table.insert().values(
+                    **{**alert, "key": key}, source=source, detected_at=checked_at, **values
+                )
+            )
+        else:
+            conn.execute(table.update().where(table.c.key == key).values(**values))
+    conn.execute(
+        table.update()
+        .where(table.c.source == source, table.c.resolved_at.is_(None), table.c.key.not_in(keys))
+        .values(resolved_at=checked_at)
+    )
+    query = select(table).where(table.c.source == source, table.c.resolved_at.is_(None))
+    return [dict(row._mapping) for row in conn.execute(query.order_by(table.c.key))]
+
+
 def latest_successful_run(conn: Connection, source: str) -> int | None:
     return conn.execute(
         select(ingestion_runs.c.id)
@@ -83,6 +120,31 @@ def latest_successful_run(conn: Connection, source: str) -> int | None:
         .order_by(ingestion_runs.c.finished_at.desc(), ingestion_runs.c.id.desc())
         .limit(1)
     ).scalar()
+
+
+def ingestion_run_summary(conn: Connection, run_id: int) -> dict:
+    """Proyección administrativa: no cargar errores, reportes, URLs ni archivos."""
+    columns = ("id", "status", "started_at", "finished_at", "rules_version")
+    query = (
+        select(
+            *(ingestion_runs.c[key] for key in columns),
+            raw_captures.c.sha256,
+            raw_captures.c.size_bytes,
+        )
+        .outerjoin(raw_captures, raw_captures.c.run_id == ingestion_runs.c.id)
+        .where(ingestion_runs.c.id == run_id)
+    )
+    result = dict(conn.execute(query).one()._mapping)
+    counts = conn.execute(
+        select(func.count(), func.count(func.distinct(station_prices.c.station_id))).where(
+            station_prices.c.run_id == run_id
+        )
+    ).one()
+    result["price_rows"], result["stations"] = counts
+    result["rejected_rows"] = conn.execute(
+        select(func.count()).select_from(rejected_rows).where(rejected_rows.c.run_id == run_id)
+    ).scalar_one()
+    return result
 
 
 def add_raw_capture(conn: Connection, run_id: int, capture: RawCapture) -> None:

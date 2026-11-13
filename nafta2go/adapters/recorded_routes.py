@@ -2,31 +2,82 @@
 
 import hashlib
 import json
+import logging
+import os
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
+from threading import Lock
 
 from nafta2go.adapters.openrouteservice import client_from_env
+from nafta2go.adapters.route_cache import RouteCache
 from nafta2go.adapters.routing import DistanceMatrix, Point, ProviderUnavailable
+
+logger = logging.getLogger(__name__)
+_runtime_lock = Lock()
+_runtime = None
+_settings = None
+
+
+def shared_cache():
+    global _runtime, _settings
+    names = (
+        "ORS_CACHE_TTL_SECONDS",
+        "ORS_CACHE_MAX_ENTRIES",
+        "ORS_REQUESTS_PER_MINUTE",
+        "ORS_REQUESTS_PER_DAY",
+    )
+    try:
+        settings = tuple(
+            int(os.environ.get(name, default))
+            for name, default in zip(names, (300, 128, 30, 450), strict=True)
+        )
+        with _runtime_lock:
+            if settings != _settings:
+                _runtime = RouteCache(*settings)
+                _settings = settings
+            return _runtime
+    except ValueError as exc:
+        raise ProviderUnavailable("Configuración local de caché o cupo inválida") from exc
 
 
 class CapturedRoutes:
     """Cliente diferido: sin cobertura no requiere credenciales ni hace solicitudes."""
 
-    def __init__(self):
+    def __init__(self, cache=None):
         self.evidence: dict | None = None
         self.sha256: str | None = None
+        self.cache_hit = False
+        self._cache = cache
 
     def matrix(self, sources, destinations):
+        self.evidence, self.sha256, self.cache_hit = None, None, False
+        cache = self._cache if self._cache is not None else shared_cache()
         client = client_from_env()
-        matrix = client.matrix(sources, destinations)
-        self.evidence = {
-            "provider": "openrouteservice",
-            "endpoint": client.matrix_url,
-            "captured_at_utc": datetime.now(UTC).isoformat(),
-            "units": {"distances": "m", "durations": "s"},
-            **asdict(matrix),
-        }
+
+        def load():
+            matrix = client.matrix(sources, destinations)
+            evidence = {
+                "provider": "openrouteservice",
+                "endpoint": client.matrix_url,
+                "captured_at_utc": datetime.now(UTC).isoformat(),
+                "units": {"distances": "m", "durations": "s"},
+                **asdict(matrix),
+            }
+            return matrix, evidence
+
+        key = (
+            client.matrix_url,
+            client.credential_scope,
+            "duration-distance-m",
+            tuple(sources),
+            tuple(destinations),
+        )
+        try:
+            (matrix, self.evidence), self.cache_hit = cache.get(key, client.credential_scope, load)
+        finally:
+            client.close()
+            logger.info("Estado de caché de rutas", extra={"route_cache": cache.snapshot()})
         self.sha256 = hashlib.sha256(matrix_bytes(self.evidence)).hexdigest()
         return matrix
 
