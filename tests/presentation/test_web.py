@@ -8,11 +8,12 @@ from fastapi.testclient import TestClient
 from nafta2go.presentation.http import create_app
 
 
-def test_web_is_public_but_has_no_embedded_token(engine, monkeypatch):
+@pytest.mark.parametrize("page", ["/", "/operacion"])
+def test_web_is_public_but_has_no_embedded_token(engine, monkeypatch, page):
     monkeypatch.setenv("NAFTA2GO_API_TOKEN", "privado-no-incrustar")
     provider = Mock()
     with TestClient(create_app(engine, provider_factory=provider)) as client:
-        response = client.get("/")
+        response = client.get(page)
     assert response.status_code == 200
     assert 'lang="es-AR"' in response.text and "Nafta2Go" in response.text
     assert "privado-no-incrustar" not in response.text
@@ -23,7 +24,10 @@ def test_web_is_public_but_has_no_embedded_token(engine, monkeypatch):
     provider.assert_not_called()
 
 
-@pytest.mark.parametrize("asset,mime", [("app.js", "javascript"), ("styles.css", "text/css")])
+@pytest.mark.parametrize(
+    "asset,mime",
+    [("app.js", "javascript"), ("operation.js", "javascript"), ("styles.css", "text/css")],
+)
 def test_assets_are_served_and_parent_directory_is_not(engine, asset, mime):
     with TestClient(create_app(engine)) as client:
         response = client.get(f"/assets/{asset}")

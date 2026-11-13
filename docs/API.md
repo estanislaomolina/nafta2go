@@ -94,13 +94,15 @@ eventos no incluyen URL, headers, cuerpo, mensajes de excepción ni ubicaciones.
 Otros servidores/proxies deben aplicar la misma política antes de exponerlos.
 Los contadores se reinician al reiniciar la aplicación/caché, no se agregan entre
 réplicas ni constituyen p95 o disponibilidad sostenida. No incluye aún consultas
-CLI, un panel, métricas de modelo ni alertas de consultas (#21).
+CLI, métricas de modelo ni alertas de consultas (#21).
 
 El token administrativo ausente o igual al del conductor produce
 503/`admin_not_configured`; el código del conductor no autoriza operación.
 Las respuestas operativas usan `Cache-Control: no-store`. Readiness y las
 recomendaciones siguen dependiendo sólo del token de conductor. Propuesta y
 límites en [ADR-016](../adr/ADR-016-acceso-administrativo-separado.md).
+
+El [panel local](WEB.md#panel-local-de-operación) presenta estas lecturas.
 
 ## Estado de ingestas para operación
 
@@ -125,4 +127,4 @@ La lectura usa la capa de aplicación y proyecciones SQL explícitas, sin leer l
 campos privados ni escribir en la base. No ejecuta ingestas ni sincroniza alertas: las
 marcas persistidas de detección/resolución siguen siendo tarea del monitor
 programado. Una lectura saludable no resuelve una alerta previa. Base/esquema no
-disponibles producen 503 seguro. No reemplaza supervisión sostenida ni un panel.
+disponibles producen 503 seguro. El [panel local](WEB.md#panel-local-de-operación) consume esta lectura; no reemplaza supervisión sostenida.

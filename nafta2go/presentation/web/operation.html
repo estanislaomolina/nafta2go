@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Operación · Nafta2Go</title>
+  <link rel="stylesheet" href="/assets/styles.css"><script src="/assets/operation.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#operation-form">Ir al acceso del operador</a>
+<header><a class="brand" href="/">Nafta<span>2</span>Go</a><span class="scope">Operación local</span></header>
+<main>
+  <div class="intro"><p class="eyebrow">Estado del servicio</p><h1>Operación a la vista.</h1><p>Consultá ingestas, solicitudes y rutas con acceso protegido.</p></div>
+  <div class="workspace">
+    <section class="panel" aria-labelledby="access-title">
+      <h2 id="access-title">Acceso del operador</h2>
+      <noscript>Necesitás habilitar JavaScript para consultar el estado.</noscript>
+      <form id="operation-form" method="post" action="/operacion" autocomplete="off" tabindex="-1">
+        <label>Código de acceso<input id="operation-access" type="password" autocomplete="off" required></label>
+        <p class="hint">Solo en esta pestaña. No guardamos el código en el navegador.</p>
+        <label>Fuente de ingesta<select id="operation-source"><option value="vigente">Precios vigentes</option><option value="historico">Histórico</option></select></label>
+        <button id="operation-submit" type="submit" disabled>Actualizar estado</button>
+      </form>
+      <p><button id="operation-clear" class="secondary" type="button">Limpiar acceso y datos</button></p>
+      <p class="hint">Actualización manual. Esta pantalla no ejecuta ingestas ni cambia alertas.</p>
+    </section>
+    <section class="results" aria-labelledby="operation-title">
+      <h2 id="operation-title">Lectura operativa</h2>
+      <p id="operation-status" role="status">Ingresá el código para consultar.</p>
+      <p id="operation-error" class="notice error" role="alert" tabindex="-1" hidden></p>
+      <div id="operation-results" role="region" aria-label="Estado operativo" tabindex="-1"></div>
+    </section>
+  </div>
+</main>
+<footer>Los contadores son del proceso actual y se reinician. No demuestran disponibilidad sostenida ni precios actuales. Las métricas de modelo todavía no están disponibles.</footer>
+</body>
+</html>
