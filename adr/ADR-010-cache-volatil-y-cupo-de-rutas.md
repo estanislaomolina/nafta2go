@@ -35,25 +35,24 @@ exactas y ordenadas de coordenadas. Se conserva fecha y hash del primer resultad
 El proveedor valida la matriz antes de ingresarla; los errores no se guardan.
 Los precios y las recomendaciones se recalculan desde su versión de datos.
 
-Esta PR incorpora el componente base. Su uso en `CapturedRoutes`, la lectura de
-cabeceras y las marcas del resultado se incorporan en una PR dependiente de #55.
-
 ### Consequences
 
 * Good, because una repetición vigente evita una llamada, incluso durante un
   bloqueo por cuota, y no renueva artificialmente su fecha de captura.
 * Good, because los cupos cuentan intentos fallidos y atienden `Retry-After` o
   reinicio anunciado; sin indicación válida, un 429 bloquea nuevos intentos 60 s.
-* Bad, because los faltantes se serializan y esperan como máximo dos segundos;
-  si el proveedor sigue ocupado se devuelve error, sin inventar rutas.
+* Good, because solo se esperan entre sí los faltantes de una misma clave; rutas
+  distintas se consultan en paralelo (#97).
+* Bad, because una consulta idéntica a otra en curso espera hasta 20 s, el
+  timeout del cliente; si sigue ocupada se devuelve error, sin inventar rutas.
 * Bad, because cuota, caché y contadores se reinician con el proceso. Con varios
   workers o clientes de la misma key se necesita coordinación compartida.
 
 ### Confirmation
 
-Tests sin red verifican TTL, LRU, concurrencia, cuotas y errores. La PR dependiente
-agrega la comparación de recomendaciones y la actualización de precios sin otra
-llamada de rutas. No constituye una medición de p95 del sistema completo.
+Tests sin red verifican TTL, LRU, aislamiento, concurrencia, cuotas y errores;
+la integración compara recomendaciones con/sin caché y cambia precios sin volver
+a consultar rutas. No constituye una medición de p95 del sistema completo.
 
 ## Pros and Cons of the Options
 

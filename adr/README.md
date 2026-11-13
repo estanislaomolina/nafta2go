@@ -23,10 +23,11 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 
 ## Decisiones de la Entrega 3
 
-ADR-008 está reservado para la programación de ingesta de MVP-01.
-
 | ADR | Decisión | Estado |
 |---|---|---|
+| [ADR-008](ADR-008-programacion-de-ingesta.md) | Programación local de la ingesta diaria con systemd | Aceptado |
 | [ADR-009](ADR-009-api-http-con-fastapi.md) | API HTTP con FastAPI sobre la capa de aplicación | Aceptado |
 | [ADR-010](ADR-010-cache-volatil-y-cupo-de-rutas.md) | Caché volátil y cupo por proceso para matrices de rutas | Aceptado |
 | [ADR-011](ADR-011-base-de-red-con-cloudformation.md) | Base de red reproducible con CloudFormation | Propuesto |
+| [ADR-012](ADR-012-web-local-con-assets-propios.md) | Web local con assets propios y API del mismo origen | Propuesto |
+| [ADR-013](ADR-013-evaluacion-temporal-de-precios.md) | Evaluación retrospectiva temporal de precios y supuesto de disponibilidad | Propuesto |

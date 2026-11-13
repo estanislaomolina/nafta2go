@@ -1,0 +1,32 @@
+{
+  "availability_assumption": "valid_from_proxy_retrospective_not_verified",
+  "capture_fetched_at_utc": "2026-11-13T13:31:55.852785+00:00",
+  "code": {
+    "files_sha256": "60dfbf54e09b47d0a178292e5d96c18f40051e0f2196cb15c4b8183b1dd9246c",
+    "git_commit": "b20035ce88228786f9606ce2f424ee0b3e791499",
+    "git_dirty": false
+  },
+  "dataset_file": "examples.jsonl",
+  "dataset_sha256": "690d5ce9e4cb59f9f8627f8c171c5ae13d5ba93e3366feac7cf24ef3a44ea89d",
+  "environment": {
+    "python": "3.12.12",
+    "sqlalchemy": "2.1.6",
+    "tzdata": "2026.5"
+  },
+  "features_version": "price-temporal-v1",
+  "format_version": 1,
+  "ingestion_run_id": 1,
+  "model_trained": false,
+  "normalization_rules_version": "1",
+  "normalized_input_sha256": "a41afeb019d563cf45da2b082c6fa842ca170a16c913517fb4b2cc7417923730",
+  "normalized_rows": 80056,
+  "parameters": {
+    "cutoff_utc": "2026-01-01T03:00:00+00:00",
+    "min_history": 5,
+    "window_days": 30
+  },
+  "random_seed": null,
+  "source": "historico",
+  "source_sha256": "5a03269876a0facd38290938fcc580d6cf03fdae30264e5549affde22e3a1e70",
+  "source_size_bytes": 779141214
+}

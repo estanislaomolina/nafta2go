@@ -9,12 +9,75 @@ from pathlib import Path
 from sqlalchemy.exc import SQLAlchemyError
 
 from nafta2go.adapters.recorded_routes import CapturedRoutes, RecordedRoutes, matrix_bytes
-from nafta2go.adapters.routing import Point, RoutingError
-from nafta2go.application.coverage_rules import MIN_RECENT_CANDIDATES
+from nafta2go.adapters.routing import (
+    InvalidCredentials,
+    Point,
+    ProviderTimeout,
+    QuotaExceeded,
+    RoutingError,
+)
+from nafta2go.application.coverage_rules import (
+    MIN_RECENT_CANDIDATES,
+    CoverageConfigurationError,
+    configured_max_price_age_days,
+)
 from nafta2go.application.query import recommend
 from nafta2go.application.recommendation import DEFAULT_CANDIDATE_LIMIT, MAX_CANDIDATES
 from nafta2go.domain.engine import FuelRequest
 from nafta2go.persistence.database import create_db_engine, database_url, upgrade_to_head
+from nafta2go.presentation.cli_telemetry import CliObservation
+from nafta2go.presentation.navigation import present_recommendation
+
+
+class _UserInputError(ValueError):
+    """Mensaje curado de validación local, sin valores ni errores de terceros."""
+
+
+class SafeArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        self.print_usage(sys.stderr)
+        detail = "Consultá --help."
+        for option, action in self._option_string_actions.items():
+            if message.startswith(f"argument {option}:"):
+                detail = f"Revisá {option}."
+                if action.choices is not None:
+                    detail += " Opciones permitidas: " + ", ".join(map(str, action.choices)) + "."
+                break
+        self.exit(2, "Argumentos inválidos. " + detail + "\n")
+
+
+def _request(args):
+    try:
+        return FuelRequest(
+            args.consumo, args.capacidad, args.litros_iniciales, args.presupuesto, args.reserva
+        )
+    except ValueError as exc:
+        raise _UserInputError(str(exc)) from None
+
+
+def _reference(value):
+    try:
+        result = datetime.fromisoformat(value) if value else datetime.now(UTC)
+    except ValueError:
+        raise _UserInputError("reference_at: usar fecha ISO 8601 con zona horaria") from None
+    if result.utcoffset() is None:
+        raise _UserInputError("reference_at: se requiere zona horaria")
+    return result
+
+
+def error_code(exc):
+    for error, code in (
+        (CoverageConfigurationError, "coverage_not_configured"),
+        (InvalidCredentials, "routes_not_configured"),
+        (ProviderTimeout, "routes_timeout"),
+        (QuotaExceeded, "routes_quota_exceeded"),
+        (RoutingError, "routes_unavailable"),
+        (SQLAlchemyError, "data_unavailable"),
+        (OSError, "file_unavailable"),
+    ):
+        if isinstance(exc, error):
+            return code
+    return "invalid_request"
 
 
 def point(value: str) -> Point:
@@ -34,9 +97,13 @@ def render(payload: dict) -> str:
             + "; no son precios actuales."
         )
     lines.append(f"Referencia de precios: {payload['price_reference_at']}")
+    lines.append(f"Vigencia máxima aplicada: {payload['query']['max_price_age_days']} días")
     if (payload.get("routes") or {}).get("replayed"):
         lines.append("Rutas REPRODUCIDAS de " + payload["routes"]["captured_at_utc"])
+    elif (payload.get("routes") or {}).get("cache_hit"):
+        lines.append("Rutas REUTILIZADAS de " + payload["routes"]["captured_at_utc"])
     lines.append("Consulta: " + json.dumps(payload["query"], ensure_ascii=False))
+    navigation = {link["station_id"]: link for link in payload.get("navigation", [])}
     evaluations = {row["station_id"]: row for row in payload["evaluations"]}
     for choice in payload["alternatives"]:
         row = evaluations[choice["station_id"]]
@@ -57,6 +124,10 @@ def render(payload: dict) -> str:
                 "  Alertas: " + (", ".join(row["alerts"]) or "ninguna"),
             ]
         )
+        if link := navigation.get(choice["station_id"]):
+            lines.append(f"  {link['label']}: {link['url']}")
+    if payload.get("navigation_notice"):
+        lines.append(payload["navigation_notice"])
     for row in payload["evaluations"]:
         if not row["feasible"]:
             lines.append(f"Descartada {row['station_id']}: " + ", ".join(row["reasons"]))
@@ -66,7 +137,32 @@ def render(payload: dict) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    observation = CliObservation()
+    emit = True
+    try:
+        observation.exit_code = run(argv, observation)
+        return observation.exit_code
+    except SystemExit as exc:
+        emit = exc.code != 0
+        observation.error_code = observation.outcome = "invalid_arguments"
+        raise SystemExit(2 if emit else 0) from None
+    except KeyboardInterrupt:
+        observation.exit_code, observation.outcome = 130, "interrupted"
+        observation.error_code = "interrupted"
+        print("Consulta interrumpida.", file=sys.stderr)
+        return 130
+    except Exception:
+        observation.exit_code, observation.outcome = 2, "error"
+        observation.error_code = "internal_error"
+        print("Consulta fallida (internal_error); revisá el estado operativo.", file=sys.stderr)
+        return 2
+    finally:
+        if emit:
+            observation.emit()
+
+
+def run(argv, observation) -> int:
+    parser = SafeArgumentParser(prog="nafta2go.query", description=__doc__)
     parser.add_argument("--origin", type=point, required=True)
     parser.add_argument("--destination", type=point, help="si falta, vuelve al origen")
     parser.add_argument("--fuel-type", choices=("super", "premium"), default="super")
@@ -91,14 +187,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     engine = None
     try:
-        request = FuelRequest(
-            args.consumo, args.capacidad, args.litros_iniciales, args.presupuesto, args.reserva
-        )
-        reference = (
-            datetime.fromisoformat(args.reference_at) if args.reference_at else datetime.now(UTC)
-        )
-        if reference.utcoffset() is None:
-            raise ValueError("reference_at: se requiere zona horaria")
+        request = _request(args)
+        reference = _reference(args.reference_at)
+        configured_max_price_age_days()
         provider = RecordedRoutes(args.matrix_file) if args.matrix_file else CapturedRoutes()
         url = database_url()
         upgrade_to_head(url)
@@ -122,10 +213,19 @@ def main(argv: list[str] | None = None) -> int:
             if args.save_matrix and evidence is not None:
                 args.save_matrix.parent.mkdir(parents=True, exist_ok=True)
                 args.save_matrix.write_bytes(matrix_bytes(evidence))
+        payload = present_recommendation(payload)
         print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else render(payload))
+        observation.outcome = payload["outcome"]
+        observation.error_code = None
         return 0
-    except (ValueError, OSError, RoutingError, SQLAlchemyError) as exc:
-        print(f"Consulta fallida ({type(exc).__name__}): {exc}", file=sys.stderr)
+    except (ValueError, OSError, RoutingError, SQLAlchemyError, CoverageConfigurationError) as exc:
+        observation.error_code = error_code(exc)
+        detail = (
+            str(exc)
+            if isinstance(exc, _UserInputError)
+            else "Verificá entradas, configuración y dependencias."
+        )
+        print(f"Consulta fallida ({observation.error_code}): {detail}", file=sys.stderr)
         return 2
     finally:
         if engine is not None:

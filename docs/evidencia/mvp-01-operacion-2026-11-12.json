@@ -1,0 +1,155 @@
+{
+  "observed_at": "2026-11-13T02:54:09.822811+00:00",
+  "scope": "Fallos de DNS de los días 11 y 12; recuperación manual. No demuestra disponibilidad continua.",
+  "time_conventions": "Fechas de base en UTC sin zona; journal at_utc y observed_at con zona explícita.",
+  "operator_checkout_commit": "4325d79d69f975281ff17c6e81822cefe361c3e7",
+  "runs": [
+    {
+      "id": 6,
+      "source": "vigente",
+      "status": "failed",
+      "started_at": "2026-11-11 17:49:13.514474",
+      "finished_at": "2026-11-11 17:49:13.540120",
+      "dns_failure": true,
+      "trigger": "not_recorded_in_database"
+    },
+    {
+      "id": 7,
+      "source": "vigente",
+      "status": "failed",
+      "started_at": "2026-11-12 12:59:42.059105",
+      "finished_at": "2026-11-12 12:59:42.065898",
+      "dns_failure": true,
+      "trigger": "not_recorded_in_database"
+    },
+    {
+      "id": 8,
+      "source": "vigente",
+      "status": "succeeded",
+      "started_at": "2026-11-13 02:50:57.983402",
+      "finished_at": "2026-11-13 02:50:59.208435",
+      "dns_failure": false,
+      "trigger": "manual_recovery_in_session"
+    }
+  ],
+  "failure_alerts": [
+    {
+      "key": "vigente:failed:6",
+      "kind": "failed",
+      "run_id": 6,
+      "detected_at": "2026-11-11 17:49:14.208511",
+      "last_seen_at": "2026-11-12 12:59:41.617740",
+      "resolved_at": "2026-11-12 12:59:42.530815"
+    },
+    {
+      "key": "vigente:failed:7",
+      "kind": "failed",
+      "run_id": 7,
+      "detected_at": "2026-11-12 12:59:42.530815",
+      "last_seen_at": "2026-11-13 02:44:08.796351",
+      "resolved_at": "2026-11-13 02:51:28.592904"
+    }
+  ],
+  "active_alert_count": 0,
+  "raw_capture": {
+    "run_id": 8,
+    "sha256": "9187e6ebf6fe911ca1c79bb9134c346c3879dd3e243b8524dfeaa16c80159bb7",
+    "size_bytes": 9260911,
+    "stored_path": "data/raw/vigente/20261113T025058Z_9187e6ebf6fe.csv",
+    "actual_size_bytes": 9260911,
+    "actual_sha256": "9187e6ebf6fe911ca1c79bb9134c346c3879dd3e243b8524dfeaa16c80159bb7",
+    "integrity_verified": true
+  },
+  "units": {
+    "nafta2go-ingestion.service": {
+      "Result": "success",
+      "ExecMainStatus": "0",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "UnitFileState": "static",
+      "installed_sha256": "6a9ba3e23368dfbe6f40a7c5efbfadd5e8e10ca1d213d34ddac1266d47152966",
+      "matches_repository": true
+    },
+    "nafta2go-ingestion.timer": {
+      "NextElapseUSecRealtime": "Fri 2026-11-13 06:00:00 -03",
+      "LastTriggerUSec": "Thu 2026-11-12 09:59:41 -03",
+      "Result": "success",
+      "ActiveState": "active",
+      "SubState": "waiting",
+      "UnitFileState": "enabled",
+      "installed_sha256": "6ea5b05ed69b2b10a8eed213edbe8643fed3d6fc482b81c88c04a6fa9dc6b2f4",
+      "matches_repository": true
+    },
+    "nafta2go-monitor.service": {
+      "Result": "success",
+      "ExecMainStatus": "0",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "UnitFileState": "static",
+      "installed_sha256": "14c6b04747aad962f326f1f29dbdf333b562325e42db5f324b808cbc4b3189e6",
+      "matches_repository": true
+    },
+    "nafta2go-monitor.timer": {
+      "NextElapseUSecRealtime": "Fri 2026-11-13 00:00:00 -03",
+      "LastTriggerUSec": "Thu 2026-11-12 23:44:08 -03",
+      "Result": "success",
+      "ActiveState": "active",
+      "SubState": "waiting",
+      "UnitFileState": "enabled",
+      "installed_sha256": "0a3d6421901a8539420d100e14dfd34dc00e2598fc566aedfeb64e861eb3a7fa",
+      "matches_repository": true
+    }
+  },
+  "journal_results": [
+    {
+      "unit": "nafta2go-ingestion.service",
+      "at_utc": "2026-11-11T17:49:13.577394+00:00",
+      "invocation_id": "896336d0eaef4703801527f83b6ddb3e",
+      "result": {
+        "run_id": 6,
+        "source": "vigente",
+        "status": "failed",
+        "started_at": "2026-11-11T17:49:13.514474Z",
+        "finished_at": "2026-11-11T17:49:13.540120Z",
+        "duration_seconds": 0.025646
+      }
+    },
+    {
+      "unit": "nafta2go-ingestion.service",
+      "at_utc": "2026-11-12T12:59:42.070421+00:00",
+      "invocation_id": "13e11fe5cbb44091a15e039903c9c8bf",
+      "result": {
+        "run_id": 7,
+        "source": "vigente",
+        "status": "failed",
+        "started_at": "2026-11-12T12:59:42.059105Z",
+        "finished_at": "2026-11-12T12:59:42.065898Z",
+        "duration_seconds": 0.006793
+      }
+    },
+    {
+      "unit": "nafta2go-ingestion.service",
+      "at_utc": "2026-11-13T02:50:59.215702+00:00",
+      "invocation_id": "2e6b910261c9434e9bbffcf37de24d31",
+      "result": {
+        "run_id": 8,
+        "source": "vigente",
+        "status": "succeeded",
+        "started_at": "2026-11-13T02:50:57.983402Z",
+        "finished_at": "2026-11-13T02:50:59.208435Z",
+        "duration_seconds": 1.225033
+      }
+    },
+    {
+      "unit": "nafta2go-monitor.service",
+      "at_utc": "2026-11-13T02:51:28.624761+00:00",
+      "invocation_id": "3f1d4f3db4cf4e81ba0fea42b91c5e50",
+      "result": {
+        "source": "vigente",
+        "status": "healthy",
+        "checked_at": "2026-11-13T02:51:28.592904+00:00"
+      }
+    }
+  ],
+  "redactions": "Ruta del original relativa al checkout; errores completos y URLs omitidos."
+}

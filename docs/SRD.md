@@ -82,9 +82,9 @@ Las reglas de dependencia son estas:
 - Ninguna capa de negocio escribe SQL: todo pasa por `repository`.
 
 El primer incremento HTTP de MVP-02 agrega `presentation/`, con FastAPI sobre
-la capa de aplicación. Esta base expone salud y readiness; la consulta HTTP se
-incorpora en una PR dependiente. Configuración en [API](API.md); decisión en
-[ADR-009](../adr/ADR-009-api-http-con-fastapi.md). La web sigue pendiente.
+`application.query`: la presentación no calcula precios ni accede directamente a
+tablas. Contrato, token local y controles de salud en [API](API.md); decisión en
+[ADR-009](../adr/ADR-009-api-http-con-fastapi.md). La primera web local se describe en [WEB](WEB.md).
 
 En el MVP se suman una capa de **presentación** (API HTTP y web) por encima de
 la aplicación, y el **diagnóstico ML** como un componente separado que la
@@ -207,6 +207,11 @@ incluyen ingesta desde el CSV completo, matriz autenticada, ranking y registro.
 | Docker + Compose | Ejecución local y CI | Misma imagen en la máquina y en el CI. Prepara la salida a cloud (RNF07) | Instalación local únicamente |
 | GitHub Actions | Integración continua | Checks requeridos en `dev` y `main`: links, ruff, pytest, gitleaks y contenedores ([CALIDAD](CALIDAD.md)) | — |
 | pytest + pytest-cov + ruff | Calidad | Tests sin red y con bases temporales; cobertura de líneas ≥ 90% controlada en CI. Un único linter y formateador | flake8 + black |
+
+El incremento #55 incorpora caché volátil de matrices y cupo local por proceso y
+credencial en los adaptadores. Conserva fecha y hash, recalcula precios y no
+persiste ubicaciones. Configuración y limitaciones en [RUTAS](RUTAS.md) y
+[ADR-010](../adr/ADR-010-cache-volatil-y-cupo-de-rutas.md).
 
 ## 5. Modelo de datos
 
@@ -383,7 +388,7 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 
 | Parte | Simplificación | Plan para el MVP |
 |---|---|---|
-| Interfaz | Base HTTP local con salud; consulta autenticada y web pendientes | Caché, interfaz web y despliegue público |
+| Interfaz | API HTTP y web local autenticadas con código de demo | Validación integral y despliegue público |
 | Ranking | Tres prioridades determinísticas; equilibrio con igual peso a ganancia neta y km extra normalizados | Comparación general/conservadora con diagnóstico ML |
 | Candidatas | Límite configurable hasta 20; diez por defecto para reproducir la POC | Validar cuota y latencia de veinte candidatas en vivo |
 | Corredor | Desvío estimado en línea recta | Se mantiene como prefiltro; el desvío real ya lo calcula el motor |
@@ -403,9 +408,26 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 | La fuente cambia columnas o formato | `UnexpectedSchema` falla nombrando lo que falta y la ejecución queda `failed` |
 | Coordenadas mal cargadas (dos estaciones con provincia CABA están fuera de la ciudad) | Alerta `fuera_de_caba`, que se excluye de la selección |
 
+El incremento de navegación de MVP-03 genera Maps URLs en `presentation/` a
+partir de coordenadas públicas de las estaciones elegidas, entregadas por
+aplicación después del registro de la recomendación. No persiste enlaces ni
+incluye ubicaciones del conductor; no modifica motor, ranking ni proveedor de
+rutas. API y CLI comparten esa presentación; contrato y pendientes en [MAPS](MAPS.md).
+
+La web local de MVP-03 sirve HTML/CSS/JS propios desde FastAPI, comparte origen
+con la API y no duplica reglas del motor. Contrato, acceso de demo y límites en
+[WEB](WEB.md); alternativas en [ADR-012](../adr/ADR-012-web-local-con-assets-propios.md).
+
 El incremento de monitoreo de MVP-01 agrega `python -m nafta2go.monitor`: detecta
 fallos, ejecuciones excedidas y ausencias, y persiste detección y resolución en
-`ingestion_alerts` (migración `0003`). Programación y alertas externas pendientes.
+`ingestion_alerts` (migración `0003`). La programación local usa systemd (vigente a las 06:00 de Argentina y monitor
+horario); instalación y límites en [INGESTA](INGESTA.md) y alternativas en
+[ADR-008](../adr/ADR-008-programacion-de-ingesta.md). Las notificaciones externas
+y la supervisión continua siguen pendientes.
+
+La adquisición remota incorpora hasta tres intentos dentro de una ingesta, con
+esperas acotadas y conteo en el reporte. No repite normalización ni persistencia;
+ver [política de reintentos](INGESTA.md). No requiere cambiar el esquema de datos.
 
 ## Preparación del sandbox AWS (MVP-08)
 
@@ -413,3 +435,48 @@ La base de red propuesta está versionada en `infra/aws/network.json`, sin cómp
 ni aplicación desplegados. Acceso reportado, límites del presupuesto, validación
 y pendientes en [AWS](AWS.md); alternativas de IaC en
 [ADR-011](../adr/ADR-011-base-de-red-con-cloudformation.md).
+
+### Telemetría HTTP local
+
+La presentación ASGI registra el ciclo de POST de recomendaciones sin inspeccionar
+su cuerpo ni URL. Emite JSON con ID propio, fecha UTC, duración, estado y resultado
+acotado; expone contadores por aplicación y caché por proceso mediante lectura
+administrativa autenticada. El arranque suprime access logs con URLs y errores
+inesperados anteriores a la respuesta se sanitizan. No incorpora persistencia de
+ubicaciones, agregación entre réplicas, métricas ML ni supervisión sostenida.
+Contrato y límites: [API](API.md#telemetría-local-de-consultas).
+
+La lectura administrativa de ingestas pasa por aplicación y repositorio, proyecta
+únicamente metadatos permitidos y agrega conteos en SQL. Distingue intento y
+versión exitosa, reutiliza las reglas del monitor para un diagnóstico actual y
+limita la respuesta a veinte condiciones con total explícito. No sincroniza
+alertas ni muta ingestas desde GET. Contrato: [API](API.md#estado-de-ingestas-para-operación).
+
+La CLI de consultas emite un evento JSON por ejecución en stderr mediante un
+logger aislado, con ID propio, fecha UTC, duración y resultado. stdout mantiene
+su contrato. Los errores y el parser usan mensajes seguros sin repetir valores
+ni excepciones originales. Los eventos CLI no se agregan a los contadores HTTP;
+contrato y retención en [POC-05](POC-05.md#telemetría-cli-agregada-en-mvp).
+
+La presentación `/operacion` usa assets propios y las dos lecturas operativas
+autenticadas del mismo origen. No consulta al cargar ni escribe datos; actualiza
+manual y conjuntamente las vistas, descarta lecturas parciales/anteriores ante
+fallos y cancela al limpiar o salir. Código sólo en memoria de pestaña. No hay
+roles nuevos ni despliegue público; [contrato y QA](WEB.md#panel-local-de-operación).
+
+La vigencia máxima de la consulta es configuración operativa por entorno
+(1–30 días, 30 predeterminado). Aplicación la lee una vez, la propaga a ambos
+orígenes y conserva el valor efectivo con cada recomendación; las capas de
+selección siguen recibiendo parámetros explícitos. Configuración inválida
+desactiva readiness y devuelve error seguro, sin rutas. No habilita override
+público, precios mayores de treinta días ni cambios administrativos en vivo;
+[contrato](COBERTURA.md#vigencia-configurable-en-mvp).
+
+### Preparación temporal de ML (primer incremento de MVP-04)
+
+`ml.temporal` es un componente puro, separado del recomendador: recibe filas
+normalizadas, prepara features anteriores al objetivo y separa ejemplos por un
+corte temporal. No accede a la base ni entrena/serve modelos. Su mediana móvil
+es un baseline estadístico, con cobertura y abstención explícitas. No usa las
+alertas mensuales de normalización, que podrían incorporar información futura.
+Supuestos, alternativas y límites en [ADR-013](../adr/ADR-013-evaluacion-temporal-de-precios.md).
