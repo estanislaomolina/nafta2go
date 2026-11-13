@@ -2,7 +2,7 @@
 
 Nafta2Go es un recomendador de estaciones de servicio para conductores de CABA. Combina precio publicado, presupuesto, autonomía, capacidad del tanque y desvío del recorrido para mostrar alternativas explicadas.
 
-Este repositorio contiene el diseño de la **Entrega 1**, la **Entrega 2: POC y SRD** y un primer incremento HTTP de la **Entrega 3: MVP** del Trabajo Práctico Integrador. El motor y el adaptador de rutas tienen pruebas automáticas; el flujo de punta a punta con datos y rutas reales se ejecuta desde un comando y conserva evidencia reproducible.
+Este repositorio contiene el diseño de la **Entrega 1**, la **Entrega 2: POC y SRD** y incrementos de API y web local de la **Entrega 3: MVP** del Trabajo Práctico Integrador. El motor y el adaptador de rutas tienen pruebas automáticas; el flujo de punta a punta con datos y rutas reales se ejecuta desde un comando y conserva evidencia reproducible.
 
 ## Integrantes
 
@@ -24,6 +24,7 @@ Santiago Bunge
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
 - [Enlaces de Google Maps](docs/MAPS.md): navegación por alternativa en API/CLI; integración visual y pruebas de teclado/móvil pendientes.
+- [Aplicación web local](docs/WEB.md): formulario y resultados explicados sobre la API, con acceso de demo.
 - [API local](docs/API.md): consulta HTTP autenticada, OpenAPI, validaciones, errores y ejecución con Python o Docker (incremento de MVP-02).
 - [Normalización de precios](docs/NORMALIZACION.md): formato real de las fechas, reglas de rechazo y alertas, duplicados y corrida real (POC-01).
 - [Cobertura de precios](docs/COBERTURA.md): mínimo de cobertura en el corredor del recorrido, escenario histórico rotulado y reporte (POC-02).
@@ -99,7 +100,7 @@ Requiere Docker con Compose v2. Desde la raíz del repositorio:
 docker compose up --build
 ```
 
-Construye la imagen de la aplicación y corre las migraciones sobre una base SQLite guardada en el volumen `nafta2go-data`. El contenedor `migrate` termina cuando el esquema queda actualizado. Para borrar la base: `docker compose down --volumes`. La consulta completa se ejecuta con `docker compose run --rm query`; ver [POC-05](docs/POC-05.md). Para iniciar la API local, configurar el token y usar `docker compose --profile mvp up --build api`; ver [API](docs/API.md). La interfaz web sigue pendiente.
+Construye la imagen de la aplicación y corre las migraciones sobre una base SQLite guardada en el volumen `nafta2go-data`. El contenedor `migrate` termina cuando el esquema queda actualizado. Para borrar la base: `docker compose down --volumes`. La consulta completa se ejecuta con `docker compose run --rm query`; ver [POC-05](docs/POC-05.md). Para iniciar la API local, configurar el token y usar `docker compose --profile mvp up --build api`; ver [API](docs/API.md). La pantalla local se abre en `http://127.0.0.1:8000/`; ver [WEB](docs/WEB.md). El despliegue público sigue pendiente.
 
 ## Estado del desarrollo
 
@@ -108,7 +109,8 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración. Esta t
 | Componente | Tarea | Estado |
 |---|---|---|
 | Integración continua: links, lint, tests y secretos | POC-07 | Implementado |
-| API del recomendador | MVP-02 | Implementada localmente con token y tests HTTP; caché, web y despliegue público pendientes; ver docs/API.md |
+| Aplicación web local | MVP-03 | Formulario y resultados explicados con acceso de demo; pruebas de navegador en PR dependiente; ver docs/WEB.md |
+| API del recomendador | MVP-02 | Implementada localmente con token y tests HTTP; caché y despliegue público pendientes; ver docs/API.md |
 | Normalización de precios | POC-01 | Implementado: descarga verificada, reglas con rechazos y alertas, y corrida real documentada en docs/NORMALIZACION.md |
 | Cobertura de precios y escenario histórico | POC-02 | Implementado: mínimo de 3 estaciones recientes en el corredor, escenario congelado del 24/10 rotulado como histórico y reporte en docs/COBERTURA.md |
 | Persistencia e ingesta mínimas | POC-06 | Implementado: esquema, migraciones e ingesta trazable, conectada a la normalización de POC-01 |

@@ -28,3 +28,6 @@ ADR-008 está reservado para la programación de ingesta de MVP-01.
 | ADR | Decisión | Estado |
 |---|---|---|
 | [ADR-009](ADR-009-api-http-con-fastapi.md) | API HTTP con FastAPI sobre la capa de aplicación | Aceptado |
+| [ADR-012](ADR-012-web-local-con-assets-propios.md) | Web local con assets propios y API del mismo origen | Propuesto |
+
+La numeración 010 y 011 está reservada para caché y red AWS en sus PRs.

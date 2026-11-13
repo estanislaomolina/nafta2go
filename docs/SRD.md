@@ -84,7 +84,7 @@ Las reglas de dependencia son estas:
 El primer incremento HTTP de MVP-02 agrega `presentation/`, con FastAPI sobre
 `application.query`: la presentación no calcula precios ni accede directamente a
 tablas. Contrato, token local y controles de salud en [API](API.md); decisión en
-[ADR-009](../adr/ADR-009-api-http-con-fastapi.md). La web sigue pendiente.
+[ADR-009](../adr/ADR-009-api-http-con-fastapi.md). La primera web local se describe en [WEB](WEB.md).
 
 En el MVP se suman una capa de **presentación** (API HTTP y web) por encima de
 la aplicación, y el **diagnóstico ML** como un componente separado que la
@@ -381,7 +381,7 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 
 | Parte | Simplificación | Plan para el MVP |
 |---|---|---|
-| Interfaz | API HTTP local autenticada sobre la aplicación; web pendiente | Caché, interfaz web y despliegue público |
+| Interfaz | API HTTP y web local autenticadas con código de demo | Caché, pruebas de navegador y despliegue público |
 | Ranking | Tres prioridades determinísticas; equilibrio con igual peso a ganancia neta y km extra normalizados | Comparación general/conservadora con diagnóstico ML |
 | Candidatas | Hasta 10 en lugar de 20, preseleccionadas por recencia dentro del corredor | Evaluar si la cuota permite 20 |
 | Corredor | Desvío estimado en línea recta | Se mantiene como prefiltro; el desvío real ya lo calcula el motor |
@@ -406,3 +406,7 @@ partir de coordenadas públicas de las estaciones elegidas, entregadas por
 aplicación después del registro de la recomendación. No persiste enlaces ni
 incluye ubicaciones del conductor; no modifica motor, ranking ni proveedor de
 rutas. API y CLI comparten esa presentación; contrato y pendientes en [MAPS](MAPS.md).
+
+La web local de MVP-03 sirve HTML/CSS/JS propios desde FastAPI, comparte origen
+con la API y no duplica reglas del motor. Contrato, acceso de demo y límites en
+[WEB](WEB.md); alternativas en [ADR-012](../adr/ADR-012-web-local-con-assets-propios.md).
