@@ -306,3 +306,13 @@ test('panel: timeout cancela la lectura completa sin conservar datos', async () 
     release(); await accessible(page);
   } finally { release?.(); await page.context().close(); }
 });
+test('panel: código pegado con espacios conserva acceso y header normalizado', async () => {
+  const page = await pageFor();
+  try {
+    await operation(page, '  codigo-web-de-prueba  ');
+    const request = page.waitForRequest(r => r.url().endsWith('/api/v1/operations'));
+    await readOperation(page);
+    assert.equal((await request).headers().authorization, 'Bearer codigo-web-de-prueba');
+    assert.match(await page.locator('#operation-status').innerText(), /Estado actualizado/);
+  } finally { await page.context().close(); }
+});

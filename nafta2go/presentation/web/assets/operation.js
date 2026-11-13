@@ -59,7 +59,7 @@ form.addEventListener('submit', async event => {
   results.replaceChildren(); error.hidden = true; submit.disabled = true; source.disabled = true;
   status.textContent = 'Consultando estado…';
   async function read(url) {
-    const response = await fetch(url, {signal, cache: 'no-store', credentials: 'omit', redirect: 'error', headers: {Authorization: 'Bearer ' + access.value}});
+    const response = await fetch(url, {signal, cache: 'no-store', credentials: 'omit', redirect: 'error', headers: {Authorization: 'Bearer ' + access.value.trim()}});
     if (!response.ok) throw new Error(response.status === 401 ? 'unauthorized' : 'unavailable');
     return response.json();
   }
