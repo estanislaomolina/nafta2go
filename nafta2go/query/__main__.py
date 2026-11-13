@@ -10,7 +10,9 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from nafta2go.adapters.recorded_routes import CapturedRoutes, RecordedRoutes, matrix_bytes
 from nafta2go.adapters.routing import Point, RoutingError
+from nafta2go.application.coverage_rules import MIN_RECENT_CANDIDATES
 from nafta2go.application.query import recommend
+from nafta2go.application.recommendation import DEFAULT_CANDIDATE_LIMIT, MAX_CANDIDATES
 from nafta2go.domain.engine import FuelRequest
 from nafta2go.persistence.database import create_db_engine, database_url, upgrade_to_head
 from nafta2go.presentation.navigation import present_recommendation
@@ -75,6 +77,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--destination", type=point, help="si falta, vuelve al origen")
     parser.add_argument("--fuel-type", choices=("super", "premium"), default="super")
     parser.add_argument("--schedule-id", type=int, choices=(2, 3), default=2)
+    parser.add_argument(
+        "--max-candidates",
+        type=int,
+        choices=range(MIN_RECENT_CANDIDATES, MAX_CANDIDATES + 1),
+        default=DEFAULT_CANDIDATE_LIMIT,
+        help="Máximo de candidatas entre 3 y 20; por defecto 10 para reproducir la POC",
+    )
     parser.add_argument("--presupuesto", default="12000")
     parser.add_argument("--consumo", default="10")
     parser.add_argument("--capacidad", default="50")
@@ -110,6 +119,7 @@ def main(argv: list[str] | None = None) -> int:
                 fuel_type=args.fuel_type,
                 schedule_id=args.schedule_id,
                 reference_at=reference,
+                max_candidates=args.max_candidates,
                 routing_provider="openrouteservice-recorded"
                 if args.matrix_file
                 else "openrouteservice",
