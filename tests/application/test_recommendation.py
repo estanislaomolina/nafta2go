@@ -122,27 +122,28 @@ def test_empty_candidates_do_not_call_provider(matrix):
     assert provider.calls == []
 
 
-def test_more_than_ten_candidates_do_not_call_provider(matrix):
+def test_more_than_twenty_candidates_do_not_call_provider(matrix):
     provider = FakeProvider(matrix)
-    with pytest.raises(ValueError, match="hasta diez"):
-        evaluate_stations(REQUEST, CANDIDATES * 6, ORIGIN, DESTINATION, provider)
+    with pytest.raises(ValueError, match="hasta veinte"):
+        evaluate_stations(REQUEST, CANDIDATES * 11, ORIGIN, DESTINATION, provider)
     assert provider.calls == []
 
 
-def test_exactly_ten_candidates_are_evaluated_in_one_call():
-    locations = [Point(lat=-34.60 - index * 0.001, lon=-58.40) for index in range(10)]
+@pytest.mark.parametrize("count", [10, 20])
+def test_candidates_are_evaluated_in_one_call(count):
+    locations = [Point(lat=-34.60 - index * 0.001, lon=-58.40) for index in range(count)]
     candidates = [
         Candidate(str(index), point, Decimal(1200)) for index, point in enumerate(locations)
     ]
     matrix = DistanceMatrix(
-        durations_s=[[60] * 11 for _ in range(11)],
-        distances_m=[[1000] * 11 for _ in range(11)],
+        durations_s=[[60] * (count + 1) for _ in range(count + 1)],
+        distances_m=[[1000] * (count + 1) for _ in range(count + 1)],
         sources=[ORIGIN, *locations],
         destinations=[*locations, DESTINATION],
     )
     provider = FakeProvider(matrix)
     results = evaluate_stations(REQUEST, candidates, ORIGIN, DESTINATION, provider)
-    assert len(results) == 10
+    assert len(results) == count
     assert len(provider.calls) == 1
     assert all(result.evaluation.feasible for result in results)
 
