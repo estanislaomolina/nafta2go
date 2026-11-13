@@ -29,9 +29,36 @@ No se desplegó en AWS ni se incorporó hosting externo.
 Incluye etiquetas, enlace para saltar al formulario, foco visible y regiones de
 estado/error. Las [pruebas de navegador](../tests/browser/README.md) verifican UC01/UC02 con
 teclado y los descartes de UC06, errores, privacidad y layouts de escritorio/móvil
-emulado. Axe-core registró cero violaciones e incompletos en siete estados de
+emulado. Axe-core registró cero violaciones e incompletos en doce estados de
 la corrida local; no se declara conformidad completa con WCAG. Falta teléfono
 físico, otros navegadores y lector de pantalla.
 El diagnóstico ML, ranking conservador, perfiles y autenticación pública siguen
 pendientes en sus respectivos issues. La web usa el valor predeterminado de diez candidatas; la API permite configurar
 un máximo entre 3 y 20. Esto no completa por sí solo MVP-03.
+
+## Panel local de operación
+
+Abrir `http://127.0.0.1:8000/operacion` en el mismo servicio. El HTML de acceso
+es público y no contiene datos ni código; las dos lecturas de [API](API.md)
+requieren el Bearer local existente. No hay roles separados de usuario/operador:
+esta interfaz no habilita uso público. Elegir fuente, ingresar el código y pulsar
+«Actualizar estado»; no hace polling ni consultas antes de esa acción.
+
+Presenta contadores de consultas HTTP y caché de rutas, condiciones del monitor
+y último intento separado de la última versión exitosa, con fechas, duración,
+conteos, reglas y captura. No genera ingestas ni escribe/resuelve alertas.
+Explica que contadores son por proceso, que la CLI queda fuera y que ausencia
+de condiciones no garantiza frescura, cobertura ni disponibilidad. ML queda
+rotulado como pendiente; no se inventan métricas.
+
+Las lecturas usan `no-store` y mismo origen. La pantalla retira datos anteriores
+al actualizar y sólo presenta el conjunto si ambas lecturas funcionan; ante
+401, dependencia, red o espera de quince segundos muestra un mensaje seguro.
+«Limpiar acceso y datos» o salir cancela la lectura y vacía credencial/resultados;
+una respuesta tardía no los repone. Sin cookies, local/session storage ni código
+en URL; sin servicios de terceros. Texto remoto se inserta con textContent.
+
+QA cubre teclado, errores, cancelación, timeout, regreso a la página, XSS y
+390/320 px emulados. Las capturas de operación son datos de prueba: el caso
+de fallo posterior al éxito y su hash son sintéticos; no son evidencia de una
+ingesta real. Falta validación con operador, teléfono físico y lector de pantalla.

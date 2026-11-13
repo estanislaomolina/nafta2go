@@ -187,3 +187,121 @@ test('timeout del proveedor y fallo de red ofrecen mensajes recuperables', async
     assert.equal(await page.locator('article').count(), 0);
   } finally { await page.context().close(); }
 });
+
+async function operation(page, code = 'codigo-web-de-prueba') {
+  await page.goto(base + '/operacion'); await page.locator('#operation-access').fill(code);
+}
+async function readOperation(page) {
+  await page.locator('#operation-submit').click();
+  await page.waitForFunction(() => !document.querySelector('#operation-submit').disabled);
+}
+test('panel: acceso por teclado y lectura real de la API sin persistir código', async () => {
+  const page = await pageFor();
+  try {
+    await page.goto(base + '/operacion'); await accessible(page);
+    assert.equal(await page.locator('#operation-results').innerText(), '');
+    await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
+    await enter(page, '#operation-access', 'codigo-web-de-prueba');
+    await page.locator('#operation-source').selectOption('historico');
+    const request = page.waitForRequest(r => r.url().includes('/operations/ingestion?'));
+    await reach(page, '#operation-submit'); await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.querySelector('#operation-status').textContent.startsWith('Estado actualizado'));
+    const sent = await request;
+    assert.equal(new URL(sent.url()).searchParams.get('source'), 'historico');
+    assert.equal(sent.headers().authorization, 'Bearer codigo-web-de-prueba');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'operation-results');
+    assert.match(await page.locator('#operation-results').innerText(), /Falta el intento diario esperado/);
+    assert.match(await page.locator('#operation-results').innerText(), /No hay una ejecución registrada/);
+    assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
+    assert.equal((await page.context().cookies()).length, 0);
+    assert.equal(new URL(page.url()).search, ''); await accessible(page);
+    await page.screenshot({path: path.join(artifacts, 'operacion-escritorio.png'), fullPage: true});
+    await page.locator('#operation-clear').click();
+    assert.equal(await page.locator('#operation-results').innerText(), '');
+    assert.equal(await page.locator('#operation-access').inputValue(), '');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'operation-access');
+  } finally { await page.context().close(); }
+});
+test('panel: código inválido, dependencia caída y fallo de red retiran la lectura anterior', async () => {
+  const page = await pageFor();
+  try {
+    await operation(page, 'incorrecto'); await readOperation(page);
+    assert.match(await page.locator('#operation-error').innerText(), /código de acceso no es válido/);
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'operation-error'); await accessible(page);
+    await page.locator('#operation-access').fill('codigo-web-de-prueba'); await readOperation(page);
+    assert.ok(await page.locator('#operation-results article').count());
+    await page.route('**/api/v1/operations/ingestion?*', route => route.fulfill({status: 503, json: {detail: {code: 'data_unavailable'}}}));
+    await readOperation(page);
+    assert.equal(await page.locator('#operation-results').innerText(), '');
+    assert.match(await page.locator('#operation-error').innerText(), /disponibilidad del servicio/);
+    await page.unroute('**/api/v1/operations/ingestion?*');
+    await page.route('**/api/v1/operations/ingestion?*', route => route.abort('failed'));
+    await readOperation(page); assert.match(await page.locator('#operation-error').innerText(), /Revisá la conexión/);
+  } finally { await page.context().close(); }
+});
+test('panel: limpiar durante carga cancela y no repone datos ni credenciales', async () => {
+  const page = await pageFor();
+  try {
+    await operation(page); let release;
+    const delayed = new Promise(resolve => { release = resolve; });
+    await page.route('**/api/v1/operations', async route => {
+      await delayed;
+      await route.fulfill({json: {queries: {completed: 999, outcome: {}}, routes: {}}}).catch(() => {});
+    });
+    const request = page.waitForRequest(r => r.url().endsWith('/api/v1/operations'));
+    await page.locator('#operation-submit').click(); await request;
+    assert.equal(await page.locator('#operation-submit').isDisabled(), true);
+    await page.locator('#operation-clear').click(); release();
+    await page.waitForLoadState('networkidle');
+    assert.equal(await page.locator('#operation-results').innerText(), '');
+    assert.equal(await page.locator('#operation-access').inputValue(), '');
+    assert.match(await page.locator('#operation-status').innerText(), /limpiados/);
+    await page.reload(); assert.equal(await page.locator('#operation-access').inputValue(), '');
+  } finally { await page.context().close(); }
+});
+test('panel móvil: fallo posterior al éxito, condiciones truncadas y texto remoto seguro', async () => {
+  const page = await pageFor({viewport: {width: 390, height: 844}, isMobile: true, hasTouch: true});
+  try {
+    await operation(page);
+    const run = {id: 8, status: 'succeeded', started_at: '2026-10-26T10:00:00+00:00', finished_at: '2026-10-26T10:01:00+00:00', duration_seconds: 60, price_rows: 12, stations: 8, rejected_rows: 1, rules_version: '<img src=x onerror="window.XSS=true">', sha256: 'a'.repeat(64), size_bytes: 1234};
+    await page.route('**/api/v1/operations/ingestion?*', route => route.fulfill({json: {
+      observed_at: run.finished_at, status: 'alerting', latest_attempt: {...run, id: 9, status: 'failed'}, latest_successful: run,
+      conditions: [{kind: 'failed', run_id: 9}], condition_count: 21, conditions_truncated: true
+    }}));
+    await readOperation(page);
+    assert.match(await page.locator('#operation-results').innerText(), /Fallida/);
+    assert.match(await page.locator('#operation-results').innerText(), /Exitosa/);
+    assert.match(await page.locator('#operation-results').innerText(), /Se muestran 1 de 21/);
+    assert.equal(await page.locator('img, script:not([src])').count(), 0);
+    assert.equal(await page.evaluate(() => window.XSS), undefined);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    await accessible(page); await page.screenshot({path: path.join(artifacts, 'operacion-movil-emulado.png'), fullPage: true});
+    await page.setViewportSize({width: 320, height: 740});
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    await page.unroute('**/api/v1/operations/ingestion?*');
+    await page.route('**/api/v1/operations/ingestion?*', route => route.fulfill({json: {
+      observed_at: run.finished_at, status: 'healthy', conditions: [], latest_attempt: run, latest_successful: run
+    }}));
+    await readOperation(page); assert.match(await page.locator('#operation-results').innerText(), /Sin condiciones de alerta/);
+    await page.locator('.brand').click(); await page.goBack();
+    assert.equal(await page.locator('#operation-access').inputValue(), '');
+    assert.equal(await page.locator('#operation-results').innerText(), '');
+  } finally { await page.context().close(); }
+});
+test('panel: timeout cancela la lectura completa sin conservar datos', async () => {
+  const page = await pageFor(); let release;
+  try {
+    await operation(page); await page.clock.install();
+    const delayed = new Promise(resolve => { release = resolve; });
+    await page.route('**/api/v1/operations', async route => {
+      await delayed; await route.fulfill({json: {}}).catch(() => {});
+    });
+    const request = page.waitForRequest(r => r.url().endsWith('/api/v1/operations'));
+    await page.locator('#operation-submit').click(); await request;
+    await page.clock.runFor(15001);
+    await page.waitForFunction(() => !document.querySelector('#operation-submit').disabled);
+    assert.match(await page.locator('#operation-error').innerText(), /demoró demasiado/);
+    assert.equal(await page.locator('#operation-results').innerText(), '');
+    release(); await accessible(page);
+  } finally { release?.(); await page.context().close(); }
+});

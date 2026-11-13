@@ -457,3 +457,9 @@ logger aislado, con ID propio, fecha UTC, duración y resultado. stdout mantiene
 su contrato. Los errores y el parser usan mensajes seguros sin repetir valores
 ni excepciones originales. Los eventos CLI no se agregan a los contadores HTTP;
 contrato y retención en [POC-05](POC-05.md#telemetría-cli-agregada-en-mvp).
+
+La presentación `/operacion` usa assets propios y las dos lecturas operativas
+autenticadas del mismo origen. No consulta al cargar ni escribe datos; actualiza
+manual y conjuntamente las vistas, descarta lecturas parciales/anteriores ante
+fallos y cancela al limpiar o salir. Código sólo en memoria de pestaña. No hay
+roles nuevos ni despliegue público; [contrato y QA](WEB.md#panel-local-de-operación).

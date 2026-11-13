@@ -80,7 +80,7 @@ un error inesperado anterior a la respuesta devuelve 500 con `internal_error`,
 sin propagar el mensaje original al servidor. Una transmisión interrumpida se
 registra como fallo y sólo propaga un mensaje fijo.
 
-`GET /api/v1/operations` exige el mismo Bearer administrativo y devuelve conteos
+`GET /api/v1/operations` exige el mismo Bearer administrativo y devuelve con `Cache-Control: no-store` conteos
 por estado/resultado, suma de duraciones y contadores de caché/rutas. No consulta
 ORS ni lee datos del conductor. La configuración inválida de caché devuelve el
 error seguro de dependencia. El proceso genera sus propios IDs; no se guardan
@@ -95,8 +95,8 @@ eventos no incluyen URL, headers, cuerpo, mensajes de excepción ni ubicaciones.
 Otros servidores/proxies deben aplicar la misma política antes de exponerlos.
 Los contadores se reinician al reiniciar la aplicación/caché, no se agregan entre
 réplicas ni constituyen p95 o disponibilidad sostenida. El resumen HTTP no incluye consultas CLI; su evento separado se describe en
-[POC-05](POC-05.md#telemetría-cli-agregada-en-mvp). Faltan panel, métricas de
-modelo y alertas de consultas (#21).
+[POC-05](POC-05.md#telemetría-cli-agregada-en-mvp). El [panel local](WEB.md#panel-local-de-operación) presenta estas lecturas.
+Faltan métricas de modelo, alertas de consultas y supervisión sostenida (#21).
 
 ## Estado de ingestas para operación
 
@@ -121,4 +121,4 @@ La lectura usa la capa de aplicación y proyecciones SQL explícitas, sin leer l
 campos privados ni escribir en la base. No ejecuta ingestas ni sincroniza alertas: las
 marcas persistidas de detección/resolución siguen siendo tarea del monitor
 programado. Una lectura saludable no resuelve una alerta previa. Base/esquema no
-disponibles producen 503 seguro. No reemplaza supervisión sostenida ni un panel.
+disponibles producen 503 seguro. El [panel local](WEB.md#panel-local-de-operación) consume esta lectura; no reemplaza supervisión sostenida.

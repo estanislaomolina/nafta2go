@@ -151,11 +151,14 @@ def create_app(
 
     @application.get("/api/v1/operations", dependencies=[Depends(authorize)])
     def operations():
-        return {
-            "scope": "process",
-            "queries": telemetry.snapshot(),
-            "routes": shared_cache().snapshot(),
-        }
+        return JSONResponse(
+            content={
+                "scope": "process",
+                "queries": telemetry.snapshot(),
+                "routes": shared_cache().snapshot(),
+            },
+            headers={"Cache-Control": "no-store"},
+        )
 
     @application.get("/api/v1/operations/ingestion", dependencies=[Depends(authorize)])
     def ingestion(source: Literal["vigente", "historico"] = "vigente"):

@@ -334,7 +334,9 @@ def test_query_telemetry_is_correlated_private_and_authenticated(clients, caplog
     with clients() as client:
         denied = client.get("/api/v1/operations")
         assert denied.status_code == 401
-        initial = client.get("/api/v1/operations", headers=AUTH).json()
+        initial_response = client.get("/api/v1/operations", headers=AUTH)
+        assert initial_response.headers["cache-control"] == "no-store"
+        initial = initial_response.json()
         assert initial["queries"]["completed"] == 0
         response = client.post(
             "/api/v1/recommendations?ubicacion=secreto-en-query",

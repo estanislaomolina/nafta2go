@@ -19,6 +19,8 @@ assert requests.get(base + '/ready', timeout=3).status_code == 200
 html = requests.get(base + '/', timeout=3)
 assert html.status_code == 200 and 'Nafta2Go' in html.text
 assert requests.get(base + '/assets/app.js', timeout=3).status_code == 200
+assert requests.get(base + '/operacion', timeout=3).status_code == 200
+assert requests.get(base + '/assets/operation.js', timeout=3).status_code == 200
 denied = requests.post(base + '/api/v1/recommendations?token=private-probe', json={}, timeout=3)
 assert denied.status_code == 401 and denied.headers['x-request-id']
 metrics = requests.get(base + '/api/v1/operations', timeout=3,

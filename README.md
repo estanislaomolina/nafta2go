@@ -28,7 +28,7 @@ Santiago Bunge
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
 - [Enlaces de Google Maps](docs/MAPS.md): navegación por alternativa en API/CLI/web; pruebas en navegador y móvil emulado; teléfono físico pendiente.
 - [Validación conjunta local](docs/INTEGRACION.md): pruebas de ingesta, caché, API, web y Docker; alcances pendientes de MVP-09.
-- [Aplicación web local](docs/WEB.md): formulario y resultados explicados sobre la API, con acceso de demo.
+- [Aplicación web local](docs/WEB.md): formulario y resultados explicados sobre la API y panel local `/operacion`, con acceso por código.
 - [API local](docs/API.md): consulta HTTP autenticada, OpenAPI, validaciones, errores y ejecución con Python o Docker (incremento de MVP-02).
 - [Normalización de precios](docs/NORMALIZACION.md): formato real de las fechas, reglas de rechazo y alertas, duplicados y corrida real (POC-01).
 - [Cobertura de precios](docs/COBERTURA.md): mínimo de cobertura en el corredor del recorrido, escenario histórico rotulado y reporte (POC-02).
@@ -124,7 +124,7 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración. Esta t
 | Flujo de punta a punta | POC-05 | Implementado: consulta explicada, ranking, rutas reales guardadas y registro trazable; ver docs/POC-05.md |
 | Levantar el sistema completo con contenedores | POC-07 | Implementado para la POC: migraciones y comando de consulta, con reproducción completa en CI |
 | Diagnóstico estadístico con ML | MVP | Fuera del alcance de la POC |
-| Recomendador completo | MVP-02 | Primer incremento: límite explícito de hasta veinte candidatas, conservado en el resultado y la recomendación; API e integración completa pendientes; ver docs/MOTOR.md |
+| Recomendador completo | MVP-02 | Primer incremento: límite explícito de hasta veinte candidatas, conservado en el resultado y la recomendación; API conectada; validación integral de MVP-09 pendiente; ver docs/MOTOR.md |
 
 ## Consulta completa con datos reales (POC-05)
 
