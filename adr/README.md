@@ -30,3 +30,4 @@ ADR-008 está reservado para la programación de ingesta de MVP-01.
 | [ADR-009](ADR-009-api-http-con-fastapi.md) | API HTTP con FastAPI sobre la capa de aplicación | Aceptado |
 | [ADR-010](ADR-010-cache-volatil-y-cupo-de-rutas.md) | Caché volátil y cupo por proceso para matrices de rutas | Aceptado |
 | [ADR-011](ADR-011-base-de-red-con-cloudformation.md) | Base de red reproducible con CloudFormation | Propuesto |
+| [ADR-012](ADR-012-web-local-con-assets-propios.md) | Web local con assets propios y API del mismo origen | Propuesto |
