@@ -75,7 +75,8 @@ entregan en una PR dependiente.
 Cada POST de recomendaciones devuelve `X-Request-ID` generado por el servidor;
 el identificador del cliente se ignora. Al finalizar se emite un evento JSON
 `query_completed` con ese ID, fecha UTC de inicio, duración monotónica en ms,
-estado HTTP y resultado acotado. Incluye rechazos 401, validaciones 422 y fallos;
+estado HTTP y resultado acotado. En fallos inesperados agrega
+`error_type`, sin mensaje ni traza. Incluye rechazos 401, validaciones 422 y fallos;
 un error inesperado anterior a la respuesta devuelve 500 con `internal_error`,
 sin propagar el mensaje original al servidor. Una transmisión interrumpida se
 registra como fallo y sólo propaga un mensaje fijo.
