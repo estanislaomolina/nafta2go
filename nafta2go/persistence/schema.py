@@ -1,4 +1,4 @@
-"""Tablas de la base. Las migraciones hasta 0002 deben coincidir con estas definiciones."""
+"""Tablas de la base. Las migraciones hasta 0003 deben coincidir con estas definiciones."""
 
 from sqlalchemy import (
     JSON,
@@ -43,6 +43,18 @@ raw_captures = Table(
     Column("stored_path", Text, nullable=False),
     Column("fetched_at", DateTime, nullable=False),
     Column("source_last_modified", String(40)),
+)
+
+ingestion_alerts = Table(
+    "ingestion_alerts",
+    metadata,
+    Column("key", String(100), primary_key=True),
+    Column("source", String(20), nullable=False),
+    Column("kind", String(20), nullable=False),
+    Column("run_id", Integer, ForeignKey("ingestion_runs.id")),
+    Column("detected_at", DateTime, nullable=False),
+    Column("last_seen_at", DateTime, nullable=False),
+    Column("resolved_at", DateTime),
 )
 
 station_prices = Table(

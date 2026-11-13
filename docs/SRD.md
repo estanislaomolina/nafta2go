@@ -396,3 +396,7 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 | El proveedor de rutas cambia de host o de cuota (ya pasó con el host anterior) | Protocolo `RoutingProvider`; OSRM como alternativa; cuota diaria y límite por minuto verificados para la cuenta de la POC, con evidencia fechada ([RUTAS](RUTAS.md)) |
 | La fuente cambia columnas o formato | `UnexpectedSchema` falla nombrando lo que falta y la ejecución queda `failed` |
 | Coordenadas mal cargadas (dos estaciones con provincia CABA están fuera de la ciudad) | Alerta `fuera_de_caba`, que se excluye de la selección |
+
+El incremento de monitoreo de MVP-01 agrega `python -m nafta2go.monitor`: detecta
+fallos, ejecuciones excedidas y ausencias, y persiste detección y resolución en
+`ingestion_alerts` (migración `0003`). Programación y alertas externas pendientes.
