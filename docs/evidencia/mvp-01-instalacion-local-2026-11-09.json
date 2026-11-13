@@ -1,0 +1,117 @@
+{
+  "scope": "Instalación local y ejecución real del catálogo oficial; no demuestra disponibilidad continua",
+  "time_conventions": {
+    "run_dates": "UTC sin zona en la base; el resumen del journal explicita UTC con Z",
+    "capture_fetched_at": "Hora de Argentina sin zona, según el contrato de persistencia",
+    "source_last_modified": "Valor literal del catálogo, sin inferir su zona"
+  },
+  "observed_at": "2026-11-09T16:51:54.901304+00:00",
+  "run": {
+    "id": 3,
+    "source": "vigente",
+    "status": "succeeded",
+    "started_at": "2026-11-09T16:50:34.765370",
+    "finished_at": "2026-11-09T16:50:36.745355",
+    "rules_version": "1",
+    "report": {
+      "filas_leidas": 732,
+      "filas_validas": 732,
+      "filas_rechazadas": 0,
+      "duplicados_exactos": 0,
+      "rechazos_por_motivo": {},
+      "alertas_por_tipo": {},
+      "estaciones": 184,
+      "fecha_min": "2023-08-16T15:32:00",
+      "fecha_max": "2026-11-03T00:00:00"
+    }
+  },
+  "raw_capture": {
+    "sha256": "0fa399066b44bdaf5076ad5984796f3f6fe036e746c4620e6293600614437759",
+    "size_bytes": 9260911,
+    "fetched_at": "2026-11-09T13:50:35.156829",
+    "source_last_modified": "2026-11-09T16:00:29.755675"
+  },
+  "raw_file": "data/raw/vigente/20261109T165035Z_0fa399066b44.csv",
+  "raw_integrity_verified": true,
+  "freshness": {
+    "maximum_age_days": 30,
+    "price_rows": 130,
+    "stations": 39,
+    "observed_at": "2026-11-09T16:51:54.901304+00:00"
+  },
+  "systemd_observed_at": "2026-11-09T16:52:25.776376+00:00",
+  "user_linger_enabled": true,
+  "units": {
+    "nafta2go-ingestion.service": {
+      "Result": "success",
+      "ExecMainStatus": "0",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "UnitFileState": "static",
+      "installed_sha256": "6a9ba3e23368dfbe6f40a7c5efbfadd5e8e10ca1d213d34ddac1266d47152966"
+    },
+    "nafta2go-ingestion.timer": {
+      "NextElapseUSecRealtime": "Tue 2026-11-10 06:00:00 -03",
+      "LastTriggerUSec": "",
+      "Result": "success",
+      "ActiveState": "active",
+      "SubState": "waiting",
+      "UnitFileState": "enabled",
+      "installed_sha256": "6ea5b05ed69b2b10a8eed213edbe8643fed3d6fc482b81c88c04a6fa9dc6b2f4"
+    },
+    "nafta2go-monitor.service": {
+      "Result": "success",
+      "ExecMainStatus": "0",
+      "ActiveState": "inactive",
+      "SubState": "dead",
+      "UnitFileState": "static",
+      "installed_sha256": "14c6b04747aad962f326f1f29dbdf333b562325e42db5f324b808cbc4b3189e6"
+    },
+    "nafta2go-monitor.timer": {
+      "NextElapseUSecRealtime": "Mon 2026-11-09 14:00:00 -03",
+      "LastTriggerUSec": "",
+      "Result": "success",
+      "ActiveState": "active",
+      "SubState": "waiting",
+      "UnitFileState": "enabled",
+      "installed_sha256": "0a3d6421901a8539420d100e14dfd34dc00e2598fc566aedfeb64e861eb3a7fa"
+    }
+  },
+  "journal_events": [
+    {
+      "unit": "nafta2go-ingestion.service",
+      "invocation_id": "e201d7a6155b4434bbdd3bc2b8a9c287",
+      "result": {
+        "source": "vigente",
+        "status": "succeeded",
+        "rules_version": "1",
+        "report": {
+          "filas_leidas": 732,
+          "filas_validas": 732,
+          "filas_rechazadas": 0,
+          "duplicados_exactos": 0,
+          "rechazos_por_motivo": {},
+          "alertas_por_tipo": {},
+          "estaciones": 184,
+          "fecha_min": "2023-08-16T15:32:00",
+          "fecha_max": "2026-11-03T00:00:00"
+        },
+        "run_id": 3,
+        "started_at": "2026-11-09T16:50:34.765370Z",
+        "finished_at": "2026-11-09T16:50:36.745355Z",
+        "duration_seconds": 1.979985
+      }
+    },
+    {
+      "unit": "nafta2go-monitor.service",
+      "invocation_id": "213ead45a7da43fdacd5502eb9d39209",
+      "result": {
+        "source": "vigente",
+        "checked_at": "2026-11-09T16:51:05.617964+00:00",
+        "status": "healthy",
+        "alerts": []
+      }
+    }
+  ],
+  "environment_file_mode": "0o600"
+}
