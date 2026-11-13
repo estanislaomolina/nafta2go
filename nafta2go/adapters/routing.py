@@ -49,6 +49,10 @@ class InvalidCredentials(RoutingError):
 class QuotaExceeded(RoutingError):
     """Se agotó la cuota diaria o el límite por minuto."""
 
+    def __init__(self, message, status=None, provider_code=None, *, retry_after_seconds=None):
+        super().__init__(message, status, provider_code)
+        self.retry_after_seconds = retry_after_seconds
+
 
 class InvalidRequest(RoutingError):
     """La solicitud no es válida para el proveedor (puntos, tamaño o parámetros)."""
