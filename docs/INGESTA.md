@@ -176,7 +176,11 @@ persistidas y una **recuperación manual**: ejecución 8, iniciada el 12/11 a la
 23:50 de Argentina (13/11 02:50 UTC). El monitor terminó después sin alertas activas.
 El archivo original coincide con el SHA-256 y tamaño de su captura, y las cuatro
 unidades instaladas coinciden con las versionadas. El checkout operativo observado
-fue `4325d79`, conservado en `feat/15-ingesta-productiva`.
+fue `4325d79`, conservado por el tag anotado
+[`evidencia/mvp-01-operacion-2026-11-12`](https://github.com/estanislaomolina/nafta2go/tree/evidencia/mvp-01-operacion-2026-11-12).
+El tag fija ese commit aunque posteriormente se elimine una rama de trabajo.
+La rama mencionada en el JSON es la observada en aquella captura; no se reescribe
+la evidencia histórica. El checkout operativo y sus servicios siguen sin cambios.
 
 El último disparo observado del timer de ingesta coincide en horario con el
 inicio de la ejecución 7. La base no registra el disparador de cada ejecución:
