@@ -209,3 +209,58 @@ def test_wrong_capture_source_fails_before_normalization(engine):
     with pytest.raises(IngestionFailed, match="origen") as exc:
         ingest_from_source(engine, "historico", capture, normalizer_returning(result()))
     assert counts(engine, exc.value.run_id) == (0, 0)
+
+
+def test_exhausted_retries_keep_previous_prices_and_are_alerted(engine):
+    from datetime import UTC
+    from unittest.mock import Mock
+
+    import requests
+
+    from nafta2go.adapters.acquisition import acquire_with_retries
+    from nafta2go.application.ingestion_monitor import check_ingestion
+
+    first = ingest(engine, capture(), normalizer_returning(result()), clock=fixed_clock)
+    acquire = Mock(side_effect=requests.ConnectionError("DNS"))
+    normalize = Mock()
+    with pytest.raises(IngestionFailed) as failure:
+        ingest_from_source(
+            engine,
+            "vigente",
+            lambda: acquire_with_retries(acquire, "vigente", Mock()),
+            normalize,
+            fixed_clock,
+        )
+    normalize.assert_not_called()
+    with engine.connect() as conn:
+        run = repo.get_run(conn, failure.value.run_id)
+        assert run["report"]["acquisition_attempts"] == 3
+        assert run["status"] == "failed"
+        assert repo.latest_successful_run(conn, "vigente") == first
+        assert repo.raw_capture_for_run(conn, run["id"]) is None
+    assert counts(engine, first) == (2, 1)
+    alerts = check_ingestion(engine, "vigente", T0.replace(tzinfo=UTC))["alerts"]
+    assert any(a["kind"] == "failed" and a["run_id"] == failure.value.run_id for a in alerts)
+
+
+def test_normalization_failure_after_retry_does_not_repeat_acquisition(engine):
+    from unittest.mock import Mock
+
+    import requests
+
+    from nafta2go.adapters.acquisition import acquire_with_retries
+
+    acquire = Mock(side_effect=[requests.Timeout("timeout"), capture()])
+    normalize = Mock(side_effect=ValueError("columna faltante"))
+    with pytest.raises(IngestionFailed) as failure:
+        ingest_from_source(
+            engine,
+            "vigente",
+            lambda: acquire_with_retries(acquire, "vigente", Mock()),
+            normalize,
+            fixed_clock,
+        )
+    assert acquire.call_count == 2
+    normalize.assert_called_once()
+    with engine.connect() as conn:
+        assert repo.get_run(conn, failure.value.run_id)["report"]["acquisition_attempts"] == 2

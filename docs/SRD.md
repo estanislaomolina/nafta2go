@@ -403,3 +403,7 @@ fallos, ejecuciones excedidas y ausencias, y persiste detección y resolución e
 horario); instalación y límites en [INGESTA](INGESTA.md) y alternativas en
 [ADR-008](../adr/ADR-008-programacion-de-ingesta.md). Las notificaciones externas
 y la supervisión continua siguen pendientes.
+
+La adquisición remota incorpora hasta tres intentos dentro de una ingesta, con
+esperas acotadas y conteo en el reporte. No repite normalización ni persistencia;
+ver [política de reintentos](INGESTA.md). No requiere cambiar el esquema de datos.
