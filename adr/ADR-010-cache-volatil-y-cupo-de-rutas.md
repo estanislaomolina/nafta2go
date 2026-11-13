@@ -41,8 +41,10 @@ Los precios y las recomendaciones se recalculan desde su versión de datos.
   bloqueo por cuota, y no renueva artificialmente su fecha de captura.
 * Good, because los cupos cuentan intentos fallidos y atienden `Retry-After` o
   reinicio anunciado; sin indicación válida, un 429 bloquea nuevos intentos 60 s.
-* Bad, because los faltantes se serializan y esperan como máximo dos segundos;
-  si el proveedor sigue ocupado se devuelve error, sin inventar rutas.
+* Good, because solo se esperan entre sí los faltantes de una misma clave; rutas
+  distintas se consultan en paralelo (#97).
+* Bad, because una consulta idéntica a otra en curso espera hasta 20 s, el
+  timeout del cliente; si sigue ocupada se devuelve error, sin inventar rutas.
 * Bad, because cuota, caché y contadores se reinician con el proceso. Con varios
   workers o clientes de la misma key se necesita coordinación compartida.
 

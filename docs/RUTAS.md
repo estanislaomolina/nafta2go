@@ -39,7 +39,12 @@ No se escribe caché en archivos, base ni logs. `RouteCache.snapshot()` y el log
 estructurado `route_cache` exponen aciertos, faltantes, intentos, errores, rechazos
 por cupo, ocupación y cantidad de entradas, sin claves ni ubicaciones. No son
 métricas persistidas ni un endpoint público. Hace falta coordinación global antes
-de escalar a varios procesos. Alternativas y pruebas en
+de escalar a varios procesos.
+
+Los faltantes se coordinan por clave: una consulta idéntica a otra en curso la
+espera hasta 20 s y reutiliza su resultado; una ruta distinta se consulta en
+paralelo (#97). Ese límite corresponde a esperar el lock; no demuestra un
+límite total de latencia de ORS ni el p95 del sistema. Alternativas y pruebas en
 [ADR-010](../adr/ADR-010-cache-volatil-y-cupo-de-rutas.md).
 
 ## Configuración
