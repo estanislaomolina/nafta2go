@@ -435,3 +435,13 @@ La base de red propuesta está versionada en `infra/aws/network.json`, sin cómp
 ni aplicación desplegados. Acceso reportado, límites del presupuesto, validación
 y pendientes en [AWS](AWS.md); alternativas de IaC en
 [ADR-011](../adr/ADR-011-base-de-red-con-cloudformation.md).
+
+### Telemetría HTTP local
+
+La presentación ASGI registra el ciclo de POST de recomendaciones sin inspeccionar
+su cuerpo ni URL. Emite JSON con ID propio, fecha UTC, duración, estado y resultado
+acotado; expone contadores por aplicación y caché por proceso mediante lectura
+administrativa autenticada. El arranque suprime access logs con URLs y errores
+inesperados anteriores a la respuesta se sanitizan. No incorpora persistencia de
+ubicaciones, agregación entre réplicas, métricas ML ni supervisión sostenida.
+Contrato y límites: [API](API.md#telemetría-local-de-consultas).

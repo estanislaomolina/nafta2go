@@ -33,7 +33,7 @@ services:
     image: nafta2go:local
     build: .
     profiles: [mvp]
-    command: ["uvicorn", "nafta2go.presentation.http:app", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["uvicorn", "nafta2go.presentation.http:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log", "--log-config", "deploy/logging.json"]
     ports: ["127.0.0.1:8000:8000"]
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; r=requests.get('http://127.0.0.1:8000/ready', timeout=2); r.raise_for_status()"]

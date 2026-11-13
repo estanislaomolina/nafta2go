@@ -117,6 +117,7 @@ def test_missing_api_token_fails_closed(clients, monkeypatch):
     with clients() as client:
         assert client.post("/api/v1/recommendations", json=BODY, headers=AUTH).status_code == 503
         assert client.get("/ready").status_code == 503
+        assert client.get("/api/v1/operations").status_code == 503
 
 
 @pytest.mark.parametrize(
@@ -313,3 +314,109 @@ def test_invalid_candidate_limit_does_not_load_routes(clients, limit):
         )
     assert response.status_code == 422
     assert response.json()["detail"]["code"] == "invalid_request"
+
+
+def query_events(caplog):
+    import json
+
+    return [
+        json.loads(record.message)
+        for record in caplog.records
+        if record.name == "nafta2go.presentation.telemetry"
+    ]
+
+
+def test_query_telemetry_is_correlated_private_and_authenticated(clients, caplog):
+    from datetime import datetime
+    from uuid import UUID
+
+    caplog.set_level("INFO", logger="nafta2go.presentation.telemetry")
+    with clients() as client:
+        denied = client.get("/api/v1/operations")
+        assert denied.status_code == 401
+        initial = client.get("/api/v1/operations", headers=AUTH).json()
+        assert initial["queries"]["completed"] == 0
+        response = client.post(
+            "/api/v1/recommendations?ubicacion=secreto-en-query",
+            json=BODY,
+            headers={**AUTH, "X-Request-ID": "secreto-del-cliente"},
+        )
+        metrics = client.get("/api/v1/operations", headers=AUTH).json()
+    (event,) = query_events(caplog)
+    assert UUID(response.headers["x-request-id"]).hex == event["request_id"]
+    assert datetime.fromisoformat(event["started_at_utc"]).utcoffset().total_seconds() == 0
+    assert event["duration_ms"] >= 0 and event["http_status"] == 200
+    assert event["outcome"] == "recommended"
+    assert set(event) == {
+        "event",
+        "request_id",
+        "started_at_utc",
+        "duration_ms",
+        "http_status",
+        "outcome",
+    }
+    assert metrics["scope"] == "process"
+    assert metrics["queries"]["completed"] == 1
+    assert metrics["queries"]["outcome"] == {"recommended": 1}
+    assert metrics["routes"].keys() == {
+        "hits",
+        "misses",
+        "requests",
+        "errors",
+        "limited",
+        "busy",
+        "entries",
+    }
+    for private in ("-34.6037", "-58.4565", "token-local-de-prueba", "secreto"):
+        assert private not in str(event) + str(metrics)
+
+
+@pytest.mark.parametrize("kind,status", [("unauthorized", 401), ("invalid", 422), ("timeout", 504)])
+def test_telemetry_counts_errors_and_preserves_safe_responses(clients, caplog, kind, status):
+    class Failing:
+        def matrix(self, sources, destinations):
+            raise ProviderTimeout("secreto-en-excepcion")
+
+    caplog.set_level("INFO", logger="nafta2go.presentation.telemetry")
+    with clients(provider_factory=Failing) as client:
+        response = client.post(
+            "/api/v1/recommendations",
+            json={} if kind == "invalid" else BODY,
+            headers={} if kind == "unauthorized" else AUTH,
+        )
+        metrics = client.get("/api/v1/operations", headers=AUTH).json()["queries"]
+    assert response.status_code == status
+    assert metrics["http_status"] == {str(status): 1}
+    assert metrics["outcome"] == {"http_error": 1}
+    assert query_events(caplog)[0]["http_status"] == status
+    assert "secreto" not in caplog.text
+
+
+def test_unexpected_failure_is_recorded_once_without_exception_text(clients, caplog):
+    def failing():
+        raise RuntimeError("secreto-inesperado")
+
+    caplog.set_level("INFO", logger="nafta2go.presentation.telemetry")
+    with clients(provider_factory=failing) as client:
+        response = client.post("/api/v1/recommendations", json=BODY, headers=AUTH)
+        assert response.status_code == 500
+        assert response.json() == {"detail": {"code": "internal_error"}}
+        assert response.headers["x-request-id"]
+        assert client.get("/api/v1/operations", headers=AUTH).json()["queries"]["completed"] == 1
+    (event,) = query_events(caplog)
+    assert event["http_status"] == 500 and event["outcome"] == "http_error"
+    assert "secreto" not in caplog.text
+
+
+def test_query_telemetry_isolated_and_counts_concurrent_requests(clients):
+    from concurrent.futures import ThreadPoolExecutor
+
+    with clients() as client, clients() as other:
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            responses = list(
+                pool.map(lambda _: client.post("/api/v1/recommendations", json={}), range(24))
+            )
+        identifiers = {response.headers["x-request-id"] for response in responses}
+        assert len(identifiers) == 24
+        assert client.get("/api/v1/operations", headers=AUTH).json()["queries"]["completed"] == 24
+        assert other.get("/api/v1/operations", headers=AUTH).json()["queries"]["completed"] == 0

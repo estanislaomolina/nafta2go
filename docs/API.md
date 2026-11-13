@@ -8,7 +8,7 @@ de `requirements-dev.txt` para correr los tests. Para iniciar desde el repositor
 python -m pip install -r requirements-dev.txt
 alembic upgrade head
 export NAFTA2GO_API_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
-uvicorn nafta2go.presentation.http:app --host 127.0.0.1 --port 8000
+uvicorn nafta2go.presentation.http:app --host 127.0.0.1 --port 8000 --no-access-log --log-config deploy/logging.json
 ```
 
 La API no carga `.env` automáticamente ni expone la clave de ORS al cliente.
@@ -69,3 +69,30 @@ La presentación agrega `navigation` (enlaces por estación elegida con ID, URL 
 etiqueta) y `navigation_notice`. No incluye el origen del conductor ni persiste
 los enlaces. Contrato y límites en [MAPS](MAPS.md); la [web local](WEB.md) presenta estos enlaces; las pruebas de navegador se
 entregan en una PR dependiente.
+
+## Telemetría local de consultas
+
+Cada POST de recomendaciones devuelve `X-Request-ID` generado por el servidor;
+el identificador del cliente se ignora. Al finalizar se emite un evento JSON
+`query_completed` con ese ID, fecha UTC de inicio, duración monotónica en ms,
+estado HTTP y resultado acotado. Incluye rechazos 401, validaciones 422 y fallos;
+un error inesperado anterior a la respuesta devuelve 500 con `internal_error`,
+sin propagar el mensaje original al servidor. Una transmisión interrumpida se
+registra como fallo y sólo propaga un mensaje fijo.
+
+`GET /api/v1/operations` exige el mismo Bearer administrativo y devuelve conteos
+por estado/resultado, suma de duraciones y contadores de caché/rutas. No consulta
+ORS ni lee datos del conductor. La configuración inválida de caché devuelve el
+error seguro de dependencia. El proceso genera sus propios IDs; no se guardan
+requests ni una lista por ID en memoria. Contadores/duración de consultas están
+aislados por aplicación y protegidos ante concurrencia; los contadores de rutas
+pertenecen a la caché compartida por proceso y sólo reflejan el proveedor en vivo
+que la utiliza. Proveedores de pruebas/grabados no incrementan esos contadores.
+
+El arranque documentado y Compose usan `deploy/logging.json` y desactivan el
+access log de Uvicorn: una URL arbitraria puede contener datos privados. Los
+eventos no incluyen URL, headers, cuerpo, mensajes de excepción ni ubicaciones.
+Otros servidores/proxies deben aplicar la misma política antes de exponerlos.
+Los contadores se reinician al reiniciar la aplicación/caché, no se agregan entre
+réplicas ni constituyen p95 o disponibilidad sostenida. No incluye aún consultas
+CLI, un panel, métricas integradas de ingesta/modelo ni alertas de consultas (#21).

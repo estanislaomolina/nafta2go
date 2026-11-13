@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 
 PROBE = """
+import os
 import requests
 from nafta2go.adapters.recorded_routes import shared_cache
 cache = shared_cache()
@@ -18,7 +19,11 @@ assert requests.get(base + '/ready', timeout=3).status_code == 200
 html = requests.get(base + '/', timeout=3)
 assert html.status_code == 200 and 'Nafta2Go' in html.text
 assert requests.get(base + '/assets/app.js', timeout=3).status_code == 200
-assert requests.post(base + '/api/v1/recommendations', json={}, timeout=3).status_code == 401
+denied = requests.post(base + '/api/v1/recommendations?token=private-probe', json={}, timeout=3)
+assert denied.status_code == 401 and denied.headers['x-request-id']
+metrics = requests.get(base + '/api/v1/operations', timeout=3,
+    headers={'Authorization': 'Bearer ' + os.environ['NAFTA2GO_API_TOKEN']}).json()
+assert metrics['queries']['http_status'] == {'401': 1}
 schema = requests.get(base + '/openapi.json', timeout=3).json()
 field = schema['components']['schemas']['RecommendationInput']['properties']['max_candidates']
 assert field['maximum'] == 20
@@ -67,6 +72,15 @@ def main():
             subprocess.run(
                 [*command, "exec", "-T", "api", "python", "-c", PROBE], check=True, **options
             )
+            logs = subprocess.run(
+                [*command, "logs", "--no-log-prefix", "api"],
+                check=True,
+                text=True,
+                capture_output=True,
+                **options,
+            ).stdout
+            assert '"event": "query_completed"' in logs and "private-probe" not in logs
+            assert environment["NAFTA2GO_API_TOKEN"] not in logs
             output = subprocess.run(
                 [
                     *command,

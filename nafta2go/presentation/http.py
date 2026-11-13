@@ -8,14 +8,14 @@ from datetime import UTC, datetime
 from secrets import compare_digest
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import Engine
 from sqlalchemy.exc import SQLAlchemyError
 
-from nafta2go.adapters.recorded_routes import CapturedRoutes
+from nafta2go.adapters.recorded_routes import CapturedRoutes, shared_cache
 from nafta2go.adapters.routing import (
     InvalidCredentials,
     ProviderTimeout,
@@ -27,6 +27,7 @@ from nafta2go.application.scenario import ScenarioIntegrityError
 from nafta2go.persistence.database import create_db_engine, database_is_ready
 from nafta2go.presentation.models import ErrorOutput, RecommendationInput, RecommendationOutput
 from nafta2go.presentation.navigation import present_recommendation
+from nafta2go.presentation.telemetry import QueryTelemetry, QueryTelemetryMiddleware
 from nafta2go.presentation.web import install_web
 
 logger = logging.getLogger(__name__)
@@ -94,6 +95,8 @@ def create_app(
                 application.state.engine.dispose()
 
     application = FastAPI(title="Nafta2Go", version="0.1.0", lifespan=lifespan)
+    telemetry = QueryTelemetry()
+    application.add_middleware(QueryTelemetryMiddleware, telemetry=telemetry)
     install_web(application)
     application.add_exception_handler(RequestValidationError, validation_error)
     for error in (RoutingError, SQLAlchemyError, ScenarioIntegrityError, OSError):
@@ -118,7 +121,7 @@ def create_app(
         response_model=RecommendationOutput,
         responses={status: {"model": ErrorOutput} for status in (401, 422, 502, 503, 504)},
     )
-    def recommendations(body: RecommendationInput) -> dict:
+    def recommendations(body: RecommendationInput, request: Request) -> dict:
         try:
             result = recommend_from_database(
                 application.state.engine,
@@ -132,6 +135,7 @@ def create_app(
                 routing_provider=routing_provider,
                 max_candidates=body.max_candidates,
             )
+            request.scope["nafta2go.outcome"] = result["outcome"]
             return present_recommendation(result)
         except ValueError as exc:
             if isinstance(exc, ScenarioIntegrityError):
@@ -143,6 +147,14 @@ def create_app(
                     "message": "Verificá las coordenadas de CABA y los parámetros del vehículo.",
                 },
             ) from exc
+
+    @application.get("/api/v1/operations", dependencies=[Depends(authorize)])
+    def operations():
+        return {
+            "scope": "process",
+            "queries": telemetry.snapshot(),
+            "routes": shared_cache().snapshot(),
+        }
 
     return application
 

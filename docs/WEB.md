@@ -1,7 +1,7 @@
 # Aplicación web local — MVP-03
 
 La pantalla está en `/` del servidor descrito en [API](API.md). Levantar el
-mismo servicio con `uvicorn nafta2go.presentation.http:app --host 127.0.0.1 --port 8000`
+mismo servicio con `uvicorn nafta2go.presentation.http:app --host 127.0.0.1 --port 8000 --no-access-log --log-config deploy/logging.json`
 o `docker compose --profile mvp up --build api`, después de configurar el código
 `NAFTA2GO_API_TOKEN` y migrar la base. Abrir `http://127.0.0.1:8000/` y usar ese
 código en «Acceso a la demo». La API y la web comparten origen; decisión propuesta
