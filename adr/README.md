@@ -20,3 +20,9 @@ Los Architecture Decision Records documentan decisiones de diseño relevantes, l
 | [ADR-007](ADR-007-trazabilidad-de-recomendaciones-historicas.md) | Origen de datos de recomendaciones históricas | Aceptado |
 
 La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de POC-03; el resultado está en [docs/RUTAS.md](../docs/RUTAS.md).
+
+## Decisiones de la Entrega 3
+
+| ADR | Decisión | Estado |
+|---|---|---|
+| [ADR-008](ADR-008-programacion-de-ingesta.md) | Programación local de la ingesta diaria con systemd | Aceptado |
