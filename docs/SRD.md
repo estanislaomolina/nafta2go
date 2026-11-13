@@ -39,7 +39,7 @@ resuelto en POC-02 de esta forma:
 |---|---|---|
 | RF01 Validar la consulta | `domain/engine.FuelRequest`, validaciones de `application/stored_query` | Implementado: rechaza valores faltantes, no numéricos, no finitos o inconsistentes nombrando el campo |
 | RF02 Filtrar CABA y nafta compatible | `normalization/reading` (alcance), `stored_query` (producto, franja y caja de CABA) | Implementado |
-| RF03 Preseleccionar y enrutar candidatas | `stored_query` (hasta 10 en el corredor), `application/recommendation.evaluate_stations` | Implementado con un máximo de 10 (el PRD admite hasta 20); se recorta por la cuota del proveedor |
+| RF03 Preseleccionar y enrutar candidatas | `stored_query`, `application/recommendation.evaluate_stations` | Admite hasta 20 mediante límite explícito; diez por defecto para reproducir la POC. Veinte probado con proveedor simulado |
 | RF04 Cálculos de alcanzabilidad, reserva, consumo, capacidad, litros y desvío | `domain/engine.evaluate_candidate` | Implementado, determinístico |
 | RF05 Descartar alternativas inviables con motivo | `domain/engine.DiscardReason`, exclusiones de `stored_query` | Implementado |
 | RF06 Hasta tres alternativas diferenciadas | `domain/ranking`, `application/query` | Implementado: combustible neto, menor desvío y equilibrio; agrupa prioridades que eligen la misma estación |
@@ -80,6 +80,11 @@ Las reglas de dependencia son estas:
 - La aplicación habla con las rutas a través del protocolo `RoutingProvider` y
   nunca con OpenRouteService directamente.
 - Ninguna capa de negocio escribe SQL: todo pasa por `repository`.
+
+El primer incremento HTTP de MVP-02 agrega `presentation/`, con FastAPI sobre
+la capa de aplicación. Esta base expone salud y readiness; la consulta HTTP se
+incorpora en una PR dependiente. Configuración en [API](API.md); decisión en
+[ADR-009](../adr/ADR-009-api-http-con-fastapi.md). La web sigue pendiente.
 
 En el MVP se suman una capa de **presentación** (API HTTP y web) por encima de
 la aplicación, y el **diagnóstico ML** como un componente separado que la
@@ -166,7 +171,7 @@ sequenceDiagram
     A->>DB: precios de la última ingesta vigente exitosa
     A->>A: filtra vigencia, calidad y corredor
     alt ≥ 3 estaciones recientes en el corredor
-        A->>R: una matriz con origen, hasta 10 candidatas y destino
+        A->>R: una matriz con origen, hasta 20 candidatas y destino (10 por defecto)
     else no alcanza
         A->>E: carga el recorte (verifica su SHA-256)
         A->>A: filtra contra la fecha del escenario
@@ -193,6 +198,7 @@ incluyen ingesta desde el CSV completo, matriz autenticada, ranking y registro.
 | Tecnología | Uso | Por qué | Alternativa considerada |
 |---|---|---|---|
 | Python 3.12 | Todo el sistema | Un solo lenguaje para datos, reglas y servicios. El equipo ya lo usa en la exploración. Tipado moderno y `zoneinfo` | — |
+| FastAPI + Pydantic + Uvicorn | API local de MVP-02 | Contrato tipado y OpenAPI sin duplicar el caso de uso; versiones en requirements.txt | Flask o Django/DRF ([ADR-009](../adr/ADR-009-api-http-con-fastapi.md)) |
 | pandas 2 | Normalización | El histórico tiene 3,4 millones de filas (780 MB). Se lee por chunks con operaciones vectorizadas: unos 2 minutos y 630 MB de memoria | Leer con el módulo `csv` fila por fila (más lento y más código) |
 | `decimal.Decimal` | Motor y precios | Entradas limitadas a 28 cifras significativas, métricas Decimal y restricciones exactas con Fraction; compra redondeada hacia abajo | `float` |
 | requests | Catálogo, descarga y rutas | Sesión inyectable: los tests reemplazan la red por una sesión falsa | httpx (no hace falta asincronía en la POC) |
@@ -373,13 +379,13 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
   ejecución. El comando de ingesta ofrece estado, fechas y duración con `--json`,
   incluidos fallos de adquisición. Las alertas automáticas de RNF08 siguen pendientes.
 
-## 9. Partes simplificadas en la POC
+## 9. Partes simplificadas y evolución al MVP
 
 | Parte | Simplificación | Plan para el MVP |
 |---|---|---|
-| Interfaz | No hay API ni web: comandos y código | API HTTP y web por encima de la capa de aplicación |
+| Interfaz | Base HTTP local con salud; consulta autenticada y web pendientes | Caché, interfaz web y despliegue público |
 | Ranking | Tres prioridades determinísticas; equilibrio con igual peso a ganancia neta y km extra normalizados | Comparación general/conservadora con diagnóstico ML |
-| Candidatas | Hasta 10 en lugar de 20, preseleccionadas por recencia dentro del corredor | Evaluar si la cuota permite 20 |
+| Candidatas | Límite configurable hasta 20; diez por defecto para reproducir la POC | Validar cuota y latencia de veinte candidatas en vivo |
 | Corredor | Desvío estimado en línea recta | Se mantiene como prefiltro; el desvío real ya lo calcula el motor |
 | Escenario histórico | Una sola captura congelada | Congelar capturas nuevas con el mismo script |
 | Ingesta | Manual | Programada y diaria, con alerta |
@@ -403,3 +409,10 @@ fallos, ejecuciones excedidas y ausencias, y persiste detección y resolución e
 horario); instalación y límites en [INGESTA](INGESTA.md) y alternativas en
 [ADR-008](../adr/ADR-008-programacion-de-ingesta.md). Las notificaciones externas
 y la supervisión continua siguen pendientes.
+
+## Preparación del sandbox AWS (MVP-08)
+
+La base de red propuesta está versionada en `infra/aws/network.json`, sin cómputo
+ni aplicación desplegados. Acceso reportado, límites del presupuesto, validación
+y pendientes en [AWS](AWS.md); alternativas de IaC en
+[ADR-011](../adr/ADR-011-base-de-red-con-cloudformation.md).

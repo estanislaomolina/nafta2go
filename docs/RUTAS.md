@@ -16,6 +16,21 @@ El código vive en la capa de adaptadores definida en el
 El dominio no importa nada de OpenRouteService. Cambiar de proveedor implica
 escribir otro adaptador con el método `matrix(sources, destinations)`.
 
+## Base de caché y cupo local (MVP-02, #63)
+
+`adapters/route_cache.RouteCache` aporta LRU en RAM con TTL, tamaño acotado,
+copias defensivas, aislamiento por credencial y cupos móviles. Sus parámetros
+predeterminados son 300 s, 128 entradas, 30 intentos/minuto y 450/24 h. TTL 0
+desactiva retención. Los errores no se guardan ni se reintentan automáticamente;
+los aciertos no consumen cupo. `snapshot()` devuelve solo contadores sin claves
+ni ubicaciones. El TTL limita reutilización y se purga al consultar.
+
+La integración con el flujo principal y la configuración por entorno se completan
+en la PR dependiente de #55. Por sí solo este componente no cambia las solicitudes
+actuales de la CLI. No comparte cuota entre procesos ni conoce lo consumido por
+otros clientes. Alternativas y límites en
+[ADR-010](../adr/ADR-010-cache-volatil-y-cupo-de-rutas.md).
+
 ## Configuración
 
 1. Crear una cuenta gratuita en la [cuenta de HeiGIT](https://account.heigit.org/) y generar una API key del plan Standard.
