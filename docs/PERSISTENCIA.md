@@ -58,10 +58,12 @@ tiene horario de verano.
 
 ## Ciclo de vida de una ejecución
 
-`ingest(engine, capture, normalize)` hace lo siguiente:
+`ingest_from_source(engine, source, acquire, normalize)` hace lo siguiente
+(`ingest` conserva el contrato anterior para capturas ya disponibles):
 
 1. En una transacción propia, crea la ejecución en estado `running` y la confirma.
-2. Llama al normalizador y verifica que el reporte coincida con lo recibido
+2. Obtiene la captura con `acquire` (incluye catálogo y descarga), llama al
+   normalizador y verifica que el reporte coincida con lo recibido
    (`filas_validas` y `filas_rechazadas`).
 3. En **una sola** transacción guarda la captura, los precios y los rechazos, y
    cierra la ejecución como `succeeded`.
@@ -73,6 +75,13 @@ Con esto, una ejecución fallida nunca deja datos parciales ni aparece como
 exitosa. Si el proceso se corta entre los pasos 1 y 3, la ejecución queda en
 `running`. Volver a ingerir una captura con el mismo SHA-256 crea una ejecución
 nueva y guarda `duplicate_of_run_id` en su reporte.
+
+El comando `python -m nafta2go.normalization --source vigente --json` expone
+identificador, estado, fechas UTC, duración, reglas y reporte, incluso ante un
+fallo de adquisición. Devuelve 0 al terminar correctamente y 1 si falla la
+adquisición o ingesta. Los mensajes originales de error quedan en la base y se
+omiten del JSON para evitar exportar URLs o credenciales. Un error de conexión
+a la base puede impedir crear la ejecución y produce salida no cero.
 
 ## Contrato con la normalización (POC-01)
 

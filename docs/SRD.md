@@ -139,11 +139,12 @@ flowchart LR
 
 ### Flujo de ingesta (implementado)
 
-1. `discover_resources` lee el catálogo y encuentra los CSV vigente e histórico.
-2. `download` baja el CSV a `data/raw/<origen>/`. Lo escribe primero como
+1. `ingest_from_source` abre la ejecución en estado `running`, en su propia
+   transacción, antes de consultar la fuente.
+2. `discover_resources` lee el catálogo y encuentra los CSV vigente e histórico.
+3. `download` baja el CSV a `data/raw/<origen>/`. Lo escribe primero como
    `.part` y lo renombra solo si el tamaño coincide con el del catálogo. Calcula
    el SHA-256.
-3. `ingest` abre la ejecución en estado `running`, en su propia transacción.
 4. `normalize_capture` lee por chunks, filtra CABA y nafta y aplica las reglas.
    Entrega las filas válidas, los rechazos con motivo y un reporte de calidad.
 5. En una segunda transacción se guardan la referencia a la captura, los
@@ -369,7 +370,8 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
   el flujo completo; ver [POC-05](POC-05.md).
 - **Observabilidad:** las ingestas y las descargas registran logs con campos
   (`run_id`, filas, rechazos, SHA-256). El reporte de calidad queda en cada
-  ejecución. Las métricas y alertas de RNF08 son del MVP.
+  ejecución. El comando de ingesta ofrece estado, fechas y duración con `--json`,
+  incluidos fallos de adquisición. Las alertas automáticas de RNF08 siguen pendientes.
 
 ## 9. Partes simplificadas en la POC
 
