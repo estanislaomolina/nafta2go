@@ -127,6 +127,7 @@ def create_app(
                 schedule_id=body.schedule_id,
                 reference_at=clock(),
                 routing_provider=routing_provider,
+                max_candidates=body.max_candidates,
             )
         except ValueError as exc:
             if isinstance(exc, ScenarioIntegrityError):
