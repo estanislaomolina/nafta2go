@@ -26,9 +26,13 @@ NUMERIC = (
     "prior_iqr_relative",
     "prior_count",
     "market_change",
+    "recent_relative",
+    "recent_count",
+    "brand_recent_relative",
+    "brand_recent_count",
 )
 CATEGORICAL = ("brand_group", "product_id", "schedule_id", "baseline_scope")
-REFERENCES = ("mediana_previa", "ultimo_precio")
+REFERENCES = ("mediana_previa", "ultimo_precio", "bandera_reciente")
 CANDIDATES = {
     "ridge": {"alpha": 1.0},
     "boosting": {
@@ -47,7 +51,13 @@ def examples_frame(examples: list[dict]) -> pd.DataFrame:
     frame.columns = [column.removeprefix("features.") for column in frame.columns]
     frame["target_at"] = pd.to_datetime(frame.target_at_utc, utc=True)
     frame = frame.sort_values(["target_at", "source_row"]).reset_index(drop=True)
-    for column in ("previous_station_price", "previous_station_age_days", "prior_iqr"):
+    for column in (
+        "previous_station_price",
+        "previous_station_age_days",
+        "prior_iqr",
+        "recent_median",
+        "brand_recent_median",
+    ):
         frame[column] = pd.to_numeric(frame[column], errors="coerce")
     prior = frame.prior_median.astype(float)
     frame["target"] = np.log(frame.target_price_ars_per_l / prior)
@@ -57,6 +67,8 @@ def examples_frame(examples: list[dict]) -> pd.DataFrame:
     # Cuánto se movió la mediana desde el ejemplo anterior de la misma estación y franja.
     identity = frame.groupby(["station_id", "product_id", "schedule_id"], sort=False)
     frame["market_change"] = np.log(prior / identity.prior_median.shift())
+    frame["recent_relative"] = np.log(frame.recent_median / prior)
+    frame["brand_recent_relative"] = np.log(frame.brand_recent_median / prior)
     frame["brand_group"] = frame.brand.where(frame.brand.isin(MAIN_BRANDS), OTHER_BRAND)
     frame["reference"] = frame.previous_relative.fillna(0.0)
     return frame
@@ -67,6 +79,8 @@ def reference_predictions(frame: pd.DataFrame) -> dict[str, pd.Series]:
     return {
         "mediana_previa": pd.Series(0.0, index=frame.index),
         "ultimo_precio": frame.reference,
+        # Mediana de la misma bandera en la última semana; sin ella, el último precio.
+        "bandera_reciente": frame.brand_recent_relative.fillna(frame.reference),
     }
 
 

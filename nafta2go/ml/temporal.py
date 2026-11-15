@@ -9,8 +9,11 @@ from zoneinfo import ZoneInfo
 
 from nafta2go.normalization.rules import CABA_BBOX, LOCAL_TIMEZONE
 
-FEATURES_VERSION = "price-temporal-v1"
+FEATURES_VERSION = "price-temporal-v2"
 ZONE_DEGREES = 0.02
+# Con inflación alta, 30 días de historia quedan desactualizados: v2 agrega el mercado
+# y la bandera de la última semana (docs/ML.md).
+RECENT_DAYS = 7
 
 
 class _Window:
@@ -83,6 +86,9 @@ def build_temporal_dataset(rows, cutoff: datetime, *, window_days=30, min_histor
             regional, city = windows[(*key, *zone)], windows[key]
             for window in (regional, city):
                 window.expire(when - timedelta(days=window_days))
+            recent, brand = windows[("recent", *key)], windows[("brand", *key, row["brand"])]
+            for window in (recent, brand):
+                window.expire(when - timedelta(days=RECENT_DAYS))
             history = regional if len(regional.prices) >= min_history else city
             scope = "zone" if history is regional else "caba"
             if len(history.prices) >= min_history:
@@ -101,6 +107,10 @@ def build_temporal_dataset(rows, cutoff: datetime, *, window_days=30, min_histor
                     "previous_station_age_days": (when - last[0]).total_seconds() / 86400
                     if last
                     else None,
+                    "recent_median": recent.quantile(0.5) if recent.prices else None,
+                    "recent_count": len(recent.prices),
+                    "brand_recent_median": brand.quantile(0.5) if brand.prices else None,
+                    "brand_recent_count": len(brand.prices),
                 }
                 examples.append(
                     {
@@ -113,11 +123,11 @@ def build_temporal_dataset(rows, cutoff: datetime, *, window_days=30, min_histor
                         "features": features,
                     }
                 )
-            pending.append((identity, price, regional, city))
+            pending.append((identity, price, (regional, city, recent, brand)))
         # Primero predecir todo el instante; después incorporar sus precios al historial.
-        for identity, price, regional, city in pending:
-            regional.add(when, price)
-            city.add(when, price)
+        for identity, price, histories in pending:
+            for window in histories:
+                window.add(when, price)
             previous[identity] = (when, price)
     report = {"excluded_geometry_or_product": discarded, "partitions": {}}
     for partition, total in totals.items():

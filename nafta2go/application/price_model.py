@@ -22,6 +22,7 @@ from nafta2go.ml.models import (
     predict,
     reference_predictions,
 )
+from nafta2go.ml.temporal import FEATURES_VERSION
 
 
 def train_price_models(dataset: Path, output: Path, selection_start: datetime, seed: int = 0):
@@ -36,6 +37,8 @@ def train_price_models(dataset: Path, output: Path, selection_start: datetime, s
         raise ValueError("El inicio de la selección requiere zona horaria")
     manifest_bytes = (dataset / "manifest.json").read_bytes()
     manifest = json.loads(manifest_bytes)
+    if manifest["features_version"] != FEATURES_VERSION:
+        raise ValueError(f"El dataset no usa {FEATURES_VERSION}: regenerarlo con nafta2go.ml")
     raw = (dataset / manifest["dataset_file"]).read_bytes()
     if sha256(raw) != manifest["dataset_sha256"]:
         raise ValueError("El dataset no coincide con el hash de su manifiesto")
