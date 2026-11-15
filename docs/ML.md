@@ -2,9 +2,10 @@
 
 Fuente: precios en surtidor de Secretaría de Energía, CC BY 4.0;
 [normalización y alcance](NORMALIZACION.md). Trabajo de #18 y #56; decisión propuesta en
-[ADR-013](../adr/ADR-013-evaluacion-temporal-de-precios.md). No entrena ni sirve
-un modelo todavía. La mediana es baseline estadístico; no reemplaza precio
-oficial, no altera el recomendador y no habilita estimaciones antiguas de #57.
+[ADR-013](../adr/ADR-013-evaluacion-temporal-de-precios.md) y
+[ADR-014](../adr/ADR-014-seleccion-de-modelo-de-precios.md). Entrena y compara modelos
+offline, pero todavía no sirve ninguno. Ninguna referencia ni modelo reemplaza el precio
+oficial, altera el recomendador o habilita estimaciones antiguas de #57.
 
 ## Reproducir sin tocar la base operativa
 
@@ -37,6 +38,10 @@ features ni para retirar precios atípicos del objetivo.
 
 La mediana comparable usa observaciones anteriores dentro de treinta días,
 producto/franja/zona y respaldo CABA; exige cinco observaciones o se abstiene.
+Desde `price-temporal-v2` cada ejemplo también trae la mediana y cantidad de la
+última semana para el mercado (producto/franja) y para la misma bandera, con las
+mismas exclusiones del instante objetivo. Con la inflación del período, treinta
+días quedan desactualizados.
 Se informa MAE en ARS/L sobre ejemplos cubiertos, cobertura y abstenciones por
 partición. Frecuencia de publicación puede dar mayor peso a algunas estaciones.
 
@@ -51,10 +56,10 @@ dataset, código Python/requirements, entorno y parámetros. Git es metadato
 adicional: puede faltar en la imagen Docker; el hash de archivos permanece.
 No tiene aleatoriedad ni modelo aprendido; no se inventa una semilla de entrenamiento.
 
-Faltan entrenar y comparar modelos sobre estos mismos ejemplos, análisis de
-errores, validación de umbrales y artefactos de inferencia/actualización/monitoreo.
-Las issues #18, #19, #20 y #56 siguen abiertas. Las métricas de baseline no
-habilitan alertas ni prueban mejora ML o precisión de precios actuales.
+Faltan validar umbrales de diagnóstico, serving, actualización y monitoreo
+(#19, #20). Las issues #18 y #56 siguen abiertas hasta que el equipo revise la
+comparación de abajo. Las métricas no habilitan alertas ni prueban precisión de
+precios actuales.
 
 ## Corrida real del 13/11/2026
 
@@ -75,3 +80,51 @@ base de sólo lectura reprodujo hashes de entradas/dataset/código y las métric
 aun con las versiones de entorno registradas por separado. No se commitean
 archivo crudo, base ni ejemplos grandes; conservarlos localmente para repetir
 con el mismo origen. No se modificó la base operativa ni se crearon recursos AWS.
+
+## Comparación de modelos del 15/11/2026
+
+[ADR-014](../adr/ADR-014-seleccion-de-modelo-de-precios.md) define el protocolo. Sobre
+un dataset `price-temporal-v2`:
+
+```bash
+python -m nafta2go.ml.train --dataset data/ml/evaluacion-1 --output data/ml/modelos-1
+```
+
+El comando verifica el hash del dataset contra su manifiesto, entrena Ridge y árboles
+potenciados con un solo hilo y semilla fija, elige el método con 2025 (dentro de train)
+y recién después informa todos en la validación. Escribe `model.joblib` (el mejor
+modelo, aunque no sea el elegido), `validation-predictions.jsonl`, `manifest.json` y
+`model-report.json` con métricas y análisis de errores por segmento.
+
+[Evidencia](evidencia/ml-modelos-2026-11-15/model-report.json) con la captura
+`950f748f…28bb` (778.654.156 bytes, anterior a la de la corrida del 13/11, por eso
+3.862 ejemplos de validación en lugar de 3.910), corte 01/01/2026 y código `f0e6c3f`.
+Dos corridas completas, dataset y modelo, produjeron archivos idénticos byte a byte, y
+recargar el artefacto reproduce sus predicciones.
+
+| Método | Selección 2025: MAE ARS/L | Error rel. | Validación 2026: MAE ARS/L | Error rel. |
+|---|---|---|---|---|
+| Mediana de 30 días (dataset) | 45,73 | 3,12 % | 79,72 | 3,89 % |
+| Último precio de la estación | 25,40 | 1,73 % | 39,12 | 1,91 % |
+| **Mediana de la bandera, última semana** | **20,62** | **1,42 %** | 41,21 | 2,01 % |
+| Ridge | 35,37 | 2,49 % | **31,24** | **1,53 %** |
+| Árboles potenciados | 22,69 | 1,59 % | 31,39 | 1,53 % |
+
+Lectura:
+
+- **El método elegido es una referencia, no un modelo**: la mediana de la bandera de la
+  última semana gana en 2025. Según #56, el diagnóstico usaría esa referencia.
+- En la validación 2026 los dos modelos superan por un 20 % a todas las referencias.
+  El resultado se informa pero no cambia la elección: hacerlo sería elegir con datos
+  reservados. Un solo año de selección puede no representar al siguiente (ADR-014).
+- Las features de la última semana mejoran a los modelos: con el dataset v1, los
+  árboles daban 40,83 en validación y Ridge 35,35.
+- Referencia y modelo fallan en casos opuestos (validación, MAE ARS/L): con último
+  precio de hasta 7 días, la bandera da 53,7 y los árboles 23,3; con último precio de
+  más de 30 días, la bandera da 23,7 y los árboles 57,4. Combinarlos es una mejora
+  candidata, a evaluar con datos nuevos.
+- YPF tiene solo 36 ejemplos en la validación 2026; sus métricas por bandera no son
+  concluyentes.
+
+Pendiente para el equipo: decidir si se adopta la referencia elegida para #19 o si se
+evalúa el protocolo de validación cruzada temporal con una captura futura.
