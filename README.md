@@ -174,5 +174,7 @@ El repositorio se mantiene público por autorización de la cátedra, confirmada
 por el equipo al cerrar esta entrega. La presentación se identifica con el
 commit específico de `main` y la URL del video.
 
-Preparación offline y baseline temporal de precios (MVP-04 en progreso):
-[ML](docs/ML.md). No modifica el recomendador ni constituye todavía un modelo entrenado.
+Preparación offline, baseline temporal y comparación de modelos de precios (MVP-04 en
+progreso): [ML](docs/ML.md). Los modelos se entrenan offline; con el protocolo de
+[ADR-014](adr/ADR-014-seleccion-de-modelo-de-precios.md) el método elegido hoy es una
+referencia, no un modelo. No modifica el recomendador ni sirve predicciones.
