@@ -13,6 +13,7 @@ from nafta2go.application.price_dataset import encoded, sha256
 from nafta2go.application.price_model import train_price_models
 from nafta2go.ml.models import (
     CANDIDATES,
+    REFERENCES,
     build_model,
     error_analysis,
     examples_frame,
@@ -21,6 +22,7 @@ from nafta2go.ml.models import (
     predict,
     reference_predictions,
 )
+from nafta2go.ml.temporal import FEATURES_VERSION
 from nafta2go.ml.train import main
 
 START = datetime(2023, 1, 1, tzinfo=UTC)
@@ -48,6 +50,10 @@ def example(row, station, when, price, prior, previous=None, partition="train", 
             "prior_iqr": 2.0,
             "previous_station_price": previous[1] if previous else None,
             "previous_station_age_days": previous[0] if previous else None,
+            "recent_median": prior,
+            "recent_count": 4,
+            "brand_recent_median": prior,
+            "brand_recent_count": 2,
         }
         | features,
     }
@@ -93,7 +99,7 @@ def write_dataset(directory, examples):
     manifest = {
         "dataset_file": "examples.jsonl",
         "dataset_sha256": sha256(raw),
-        "features_version": "price-temporal-v1",
+        "features_version": FEATURES_VERSION,
         "source_sha256": "c" * 64,
         "availability_assumption": "valid_from_proxy_retrospective_not_verified",
     }
@@ -153,15 +159,7 @@ def test_training_writes_reproducible_artifacts(tmp_path):
     for name in ("model-report.json", "validation-predictions.jsonl", "manifest.json"):
         assert (tmp_path / "a" / name).read_bytes() == (tmp_path / "b" / name).read_bytes()
     report, manifest = first["report"], first["manifest"]
-    assert (
-        set(report["selection"])
-        == set(report["validation"])
-        == {
-            "mediana_previa",
-            "ultimo_precio",
-            *CANDIDATES,
-        }
-    )
+    assert set(report["selection"]) == set(report["validation"]) == {*REFERENCES, *CANDIDATES}
     assert report["chosen_method"] == min(
         report["selection"], key=lambda name: report["selection"][name]["mae_ars_per_l"]
     )
@@ -230,6 +228,26 @@ def test_cli_summarizes_and_hides_errors(tmp_path, capsys):
     assert "Entrenamiento fallido" in capsys.readouterr().err
     with pytest.raises(SystemExit):
         main(["--seed", "uno"])
+
+
+def test_recent_brand_reference_falls_back_to_the_last_price():
+    when = datetime(2025, 3, 1, tzinfo=UTC)
+    frame = examples_frame(
+        [
+            example(1, 1, when, 110, 100, (5, 105), brand_recent_median=108),
+            example(2, 2, when, 90, 100, (5, 95), brand_recent_median=None, brand_recent_count=0),
+        ]
+    )
+    reference = reference_predictions(frame)["bandera_reciente"]
+    assert reference.tolist() == pytest.approx([math.log(1.08), math.log(0.95)])
+
+
+def test_datasets_from_another_features_version_are_rejected(tmp_path):
+    dataset = write_dataset(tmp_path / "dataset", synthetic_examples())
+    manifest = json.loads((dataset / "manifest.json").read_text())
+    (dataset / "manifest.json").write_text(json.dumps(manifest | {"features_version": "otra"}))
+    with pytest.raises(ValueError, match="regenerarlo"):
+        train_price_models(dataset, tmp_path / "out", SELECTION)
 
 
 def test_frame_handles_missing_previous_values_as_numbers():
