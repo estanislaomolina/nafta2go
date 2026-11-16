@@ -407,6 +407,8 @@ def test_query_telemetry_isolated_and_counts_concurrent_requests(clients):
         assert (
             other.get("/api/v1/operations", headers=ADMIN_AUTH).json()["queries"]["completed"] == 0
         )
+
+
 @pytest.mark.parametrize("limit", [3, 20])
 def test_http_accepts_and_propagates_candidate_limit(clients, engine, limit):
     from nafta2go.adapters.routing import DistanceMatrix

@@ -129,3 +129,9 @@ campos privados ni escribir en la base. No ejecuta ingestas ni sincroniza alerta
 marcas persistidas de detección/resolución siguen siendo tarea del monitor
 programado. Una lectura saludable no resuelve una alerta previa. Base/esquema no
 disponibles producen 503 seguro. El [panel local](WEB.md#panel-local-de-operación) consume esta lectura; no reemplaza supervisión sostenida.
+
+## Telemetría CLI
+
+La CLI emite eventos seguros separados del resultado; contrato y límites en
+[POC-05](POC-05.md#telemetría-cli-agregada-en-mvp). Sus eventos no se agregan
+a los contadores HTTP cuando éstos se habilitan.
