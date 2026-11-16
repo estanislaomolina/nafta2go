@@ -104,3 +104,29 @@ def test_bad_dates_duplicates_or_targets_are_rejected():
     ]:
         with pytest.raises(ValueError):
             build_temporal_dataset(rows, cutoff)
+
+
+def test_recent_market_and_brand_use_only_the_previous_week():
+    rows = [
+        row(1, 0, 100, brand="YPF"),
+        row(2, 0, 110, brand="AXION"),
+        row(3, 0, 120, brand="YPF"),
+        row(4, 6, 140, brand="YPF"),
+        row(5, 9, 160, brand="YPF"),  # objetivo: el día 0 quedó fuera de los 7 días
+        row(6, 9, 999, brand="YPF"),  # mismo instante: no entra en las features del otro
+    ]
+    examples, _ = build_temporal_dataset(rows, CUTOFF, min_history=3, window_days=30)
+    target = next(r for r in examples if r["station_id"] == 5)["features"]
+    assert (target["recent_median"], target["recent_count"]) == (140, 1)
+    assert (target["brand_recent_median"], target["brand_recent_count"]) == (140, 1)
+    early = next(r for r in examples if r["station_id"] == 4)["features"]
+    assert early["recent_median"] == 110 and early["recent_count"] == 3
+    assert early["brand_recent_median"] == 110 and early["brand_recent_count"] == 2
+
+
+def test_recent_features_are_empty_without_recent_publications():
+    rows = history()[:3] + [row(4, 20, 130)]
+    examples, _ = build_temporal_dataset(rows, CUTOFF, min_history=3, window_days=30)
+    features = examples[0]["features"]
+    assert features["recent_median"] is None and features["recent_count"] == 0
+    assert features["brand_recent_median"] is None
