@@ -42,7 +42,20 @@ bearer = HTTPBearer(auto_error=False)
 def authorize(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
 ) -> None:
-    expected = os.environ.get("NAFTA2GO_API_TOKEN", "").strip()
+    _authorize(credentials, os.environ.get("NAFTA2GO_API_TOKEN", "").strip())
+
+
+def authorize_admin(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
+) -> None:
+    expected = os.environ.get("NAFTA2GO_ADMIN_TOKEN", "").strip()
+    driver = os.environ.get("NAFTA2GO_API_TOKEN", "").strip()
+    if not expected or compare_digest(expected.encode(), driver.encode()):
+        raise HTTPException(503, detail={"code": "admin_not_configured"})
+    _authorize(credentials, expected)
+
+
+def _authorize(credentials, expected):
     if not expected:
         raise HTTPException(503, detail={"code": "api_not_configured"})
     if credentials is None or not compare_digest(
@@ -104,6 +117,7 @@ def create_app(
     application = FastAPI(title="Nafta2Go", version="0.1.0", lifespan=lifespan)
     telemetry = QueryTelemetry()
     application.add_middleware(QueryTelemetryMiddleware, telemetry=telemetry)
+
     install_web(application)
     application.add_exception_handler(RequestValidationError, validation_error)
     for error in (
@@ -165,7 +179,7 @@ def create_app(
                 },
             ) from exc
 
-    @application.get("/api/v1/operations", dependencies=[Depends(authorize)])
+    @application.get("/api/v1/operations", dependencies=[Depends(authorize_admin)])
     def operations():
         return JSONResponse(
             content={
@@ -176,7 +190,7 @@ def create_app(
             headers={"Cache-Control": "no-store"},
         )
 
-    @application.get("/api/v1/operations/ingestion", dependencies=[Depends(authorize)])
+    @application.get("/api/v1/operations/ingestion", dependencies=[Depends(authorize_admin)])
     def ingestion(source: Literal["vigente", "historico"] = "vigente"):
         return JSONResponse(
             content=ingestion_status(application.state.engine, source, clock()),

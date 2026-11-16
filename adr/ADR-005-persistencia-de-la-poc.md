@@ -71,6 +71,8 @@ La decisión se confirma con los tests de `tests/persistence` y `tests/services`
 
 ## More Information
 
+### Ampliación para el monitoreo de MVP-01 (13/11/2026)
+
 En el incremento de monitoreo de MVP-01 se conserva este almacenamiento para
 `ingestion_alerts`: frente a usar solo el journal, permite consultar la primera
 detección y la resolución sin depender de su rotación, a cambio de depender de

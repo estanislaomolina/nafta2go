@@ -51,6 +51,7 @@ class QueryTelemetryMiddleware:
         request_id, started = uuid4().hex, monotonic()
         timestamp = datetime.now(UTC).isoformat()
         status, failed, response_started = 500, True, False
+        error_type = None
 
         async def send_response(message):
             nonlocal status, response_started
@@ -69,7 +70,8 @@ class QueryTelemetryMiddleware:
         try:
             await self.app(scope, receive, send_response)
             failed = False
-        except Exception:
+        except Exception as exc:
+            error_type = type(exc).__name__
             # No propagar mensajes arbitrarios al servidor ni devolver trazas al cliente.
             if response_started:
                 raise RuntimeError("Respuesta de consulta interrumpida") from None
@@ -94,6 +96,7 @@ class QueryTelemetryMiddleware:
                         "duration_ms": round(duration, 3),
                         "http_status": status,
                         "outcome": outcome,
+                        **({"error_type": error_type} if error_type else {}),
                     }
                 )
             )

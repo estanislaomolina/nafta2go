@@ -388,7 +388,7 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 
 | Parte | Simplificación | Plan para el MVP |
 |---|---|---|
-| Interfaz | API HTTP y web local autenticadas con código de demo | Validación integral y despliegue público |
+| Interfaz | API HTTP y web local con código de demo y caché por proceso | QA de navegador, coordinación entre réplicas y despliegue público |
 | Ranking | Tres prioridades determinísticas; equilibrio con igual peso a ganancia neta y km extra normalizados | Comparación general/conservadora con diagnóstico ML |
 | Candidatas | Límite configurable hasta 20; diez por defecto para reproducir la POC | Validar cuota y latencia de veinte candidatas en vivo |
 | Corredor | Desvío estimado en línea recta | Se mantiene como prefiltro; el desvío real ya lo calcula el motor |
@@ -436,7 +436,16 @@ ni aplicación desplegados. Acceso reportado, límites del presupuesto, validaci
 y pendientes en [AWS](AWS.md); alternativas de IaC en
 [ADR-011](../adr/ADR-011-base-de-red-con-cloudformation.md).
 
-### Telemetría HTTP local
+## Preparación temporal de ML (primer incremento de MVP-04)
+
+`ml.temporal` es un componente puro, separado del recomendador: recibe filas
+normalizadas, prepara features anteriores al objetivo y separa ejemplos por un
+corte temporal. No accede a la base ni entrena/serve modelos. Su mediana móvil
+es un baseline estadístico, con cobertura y abstención explícitas. No usa las
+alertas mensuales de normalización, que podrían incorporar información futura.
+Supuestos, alternativas y límites en [ADR-013](../adr/ADR-013-evaluacion-temporal-de-precios.md).
+
+## Telemetría HTTP local
 
 La presentación ASGI registra el ciclo de POST de recomendaciones sin inspeccionar
 su cuerpo ni URL. Emite JSON con ID propio, fecha UTC, duración, estado y resultado
@@ -452,17 +461,18 @@ versión exitosa, reutiliza las reglas del monitor para un diagnóstico actual y
 limita la respuesta a veinte condiciones con total explícito. No sincroniza
 alertas ni muta ingestas desde GET. Contrato: [API](API.md#estado-de-ingestas-para-operación).
 
+La presentación `/operacion` usa assets propios y las dos lecturas operativas
+autenticadas del mismo origen. No consulta al cargar ni escribe datos; actualiza
+manual y conjuntamente las vistas, descarta lecturas parciales/anteriores ante
+fallos y cancela al limpiar o salir. Código sólo en memoria de pestaña. Separa conductor y administración; no hay despliegue público; [contrato y QA](WEB.md#panel-local-de-operación).
+
+## Telemetría CLI
+
 La CLI de consultas emite un evento JSON por ejecución en stderr mediante un
 logger aislado, con ID propio, fecha UTC, duración y resultado. stdout mantiene
 su contrato. Los errores y el parser usan mensajes seguros sin repetir valores
 ni excepciones originales. Los eventos CLI no se agregan a los contadores HTTP;
 contrato y retención en [POC-05](POC-05.md#telemetría-cli-agregada-en-mvp).
-
-La presentación `/operacion` usa assets propios y las dos lecturas operativas
-autenticadas del mismo origen. No consulta al cargar ni escribe datos; actualiza
-manual y conjuntamente las vistas, descarta lecturas parciales/anteriores ante
-fallos y cancela al limpiar o salir. Código sólo en memoria de pestaña. No hay
-roles nuevos ni despliegue público; [contrato y QA](WEB.md#panel-local-de-operación).
 
 La vigencia máxima de la consulta es configuración operativa por entorno
 (1–30 días, 30 predeterminado). Aplicación la lee una vez, la propaga a ambos
@@ -471,12 +481,3 @@ selección siguen recibiendo parámetros explícitos. Configuración inválida
 desactiva readiness y devuelve error seguro, sin rutas. No habilita override
 público, precios mayores de treinta días ni cambios administrativos en vivo;
 [contrato](COBERTURA.md#vigencia-configurable-en-mvp).
-
-### Preparación temporal de ML (primer incremento de MVP-04)
-
-`ml.temporal` es un componente puro, separado del recomendador: recibe filas
-normalizadas, prepara features anteriores al objetivo y separa ejemplos por un
-corte temporal. No accede a la base ni entrena/serve modelos. Su mediana móvil
-es un baseline estadístico, con cobertura y abstención explícitas. No usa las
-alertas mensuales de normalización, que podrían incorporar información futura.
-Supuestos, alternativas y límites en [ADR-013](../adr/ADR-013-evaluacion-temporal-de-precios.md).

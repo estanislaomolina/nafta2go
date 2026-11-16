@@ -75,12 +75,13 @@ entregan en una PR dependiente.
 Cada POST de recomendaciones devuelve `X-Request-ID` generado por el servidor;
 el identificador del cliente se ignora. Al finalizar se emite un evento JSON
 `query_completed` con ese ID, fecha UTC de inicio, duración monotónica en ms,
-estado HTTP y resultado acotado. Incluye rechazos 401, validaciones 422 y fallos;
+estado HTTP y resultado acotado. En fallos inesperados agrega
+`error_type`, sin mensaje ni traza. Incluye rechazos 401, validaciones 422 y fallos;
 un error inesperado anterior a la respuesta devuelve 500 con `internal_error`,
 sin propagar el mensaje original al servidor. Una transmisión interrumpida se
 registra como fallo y sólo propaga un mensaje fijo.
 
-`GET /api/v1/operations` exige el mismo Bearer administrativo y devuelve con `Cache-Control: no-store` conteos
+`GET /api/v1/operations` exige `NAFTA2GO_ADMIN_TOKEN`, distinto del token de conductor y devuelve conteos
 por estado/resultado, suma de duraciones y contadores de caché/rutas. No consulta
 ORS ni lee datos del conductor. La configuración inválida de caché devuelve el
 error seguro de dependencia. El proceso genera sus propios IDs; no se guardan
@@ -94,9 +95,15 @@ access log de Uvicorn: una URL arbitraria puede contener datos privados. Los
 eventos no incluyen URL, headers, cuerpo, mensajes de excepción ni ubicaciones.
 Otros servidores/proxies deben aplicar la misma política antes de exponerlos.
 Los contadores se reinician al reiniciar la aplicación/caché, no se agregan entre
-réplicas ni constituyen p95 o disponibilidad sostenida. El resumen HTTP no incluye consultas CLI; su evento separado se describe en
-[POC-05](POC-05.md#telemetría-cli-agregada-en-mvp). El [panel local](WEB.md#panel-local-de-operación) presenta estas lecturas.
-Faltan métricas de modelo, alertas de consultas y supervisión sostenida (#21).
+réplicas ni constituyen p95 o disponibilidad sostenida. No incluye aún métricas integradas de ingesta/modelo ni alertas de consultas (#21).
+
+El token administrativo ausente o igual al del conductor produce
+503/`admin_not_configured`; el código del conductor no autoriza operación.
+Las respuestas operativas usan `Cache-Control: no-store`. Readiness y las
+recomendaciones siguen dependiendo sólo del token de conductor. Propuesta y
+límites en [ADR-016](../adr/ADR-016-acceso-administrativo-separado.md).
+
+El [panel local](WEB.md#panel-local-de-operación) presenta estas lecturas.
 
 ## Estado de ingestas para operación
 
@@ -122,6 +129,12 @@ campos privados ni escribir en la base. No ejecuta ingestas ni sincroniza alerta
 marcas persistidas de detección/resolución siguen siendo tarea del monitor
 programado. Una lectura saludable no resuelve una alerta previa. Base/esquema no
 disponibles producen 503 seguro. El [panel local](WEB.md#panel-local-de-operación) consume esta lectura; no reemplaza supervisión sostenida.
+
+## Telemetría CLI
+
+La CLI emite eventos seguros separados del resultado; contrato y límites en
+[POC-05](POC-05.md#telemetría-cli-agregada-en-mvp). Sus eventos no se agregan
+a los contadores HTTP.
 
 La vigencia se configura con `NAFTA2GO_MAX_PRICE_AGE_DAYS` (1–30, predeterminado
 30); ver [COBERTURA](COBERTURA.md#vigencia-configurable-en-mvp). El cliente no

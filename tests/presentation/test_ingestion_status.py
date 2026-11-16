@@ -20,7 +20,8 @@ URL = "/api/v1/operations/ingestion"
 
 @pytest.fixture
 def client(engine, monkeypatch):
-    monkeypatch.setenv("NAFTA2GO_API_TOKEN", "token-administrativo")
+    monkeypatch.setenv("NAFTA2GO_API_TOKEN", "token-conductor")
+    monkeypatch.setenv("NAFTA2GO_ADMIN_TOKEN", "token-administrativo")
     with TestClient(create_app(engine, clock=lambda: NOW)) as client:
         yield client
 
@@ -152,16 +153,17 @@ def test_application_rejects_unknown_source_or_naive_clock(engine, source, now):
 
 
 def test_missing_token_fails_closed(client, monkeypatch):
-    monkeypatch.delenv("NAFTA2GO_API_TOKEN")
+    monkeypatch.delenv("NAFTA2GO_ADMIN_TOKEN")
     response = client.get(URL, headers=AUTH)
     assert response.status_code == 503
-    assert response.json()["detail"]["code"] == "api_not_configured"
+    assert response.json()["detail"]["code"] == "admin_not_configured"
 
 
 def test_missing_schema_returns_safe_error(tmp_path, monkeypatch, caplog):
     from nafta2go.persistence.database import create_db_engine
 
-    monkeypatch.setenv("NAFTA2GO_API_TOKEN", "token-administrativo")
+    monkeypatch.setenv("NAFTA2GO_API_TOKEN", "token-conductor")
+    monkeypatch.setenv("NAFTA2GO_ADMIN_TOKEN", "token-administrativo")
     engine = create_db_engine(f"sqlite:///{tmp_path / 'secreto-base.db'}")
     try:
         with TestClient(create_app(engine, clock=lambda: NOW)) as client:

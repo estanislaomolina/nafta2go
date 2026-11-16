@@ -2,8 +2,11 @@
 
 Se reunieron los incrementos de ingesta/monitor/reintentos, límite de candidatas,
 API, caché/cupo, Maps, web/QA y plantillas de red en una rama de validación.
-[Fuentes](evidencia/integracion-local-2026-11-13/fuentes.json) registra los commits
-de base; las pruebas y correcciones de integración están encima de esa base.
+[Fuentes históricas](evidencia/integracion-local-2026-11-13/fuentes.json) registra
+los commits de la corrida original. La actualización del 16/11/2026 reúne las
+bases actuales de #78, #81/#82, #84, #88/#90, #92 y #94 sobre `dev` 1567e95;
+el grafo de esta rama conserva sus commits. La prueba Docker verifica también
+la separación de códigos de conductor/administración y los eventos seguros CLI/HTTP.
 Esto no representa un merge aprobado en `dev` ni una entrega completa.
 
 ## Prueba entre componentes
@@ -46,7 +49,7 @@ sin credencial, configuración de caché y consulta con la matriz real grabada d
 POC-05. Elimina sus propios recursos al terminar. `--image` selecciona otra
 imagen local; no publica imágenes ni despliega infraestructura AWS.
 
-## Resultado local del 13/11/2026 y límites
+## Resultado histórico local del 13/11/2026 y límites
 
 519 tests Python y 148 subtests aprobados, cobertura de líneas 97,94 %; once
 pruebas de navegador aprobadas. Ruff, formato, links, unidades systemd y calendario
@@ -59,3 +62,13 @@ CABA ni utilidad con usuarios. La web se probó en Chromium y móvil emulado, no
 en teléfono físico ni lector de pantalla. ML/ranking conservador, autenticación
 de usuarios y despliegue público siguen pendientes. El checkout operativo de
 las ingestas no se modificó. MVP-09 y la entrega final siguen abiertos.
+
+## Actualización verificada del 16/11/2026
+
+Sobre las bases actualizadas: 570 tests Python y 148 subtests aprobados, cobertura
+98,32 %, Ruff, formato y links válidos. Se construyó `nafta2go:qa-20261116`
+y se ejecutó el smoke Docker: API y web listas, variables de caché propagadas,
+separación de códigos comprobada, diez evaluaciones históricas persistidas y
+telemetría segura HTTP/CLI. El proyecto y volumen temporales se retiraron. La QA
+del panel #94 aprobó 19 pruebas Chromium; no se presenta como validación de
+navegadores adicionales ni de operación sostenida.

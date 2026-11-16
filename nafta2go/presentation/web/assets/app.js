@@ -58,7 +58,7 @@ function show(data) {
   if (discarded.length || Object.keys(data.exclusions).length) {
     const details = document.createElement("details"), list = document.createElement("ul");
     details.append(node("summary", "Por qué se descartaron estaciones"));
-    for (const row of discarded) list.append(node("li", (row.brand || "Estación " + row.station_id) + " · " + row.address + ": " + row.reasons.map(key => reasons[key] || key).join("; ")));
+    for (const row of discarded) list.append(node("li", (row.brand || "Estación " + row.station_id) + " · " + (row.address || "Dirección no informada") + ": " + row.reasons.map(key => reasons[key] || key).join("; ")));
     if (Object.keys(data.exclusions).length) list.append(node("li", "También se excluyeron datos que no cumplen ubicación, producto, horario o vigencia: " + Object.values(data.exclusions).reduce((a, b) => a + b, 0)));
     details.append(list); output.append(details);
   }

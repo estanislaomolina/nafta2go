@@ -50,6 +50,7 @@ services:
       ORS_REQUESTS_PER_MINUTE: ${ORS_REQUESTS_PER_MINUTE:-30}
       ORS_REQUESTS_PER_DAY: ${ORS_REQUESTS_PER_DAY:-450}
       NAFTA2GO_API_TOKEN: ${NAFTA2GO_API_TOKEN:-}
+      NAFTA2GO_ADMIN_TOKEN: ${NAFTA2GO_ADMIN_TOKEN:-}
     volumes:
       - nafta2go-data:/app/data
     depends_on:

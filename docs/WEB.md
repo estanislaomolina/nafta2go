@@ -1,7 +1,7 @@
 # Aplicación web local — MVP-03
 
 La pantalla está en `/` del servidor descrito en [API](API.md). Levantar el
-mismo servicio con `uvicorn nafta2go.presentation.http:app --host 127.0.0.1 --port 8000 --no-access-log --log-config deploy/logging.json`
+mismo servicio con `uvicorn nafta2go.presentation.http:app --host 127.0.0.1 --port 8000`
 o `docker compose --profile mvp up --build api`, después de configurar el código
 `NAFTA2GO_API_TOKEN` y migrar la base. Abrir `http://127.0.0.1:8000/` y usar ese
 código en «Acceso a la demo». La API y la web comparten origen; decisión propuesta
@@ -33,15 +33,15 @@ emulado. Axe-core registró cero violaciones e incompletos en doce estados de
 la corrida local; no se declara conformidad completa con WCAG. Falta teléfono
 físico, otros navegadores y lector de pantalla.
 El diagnóstico ML, ranking conservador, perfiles y autenticación pública siguen
-pendientes en sus respectivos issues. La web usa el valor predeterminado de diez candidatas; la API permite configurar
-un máximo entre 3 y 20. Esto no completa por sí solo MVP-03.
+pendientes en sus respectivos issues. La web usa diez candidatas por defecto;
+la API admite un límite de 3 a 20. No completa por sí sola MVP-03.
 
 ## Panel local de operación
 
 Abrir `http://127.0.0.1:8000/operacion` en el mismo servicio. El HTML de acceso
 es público y no contiene datos ni código; las dos lecturas de [API](API.md)
-requieren el Bearer local existente. No hay roles separados de usuario/operador:
-esta interfaz no habilita uso público. Elegir fuente, ingresar el código y pulsar
+requieren el código administrativo, distinto del código de conductor
+(ADR-016). Esta interfaz no habilita uso público. Elegir fuente, ingresar el código y pulsar
 «Actualizar estado»; no hace polling ni consultas antes de esa acción.
 
 Presenta contadores de consultas HTTP y caché de rutas, condiciones del monitor
