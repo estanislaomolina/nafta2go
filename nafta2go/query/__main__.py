@@ -22,6 +22,7 @@ from nafta2go.application.recommendation import DEFAULT_CANDIDATE_LIMIT, MAX_CAN
 from nafta2go.domain.engine import FuelRequest
 from nafta2go.persistence.database import create_db_engine, database_url, upgrade_to_head
 from nafta2go.presentation.cli_telemetry import CliObservation
+from nafta2go.presentation.navigation import present_recommendation
 
 
 class _UserInputError(ValueError):
@@ -96,6 +97,7 @@ def render(payload: dict) -> str:
     elif (payload.get("routes") or {}).get("cache_hit"):
         lines.append("Rutas REUTILIZADAS de " + payload["routes"]["captured_at_utc"])
     lines.append("Consulta: " + json.dumps(payload["query"], ensure_ascii=False))
+    navigation = {link["station_id"]: link for link in payload.get("navigation", [])}
     evaluations = {row["station_id"]: row for row in payload["evaluations"]}
     for choice in payload["alternatives"]:
         row = evaluations[choice["station_id"]]
@@ -116,6 +118,10 @@ def render(payload: dict) -> str:
                 "  Alertas: " + (", ".join(row["alerts"]) or "ninguna"),
             ]
         )
+        if link := navigation.get(choice["station_id"]):
+            lines.append(f"  {link['label']}: {link['url']}")
+    if payload.get("navigation_notice"):
+        lines.append(payload["navigation_notice"])
     for row in payload["evaluations"]:
         if not row["feasible"]:
             lines.append(f"Descartada {row['station_id']}: " + ", ".join(row["reasons"]))
@@ -200,6 +206,7 @@ def run(argv, observation) -> int:
             if args.save_matrix and evidence is not None:
                 args.save_matrix.parent.mkdir(parents=True, exist_ok=True)
                 args.save_matrix.write_bytes(matrix_bytes(evidence))
+        payload = present_recommendation(payload)
         print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else render(payload))
         observation.outcome = payload["outcome"]
         observation.error_code = None

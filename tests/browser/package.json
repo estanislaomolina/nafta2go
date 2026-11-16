@@ -1,0 +1,11 @@
+{
+  "name": "nafta2go-browser-tests",
+  "private": true,
+  "scripts": {
+    "test": "node --test --test-concurrency=1 web.test.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.65.0",
+    "axe-core": "4.14.0"
+  }
+}
