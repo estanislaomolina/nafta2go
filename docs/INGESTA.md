@@ -14,8 +14,9 @@ El JSON expone `run_id`, origen, estado, fechas UTC, duración en segundos,
 versión de reglas y reporte de calidad. El código de salida es 0 si termina
 correctamente y 1 si falla la adquisición o ingesta. Los errores de configuración
 o conexión a la base pueden impedir crear el registro y producen salida no cero.
-Los mensajes completos de error quedan en la base; el JSON omite esos mensajes
-para evitar exportar URLs o credenciales contenidas en excepciones.
+En adquisición remota se conserva sólo el tipo de error, sin su mensaje original.
+Otros fallos pueden conservar mensajes en la base; el JSON los omite para evitar
+exportar URLs o credenciales contenidas en excepciones.
 
 ## Programación en Linux con systemd
 
@@ -116,13 +117,14 @@ interrupciones, límites horarios y recuperación con marcas de detección, sin 
 
 ## Límites de operación
 
-Un fallo transitorio de DNS o de red queda registrado como `failed`; estas
-unidades no reintentan automáticamente. `Persistent=true` recupera una ejecución
+Estas unidades no reinician automáticamente el servicio. El comando realiza
+los reintentos acotados de adquisición descritos abajo; si no se recupera, la
+ejecución queda `failed`. `Persistent=true` recupera una ejecución
 omitida, pero no reintenta una ejecución que falló. Tras comprobar conectividad,
 el operador puede iniciar el servicio manualmente y luego consultar el monitor.
 Los precios anteriores se conservan y su vigencia se evalúa por fecha original.
 No se garantiza disponibilidad continua ni actualización exitosa diaria por
-instalar los temporizadores. La evidencia de operación se incorpora por separado.
+instalar los temporizadores. La evidencia fechada y sus límites se detallan abajo.
 
 ## Evidencia local y recuperación observada
 
@@ -168,6 +170,42 @@ La ruta del original se normalizó como relativa y se omitieron errores completo
 y URLs. Los datos y el journal pueden cambiar o rotar después de esta captura.
 
 **MVP-01 sigue abierto:** no hubo actualización automática exitosa los días del
-fallo. Restan supervisión sostenida, política de reintentos acotados y resolver la
-disponibilidad del equipo/catálogo; no hay notificaciones a un receptor externo.
+fallo. Restan supervisión sostenida, instalar y observar los reintentos descritos
+abajo y resolver la disponibilidad del equipo/catálogo; no hay notificaciones a un receptor externo.
 No cambiar de rama ni mover el checkout operativo sin revisar sus servicios.
+
+## Reintentos acotados de adquisición remota
+
+Sin `--file`, cada invocación permite hasta **tres intentos** de adquisición del
+catálogo y CSV, con esperas de **60 y 120 segundos**. Cada intento abre y cierra
+su propia sesión y vuelve a consultar el catálogo. Se reintentan conexión/DNS,
+timeouts, descarga interrumpida o incompleta y HTTP 502, 503 o 504 sin
+`Retry-After`. El adaptador borra los archivos parciales antes del siguiente intento.
+Con `--file` se usa el archivo local una sola vez.
+
+No se reintentan TLS, proxy, errores permanentes de catálogo, HTTP distintos de
+los anteriores, normalización ni persistencia. Si una respuesta HTTP trae
+`Retry-After`, se detiene sin reintentar dentro de esa invocación: no se acorta ni
+se ignora la espera indicada, aunque el valor esté mal formado. Tampoco se
+reintenta HTTP 429. ORS y su política de cuota no se modifican.
+
+Los intentos pertenecen al mismo `run_id`: permanece `running` hasta completar o
+fallar, sin repetir precios ni crear ejecuciones por cada error transitorio.
+Las nuevas ejecuciones conservan `report.acquisition_attempts`, tanto en éxito
+como en fallo, y el JSON de la CLI lo expone dentro del reporte. Los eventos de
+reintento incluyen origen, número de intento, tipo de error y próxima espera;
+no incluyen URLs ni mensajes originales. En systemd se vinculan por invocación.
+No se aplica una migración ni se infiere ese dato para las ejecuciones antiguas.
+
+Al agotarse los intentos la ejecución queda `failed`, conserva la versión anterior
+y el monitor puede alertar. Si la adquisición tiene éxito pero la normalización
+falla, no vuelve a descargar. Las esperas adicionales suman como máximo 180 s;
+los timeouts de red existentes y el límite de dos horas del servicio siguen
+vigentes. Esto no garantiza una descarga exitosa ni disponibilidad del equipo.
+
+Las pruebas simulan recuperación de DNS y corte de stream, agotamiento, errores
+permanentes, cierre de sesiones y limpieza de parciales, sin red ni esperas reales.
+La rama operativa original todavía conserva el comportamiento anterior; el nuevo
+comando se usará tras integrar y actualizar su checkout de forma controlada.
+
+La clasificación usa las [excepciones de Requests](https://requests.readthedocs.io/en/latest/user/quickstart/#errors-and-exceptions).
