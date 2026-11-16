@@ -12,10 +12,9 @@ WEB = Path(__file__).with_name("web")
 def install_web(application: FastAPI) -> None:
     application.mount("/assets", StaticFiles(directory=WEB / "assets"), name="assets")
 
-    @application.get("/", include_in_schema=False)
-    def index():
+    def page(name):
         return FileResponse(
-            WEB / "index.html",
+            WEB / name,
             headers={
                 "Cache-Control": "no-store",
                 "Referrer-Policy": "no-referrer",
@@ -27,3 +26,11 @@ def install_web(application: FastAPI) -> None:
                 ),
             },
         )
+
+    @application.get("/", include_in_schema=False)
+    def index():
+        return page("index.html")
+
+    @application.get("/operacion", include_in_schema=False)
+    def operation():
+        return page("operation.html")
