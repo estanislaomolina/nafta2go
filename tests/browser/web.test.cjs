@@ -204,7 +204,7 @@ test('timeout del proveedor y fallo de red ofrecen mensajes recuperables', async
   } finally { await page.context().close(); }
 });
 
-async function operation(page, code = 'codigo-web-de-prueba') {
+async function operation(page, code = 'codigo-operacion-de-prueba') {
   await page.goto(base + '/operacion'); await page.locator('#operation-access').fill(code);
 }
 async function readOperation(page) {
@@ -217,14 +217,14 @@ test('panel: acceso por teclado y lectura real de la API sin persistir código',
     await page.goto(base + '/operacion'); await accessible(page);
     assert.equal(await page.locator('#operation-results').innerText(), '');
     await page.keyboard.press('Tab'); await page.keyboard.press('Enter');
-    await enter(page, '#operation-access', 'codigo-web-de-prueba');
+    await enter(page, '#operation-access', 'codigo-operacion-de-prueba');
     await page.locator('#operation-source').selectOption('historico');
     const request = page.waitForRequest(r => r.url().includes('/operations/ingestion?'));
     await reach(page, '#operation-submit'); await page.keyboard.press('Enter');
     await page.waitForFunction(() => document.querySelector('#operation-status').textContent.startsWith('Estado actualizado'));
     const sent = await request;
     assert.equal(new URL(sent.url()).searchParams.get('source'), 'historico');
-    assert.equal(sent.headers().authorization, 'Bearer codigo-web-de-prueba');
+    assert.equal(sent.headers().authorization, 'Bearer codigo-operacion-de-prueba');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'operation-results');
     assert.match(await page.locator('#operation-results').innerText(), /Falta el intento diario esperado/);
     assert.match(await page.locator('#operation-results').innerText(), /No hay una ejecución registrada/);
@@ -244,7 +244,7 @@ test('panel: código inválido, dependencia caída y fallo de red retiran la lec
     await operation(page, 'incorrecto'); await readOperation(page);
     assert.match(await page.locator('#operation-error').innerText(), /código de acceso no es válido/);
     assert.equal(await page.evaluate(() => document.activeElement.id), 'operation-error'); await accessible(page);
-    await page.locator('#operation-access').fill('codigo-web-de-prueba'); await readOperation(page);
+    await page.locator('#operation-access').fill('codigo-operacion-de-prueba'); await readOperation(page);
     assert.ok(await page.locator('#operation-results article').count());
     await page.route('**/api/v1/operations/ingestion?*', route => route.fulfill({status: 503, json: {detail: {code: 'data_unavailable'}}}));
     await readOperation(page);
@@ -324,10 +324,21 @@ test('panel: timeout cancela la lectura completa sin conservar datos', async () 
 test('panel: código pegado con espacios conserva acceso y header normalizado', async () => {
   const page = await pageFor();
   try {
-    await operation(page, '  codigo-web-de-prueba  ');
+    await operation(page, '  codigo-operacion-de-prueba  ');
     const request = page.waitForRequest(r => r.url().endsWith('/api/v1/operations'));
     await readOperation(page);
-    assert.equal((await request).headers().authorization, 'Bearer codigo-web-de-prueba');
+    assert.equal((await request).headers().authorization, 'Bearer codigo-operacion-de-prueba');
     assert.match(await page.locator('#operation-status').innerText(), /Estado actualizado/);
+  } finally { await page.context().close(); }
+});
+
+ test('panel: el código del conductor se rechaza y el administrativo permite consultar', async () => {
+  const page = await pageFor();
+  try {
+    await operation(page, 'codigo-web-de-prueba'); await readOperation(page);
+    assert.match(await page.locator('#operation-error').innerText(), /código de acceso no es válido/);
+    assert.equal(await page.locator('#operation-results').innerText(), '');
+    await page.locator('#operation-access').fill('codigo-operacion-de-prueba'); await readOperation(page);
+    assert.ok(await page.locator('#operation-results article').count());
   } finally { await page.context().close(); }
 });

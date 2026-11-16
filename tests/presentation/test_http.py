@@ -269,6 +269,8 @@ def test_navigation_uses_station_coordinates_without_persisting_links(clients, e
     assert "google.com/maps" not in encoded and "navigation_destinations" not in encoded
     assert "-34.6037" not in encoded and "-58.4565" not in encoded
     assert "google.com/maps" not in caplog.text
+
+
 def query_events(caplog):
     import json
 

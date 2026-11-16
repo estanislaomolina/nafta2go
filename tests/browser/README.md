@@ -20,7 +20,7 @@ sesiones del navegador del usuario ni consulta APIs de Google/ORS/Energía.
 El servidor no se usa para una demo productiva ni para afirmar rutas reales.
 Las otras respuestas interceptadas verifican estados de la presentación.
 
-Diecisiete pruebas cubren UC01/UC02 con teclado, descartes UC06, validación/corrección,
+Diecinueve pruebas cubren UC01/UC02 con teclado, descartes UC06, validación/corrección,
 401, cuota, timeout, red, privacidad, geolocalización simulada/denegada, XSS y
 layouts de 1440, 390 y 320 px. Playwright 1.65.0 usa Chromium 158.0.8127.18;
 axe-core 4.14.0 revisa etiquetas WCAG 2/2.1 A-AA y 2.2 AA en doce estados.
@@ -28,7 +28,7 @@ El entorno exacto, violaciones e incompletos quedan en JSON junto a las capturas
 Cualquier violación automatizada falla la prueba; los incompletos se conservan
 para revisión humana. No se declara conformidad universal con WCAG.
 
-La corrida local del 13/11/2026 aprobó las diecisiete pruebas, con cero violaciones e
+La corrida local del 16/11/2026 aprobó las diecinueve pruebas, con cero violaciones e
 incompletos en los doce análisis. Se corrigió un rol no permitido en el área de
 resultados antes de registrar ese resultado. La vista móvil es emulación de
 Chromium: falta prueba en teléfono físico, otros navegadores y lector de pantalla.
@@ -48,3 +48,6 @@ truncadas usa respuestas sintéticas interceptadas. Capturas adicionales:
 operación real ni de un teléfono físico.
 
 La regresión de copia de código con espacios comprueba acceso y Bearer normalizado.
+
+El servidor temporal configura códigos distintos para conductor y administración.
+Una regresión rechaza el código del conductor en el panel y permite el administrativo.
