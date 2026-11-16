@@ -1,5 +1,36 @@
 # API local del recomendador — primer incremento de MVP-02
 
+## Diagnóstico retrospectivo de precios (incremento de MVP-05)
+
+`GET /api/v1/price-diagnostics/{station_id}?product_id=2&schedule_id=2` requiere
+el mismo Bearer de las consultas. Producto/franja aceptan 2 o 3. Selecciona la
+última publicación no futura en la última ingesta vigente exitosa; el cliente
+no puede enviar precio, fecha, features ni rutas de artefactos.
+
+Configurar `NAFTA2GO_PRICE_DATASET_DIR` y `NAFTA2GO_PRICE_MODEL_DIR` con los
+directorios generados según [ML](ML.md). Se leen sus `manifest.json`: deben
+coincidir hashes, features, captura histórica y reglas de normalización. Ventana
+y mínimo de historia proceden del dataset. En despliegue, usar directorios de
+confianza de sólo lectura; Docker requiere mounts y rutas del contenedor.
+
+El método servido es `chosen_method` si es una referencia admitida; no se carga
+pickle ni se sustituye por `artifact_model`. Devuelve precio oficial, fecha,
+referencia, diferencia (oficial menos referencia), método, versión e ingestas,
+con `Cache-Control: no-store`. Usa la misma preparación temporal que entrenamiento
+y publicaciones estrictamente anteriores al objetivo. El supuesto de disponibilidad
+histórica se declara en la respuesta; no equivale a disponibilidad verificada.
+
+`scope=published_price_retrospective` diagnostica la publicación, no el precio
+actual. `reference_only` conserva `alert_level=not_calibrated`: no afirma normalidad,
+anomalía ni error. Sin contexto devuelve 200/`unavailable`, referencia/diferencia
+nulas; sin publicación, 404; sin datos/configuración compatibles, 503 seguro.
+La referencia no modifica motor, precio oficial, ranking ni vigencia.
+
+Es optativo: sin estas variables, la consulta habitual sigue funcionando y
+readiness no exige diagnóstico. Faltan calibración de alertas, serving aprendido
+e integración visual antes de cerrar #19. Alternativas en
+[ADR-015](../adr/ADR-015-referencia-servida-y-abstencion-de-alertas.md).
+
 La presentación HTTP usa FastAPI ([ADR-009](../adr/ADR-009-api-http-con-fastapi.md))
 y llama al mismo caso de uso que la CLI. Requiere Python 3.12 y las dependencias
 de `requirements-dev.txt` para correr los tests. Para iniciar desde el repositorio:

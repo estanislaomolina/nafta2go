@@ -83,5 +83,27 @@ class ErrorDetail(BaseModel):
     message: str | None = None
 
 
+class PriceDiagnosticOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    scope: Literal["published_price_retrospective"]
+    status: Literal["reference_only", "unavailable"]
+    station_id: int
+    product_id: int
+    schedule_id: int
+    official_price_ars_per_l: str
+    published_at: str
+    reference_ars_per_l: str | None
+    difference_ars_per_l: str | None
+    alert_level: Literal["not_calibrated"]
+    reason: Literal["alert_policy_not_validated", "context_unavailable"]
+    method: Literal["mediana_previa", "ultimo_precio", "bandera_reciente"]
+    version: str
+    features_version: str
+    data_run_id: int
+    history_run_id: int
+    history_sha256: str
+    availability_assumption: str
+
+
 class ErrorOutput(BaseModel):
     detail: ErrorDetail

@@ -1,5 +1,10 @@
 # Preparación y baseline temporal de precios — MVP-04 en progreso
 
+El primer serving de referencias seleccionadas se describe en [API](API.md) y
+[ADR-015](../adr/ADR-015-referencia-servida-y-abstencion-de-alertas.md): reutiliza
+la preparación temporal, no carga el modelo no elegido y se abstiene de alertar
+hasta validar umbrales. Es un incremento parcial de #19.
+
 Fuente: precios en surtidor de Secretaría de Energía, CC BY 4.0;
 [normalización y alcance](NORMALIZACION.md). Trabajo de #18 y #56; decisión propuesta en
 [ADR-013](../adr/ADR-013-evaluacion-temporal-de-precios.md) y

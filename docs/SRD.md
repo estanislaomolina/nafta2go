@@ -438,6 +438,11 @@ y pendientes en [AWS](AWS.md); alternativas de IaC en
 
 ## Preparación temporal de ML (primer incremento de MVP-04)
 
+El primer serving optativo de MVP-05 consulta la referencia seleccionada mediante
+HTTP autenticado, verifica manifiestos/captura/reglas y reutiliza `ml.temporal`.
+No modifica el recomendador ni emite alertas calibradas; contrato en [API](API.md)
+y alternativas en [ADR-015](../adr/ADR-015-referencia-servida-y-abstencion-de-alertas.md).
+
 `ml.temporal` es un componente puro, separado del recomendador: recibe filas
 normalizadas, prepara features anteriores al objetivo y separa ejemplos por un
 corte temporal. No accede a la base ni entrena/serve modelos. Su mediana móvil
