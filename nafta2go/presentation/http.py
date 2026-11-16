@@ -115,9 +115,10 @@ def create_app(
                 application.state.engine.dispose()
 
     application = FastAPI(title="Nafta2Go", version="0.1.0", lifespan=lifespan)
-    install_web(application)
     telemetry = QueryTelemetry()
     application.add_middleware(QueryTelemetryMiddleware, telemetry=telemetry)
+
+    install_web(application)
     application.add_exception_handler(RequestValidationError, validation_error)
     for error in (
         RoutingError,
