@@ -135,3 +135,8 @@ disponibles producen 503 seguro. El [panel local](WEB.md#panel-local-de-operaci�
 La CLI emite eventos seguros separados del resultado; contrato y límites en
 [POC-05](POC-05.md#telemetría-cli-agregada-en-mvp). Sus eventos no se agregan
 a los contadores HTTP.
+
+La vigencia se configura con `NAFTA2GO_MAX_PRICE_AGE_DAYS` (1–30, predeterminado
+30); ver [COBERTURA](COBERTURA.md#vigencia-configurable-en-mvp). El cliente no
+puede enviarla en el cuerpo. La respuesta registra `query.max_price_age_days`;
+configuración inválida produce 503/`coverage_not_configured` y readiness 503.

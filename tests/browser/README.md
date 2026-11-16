@@ -51,3 +51,6 @@ La regresión de copia de código con espacios comprueba acceso y Bearer normali
 
 El servidor temporal configura códigos distintos para conductor y administración.
 Una regresión rechaza el código del conductor en el panel y permite el administrativo.
+
+El servidor de QA fija `NAFTA2GO_MAX_PRICE_AGE_DAYS=29` para comprobar una política
+no predeterminada y su presentación; sigue usando rutas sintéticas explícitas.

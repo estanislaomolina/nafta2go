@@ -28,6 +28,8 @@ if __name__ == "__main__":
         engine = create_db_engine(url)
         os.environ["NAFTA2GO_API_TOKEN"] = "codigo-web-de-prueba"
         os.environ["NAFTA2GO_ADMIN_TOKEN"] = "codigo-operacion-de-prueba"
+
+        os.environ["NAFTA2GO_MAX_PRICE_AGE_DAYS"] = "29"
         application = create_app(
             engine,
             FixtureRoutes,
