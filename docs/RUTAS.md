@@ -25,6 +25,10 @@ desactiva retención. Los errores no se guardan ni se reintentan automáticament
 los aciertos no consumen cupo. `snapshot()` devuelve solo contadores sin claves
 ni ubicaciones. El TTL limita reutilización y se purga al consultar.
 
+Los faltantes se coordinan por clave: una consulta idéntica a otra en curso la
+espera hasta 20 s y reutiliza su resultado; una ruta distinta se consulta en
+paralelo, sin esperar al proveedor ocupado (#97).
+
 La integración con el flujo principal y la configuración por entorno se completan
 en la PR dependiente de #55. Por sí solo este componente no cambia las solicitudes
 actuales de la CLI. No comparte cuota entre procesos ni conoce lo consumido por

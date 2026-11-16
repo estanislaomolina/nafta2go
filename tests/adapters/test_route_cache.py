@@ -111,7 +111,7 @@ def test_concurrent_identical_calls_only_fetch_once():
     assert len(calls) == 1
 
 
-def test_busy_fetch_does_not_block_existing_cache_hits():
+def test_slow_fetch_blocks_neither_cache_hits_nor_other_keys():
     entered, release = Event(), Event()
     cache = RouteCache()
     cache.get("warm", "account", lambda: "cached")
@@ -126,12 +126,43 @@ def test_busy_fetch_does_not_block_existing_cache_hits():
         try:
             assert entered.wait(1)
             assert cache.get("warm", "account", lambda: None) == ("cached", True)
+            assert cache.get("different", "account", lambda: "new") == ("new", False)
+        finally:
+            release.set()
+        assert task.result() == ("loaded", False)
+    assert cache.snapshot()["busy"] == 0
+    assert cache._inflight == {}
+
+
+def test_identical_call_gives_up_after_bounded_wait(monkeypatch):
+    monkeypatch.setattr("nafta2go.adapters.route_cache.FETCH_WAIT_SECONDS", 0.05)
+    entered, release = Event(), Event()
+    cache = RouteCache()
+
+    def slow():
+        entered.set()
+        assert release.wait(10)
+        return "loaded"
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        task = pool.submit(cache.get, "k", "account", slow)
+        try:
+            assert entered.wait(1)
             with pytest.raises(ProviderUnavailable, match="ocupado"):
-                cache.get("different", "account", lambda: "new")
+                cache.get("k", "account", lambda: pytest.fail("no duplicar la llamada"))
         finally:
             release.set()
         assert task.result() == ("loaded", False)
     assert cache.snapshot()["busy"] == 1
+    assert cache._inflight == {}
+
+
+def test_failed_fetch_releases_its_key():
+    cache = RouteCache()
+    with pytest.raises(ProviderUnavailable):
+        cache.get("k", "account", Mock(side_effect=ProviderUnavailable("fallo")))
+    assert cache._inflight == {}
+    assert cache.get("k", "account", lambda: "valid") == ("valid", False)
 
 
 @pytest.mark.parametrize(
