@@ -44,10 +44,9 @@ no abre Maps ni transmite datos a Google. La misma información está en
 
 ## Pendiente de la interfaz (#58 y #17)
 
-Este incremento no entrega una pantalla web ni demuestra accesibilidad visual.
-La futura web debe usar un enlace con texto descriptivo (`label`), mostrar el
-aviso y la vigencia, y mantener navegación por teclado. Si abre otra pestaña,
-usará `rel="noopener noreferrer"`; los textos se renderizan como texto, no HTML.
-Faltan pruebas reales en navegador y móvil y el recorrido mediante teclado.
+La [web local](WEB.md) presenta enlaces con texto descriptivo, aviso de recálculo
+y vigencia. Abre otra pestaña con `rel="noopener noreferrer"` e inserta los textos
+como texto, no HTML. Las pruebas automatizadas de teclado y navegador se entregan
+en una PR dependiente; falta validar en un teléfono físico.
 Los tests actuales cubren coordenadas, codificación, destino, conservación del
 ranking, contrato HTTP/CLI y ausencia de enlaces en la persistencia, sin red.
