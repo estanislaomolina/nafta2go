@@ -29,8 +29,8 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 | [ADR-009](ADR-009-api-http-con-fastapi.md) | API HTTP con FastAPI sobre la capa de aplicación | Aceptado |
 | [ADR-010](ADR-010-cache-volatil-y-cupo-de-rutas.md) | Caché volátil y cupo por proceso para matrices de rutas | Aceptado |
 | [ADR-011](ADR-011-base-de-red-con-cloudformation.md) | Base de red reproducible con CloudFormation | Propuesto |
+| [ADR-012](ADR-012-web-local-con-assets-propios.md) | Web local con assets propios y API del mismo origen | Propuesto |
 | [ADR-013](ADR-013-evaluacion-temporal-de-precios.md) | Evaluación retrospectiva temporal de precios y supuesto de disponibilidad | Propuesto |
 | [ADR-014](ADR-014-seleccion-de-modelo-de-precios.md) | Selección del método de referencia de precios sin usar la validación | Propuesto |
 | [ADR-015](ADR-015-referencia-servida-y-abstencion-de-alertas.md) | Referencia seleccionada servida y abstención de alertas sin calibración | Propuesto |
-
-ADR-012 está reservado para la web local en la PR #81.
+| [ADR-016](ADR-016-acceso-administrativo-separado.md) | Acceso administrativo separado del código de conductor | Propuesto |

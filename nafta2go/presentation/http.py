@@ -6,7 +6,7 @@ from collections.abc import Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from secrets import compare_digest
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
@@ -15,13 +15,18 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import Engine
 from sqlalchemy.exc import SQLAlchemyError
 
-from nafta2go.adapters.recorded_routes import CapturedRoutes
+from nafta2go.adapters.recorded_routes import CapturedRoutes, shared_cache
 from nafta2go.adapters.routing import (
     InvalidCredentials,
     ProviderTimeout,
     QuotaExceeded,
     RoutingError,
 )
+from nafta2go.application.coverage_rules import (
+    CoverageConfigurationError,
+    configured_max_price_age_days,
+)
+from nafta2go.application.ingestion_status import ingestion_status
 from nafta2go.application.price_diagnostic import DiagnosticUnavailable, price_diagnostic
 from nafta2go.application.query import recommend_from_database
 from nafta2go.application.scenario import ScenarioIntegrityError
@@ -32,6 +37,9 @@ from nafta2go.presentation.models import (
     RecommendationInput,
     RecommendationOutput,
 )
+from nafta2go.presentation.navigation import present_recommendation
+from nafta2go.presentation.telemetry import QueryTelemetry, QueryTelemetryMiddleware
+from nafta2go.presentation.web import install_web
 
 logger = logging.getLogger(__name__)
 bearer = HTTPBearer(auto_error=False)
@@ -40,7 +48,20 @@ bearer = HTTPBearer(auto_error=False)
 def authorize(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
 ) -> None:
-    expected = os.environ.get("NAFTA2GO_API_TOKEN", "").strip()
+    _authorize(credentials, os.environ.get("NAFTA2GO_API_TOKEN", "").strip())
+
+
+def authorize_admin(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
+) -> None:
+    expected = os.environ.get("NAFTA2GO_ADMIN_TOKEN", "").strip()
+    driver = os.environ.get("NAFTA2GO_API_TOKEN", "").strip()
+    if not expected or compare_digest(expected.encode(), driver.encode()):
+        raise HTTPException(503, detail={"code": "admin_not_configured"})
+    _authorize(credentials, expected)
+
+
+def _authorize(credentials, expected):
     if not expected:
         raise HTTPException(503, detail={"code": "api_not_configured"})
     if credentials is None or not compare_digest(
@@ -53,6 +74,8 @@ def authorize(
 
 def dependency_error(_request, exc: Exception) -> JSONResponse:
     status, code = 503, "data_unavailable"
+    if isinstance(exc, CoverageConfigurationError):
+        code = "coverage_not_configured"
     if isinstance(exc, RoutingError):
         status, code = 502, "routes_unavailable"
         if isinstance(exc, ProviderTimeout):
@@ -98,8 +121,18 @@ def create_app(
                 application.state.engine.dispose()
 
     application = FastAPI(title="Nafta2Go", version="0.1.0", lifespan=lifespan)
+    telemetry = QueryTelemetry()
+    application.add_middleware(QueryTelemetryMiddleware, telemetry=telemetry)
+
+    install_web(application)
     application.add_exception_handler(RequestValidationError, validation_error)
-    for error in (RoutingError, SQLAlchemyError, ScenarioIntegrityError, OSError):
+    for error in (
+        RoutingError,
+        SQLAlchemyError,
+        ScenarioIntegrityError,
+        OSError,
+        CoverageConfigurationError,
+    ):
         application.add_exception_handler(error, dependency_error)
 
     @application.get("/health")
@@ -134,6 +167,10 @@ def create_app(
     @application.get("/ready")
     def ready():
         configured = bool(os.environ.get("NAFTA2GO_API_TOKEN", "").strip())
+        try:
+            configured_max_price_age_days()
+        except CoverageConfigurationError:
+            configured = False
         available = configured and database_is_ready(application.state.engine)
         return JSONResponse(
             status_code=200 if available else 503,
@@ -146,9 +183,9 @@ def create_app(
         response_model=RecommendationOutput,
         responses={status: {"model": ErrorOutput} for status in (401, 422, 502, 503, 504)},
     )
-    def recommendations(body: RecommendationInput) -> dict:
+    def recommendations(body: RecommendationInput, request: Request) -> dict:
         try:
-            return recommend_from_database(
+            result = recommend_from_database(
                 application.state.engine,
                 body.fuel_request(),
                 body.origin.point(),
@@ -158,7 +195,10 @@ def create_app(
                 schedule_id=body.schedule_id,
                 reference_at=clock(),
                 routing_provider=routing_provider,
+                max_candidates=body.max_candidates,
             )
+            request.scope["nafta2go.outcome"] = result["outcome"]
+            return present_recommendation(result)
         except ValueError as exc:
             if isinstance(exc, ScenarioIntegrityError):
                 raise
@@ -169,6 +209,24 @@ def create_app(
                     "message": "Verificá las coordenadas de CABA y los parámetros del vehículo.",
                 },
             ) from exc
+
+    @application.get("/api/v1/operations", dependencies=[Depends(authorize_admin)])
+    def operations():
+        return JSONResponse(
+            content={
+                "scope": "process",
+                "queries": telemetry.snapshot(),
+                "routes": shared_cache().snapshot(),
+            },
+            headers={"Cache-Control": "no-store"},
+        )
+
+    @application.get("/api/v1/operations/ingestion", dependencies=[Depends(authorize_admin)])
+    def ingestion(source: Literal["vigente", "historico"] = "vigente"):
+        return JSONResponse(
+            content=ingestion_status(application.state.engine, source, clock()),
+            headers={"Cache-Control": "no-store"},
+        )
 
     return application
 

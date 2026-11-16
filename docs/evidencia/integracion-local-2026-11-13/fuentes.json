@@ -1,0 +1,13 @@
+{
+  "validation_base_commit": "2bf06a5e07a080baabb88768f717049dffbb96a1",
+  "source_heads": {
+    "test/80-web-accesibilidad": "d324c28ce1093812a2bb9d4b74f20010c61ab0c7",
+    "feat/16-limite-candidatas": "2d52609d5484e0fce5d2f58224b1f66ae3d9666c",
+    "fix/83-limite-candidatas-http": "69c41c9cdf5015871504e0fa5e590db6e7041ad1",
+    "feat/55-integrar-cache": "fb8bb1f8468ca1afbcce8d9e316d983ed193f20a",
+    "fix/75-reintentos-ingesta": "e4762f0cda62cf30de26bf46f31791d71492057e",
+    "docs/72-evidencia-ingesta": "1e9171954cd1db8337407c051922424e8e5c9770",
+    "ci/59-base-red-aws": "c8b8600207c4f67e9e42a29a687a4b62c15ec8f7"
+  },
+  "scope": "Snapshot de validación local; no representa un merge aprobado en dev ni un MVP completo."
+}

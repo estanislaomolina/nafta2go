@@ -209,3 +209,12 @@ La rama operativa original todavía conserva el comportamiento anterior; el nuev
 comando se usará tras integrar y actualizar su checkout de forma controlada.
 
 La clasificación usa las [excepciones de Requests](https://requests.readthedocs.io/en/latest/user/quickstart/#errors-and-exceptions).
+
+## Lectura administrativa por HTTP
+
+La API local ofrece `GET /api/v1/operations/ingestion` con Bearer para consultar
+el último intento, la última versión exitosa y sus conteos, captura y reglas.
+Recalcula las condiciones del monitor sin escribir ni cambiar alertas; una
+lectura no constituye una ejecución del monitor ni demuestra que el timer haya
+corrido. No expone errores originales, URLs, archivos ni filas. Contrato y
+límites en [API](API.md#estado-de-ingestas-para-operación).

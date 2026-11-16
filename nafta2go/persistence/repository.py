@@ -11,7 +11,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
-from sqlalchemy import Connection, select
+from sqlalchemy import Connection, func, select
 
 from nafta2go.persistence.models import RawCapture
 from nafta2go.persistence.schema import (
@@ -34,6 +34,7 @@ ALLOWED_REQUEST_KEYS = frozenset(
         "budget_ars",
         "reserve_l",
         "max_candidates",
+        "max_price_age_days",
         "schedule_id",
     }
 )
@@ -120,6 +121,31 @@ def latest_successful_run(conn: Connection, source: str) -> int | None:
         .order_by(ingestion_runs.c.finished_at.desc(), ingestion_runs.c.id.desc())
         .limit(1)
     ).scalar()
+
+
+def ingestion_run_summary(conn: Connection, run_id: int) -> dict:
+    """Proyección administrativa: no cargar errores, reportes, URLs ni archivos."""
+    columns = ("id", "status", "started_at", "finished_at", "rules_version")
+    query = (
+        select(
+            *(ingestion_runs.c[key] for key in columns),
+            raw_captures.c.sha256,
+            raw_captures.c.size_bytes,
+        )
+        .outerjoin(raw_captures, raw_captures.c.run_id == ingestion_runs.c.id)
+        .where(ingestion_runs.c.id == run_id)
+    )
+    result = dict(conn.execute(query).one()._mapping)
+    counts = conn.execute(
+        select(func.count(), func.count(func.distinct(station_prices.c.station_id))).where(
+            station_prices.c.run_id == run_id
+        )
+    ).one()
+    result["price_rows"], result["stations"] = counts
+    result["rejected_rows"] = conn.execute(
+        select(func.count()).select_from(rejected_rows).where(rejected_rows.c.run_id == run_id)
+    ).scalar_one()
+    return result
 
 
 def add_raw_capture(conn: Connection, run_id: int, capture: RawCapture) -> None:

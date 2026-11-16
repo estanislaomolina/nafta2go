@@ -245,3 +245,8 @@ pytest -q tests/application/test_stored_query.py
 La matriz real, las alternativas y la ejecución completa están documentadas en
 [POC-05](POC-05.md). La evidencia del flujo definitivo incluye normalización e
 ingesta reales, rutas autenticadas y recomendación persistida con su origen de datos.
+
+El incremento de vigencia configurable usa motor `mvp-02-v2` y registra
+`max_price_age_days` en parámetros y resultado. Los cálculos físicos no cambian;
+la política de 1–30 días puede reducir candidatas. Ver
+[COBERTURA](COBERTURA.md#vigencia-configurable-en-mvp).

@@ -6,6 +6,8 @@ from typing import Any, Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from nafta2go.adapters.routing import Point
+from nafta2go.application.coverage_rules import MIN_RECENT_CANDIDATES
+from nafta2go.application.recommendation import DEFAULT_CANDIDATE_LIMIT, MAX_CANDIDATES
 from nafta2go.domain.engine import FuelRequest
 
 
@@ -24,6 +26,9 @@ class RecommendationInput(BaseModel):
     destination: Coordinates | None = None
     fuel_type: Literal["super", "premium"]
     schedule_id: int = Field(default=2, strict=True, ge=2, le=3)
+    max_candidates: int = Field(
+        default=DEFAULT_CANDIDATE_LIMIT, strict=True, ge=MIN_RECENT_CANDIDATES, le=MAX_CANDIDATES
+    )
     consumption_l_per_100km: Decimal
     tank_capacity_l: Decimal
     remaining_l: Decimal
@@ -45,6 +50,12 @@ class RecommendationInput(BaseModel):
         return self
 
 
+class NavigationLink(BaseModel):
+    station_id: str
+    url: str
+    label: str
+
+
 class RecommendationOutput(BaseModel):
     status: Literal["ready", "historical_scenario", "insufficient_coverage"]
     outcome: Literal["recommended", "insufficient_coverage", "no_feasible_stations"]
@@ -62,6 +73,8 @@ class RecommendationOutput(BaseModel):
     alternatives: list[dict[str, Any]]
     evaluations: list[dict[str, Any]]
     recommendation_id: int | None
+    navigation: list[NavigationLink]
+    navigation_notice: str | None
 
 
 class ErrorDetail(BaseModel):

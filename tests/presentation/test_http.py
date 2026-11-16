@@ -25,6 +25,7 @@ from nafta2go.presentation.http import create_app
 
 MATRIX = Path(__file__).resolve().parents[2] / "docs/evidencia/poc-05-flujo-2026-10-26/matrix.json"
 AUTH = {"Authorization": "Bearer token-local-de-prueba"}
+ADMIN_AUTH = {"Authorization": "Bearer codigo-admin-de-prueba"}
 BODY = {
     "origin": {"lat": -34.6037, "lon": -58.3816},
     "destination": {"lat": -34.5627, "lon": -58.4565},
@@ -86,6 +87,7 @@ def test_current_data_response_refers_to_its_ingestion(clients, engine):
     payload = response.json()
     assert payload["status"] == "ready" and payload["scenario"] is None
     assert payload["data_run_id"] == run_id
+    assert payload["navigation"]
 
 
 def test_infeasible_query_returns_an_explained_result(clients):
@@ -96,6 +98,7 @@ def test_infeasible_query_returns_an_explained_result(clients):
     assert response.status_code == 200
     assert response.json()["outcome"] == "no_feasible_stations"
     assert response.json()["alternatives"] == []
+    assert response.json()["navigation"] == []
 
 
 @pytest.mark.parametrize("authorization", [None, "Bearer incorrecto", "Basic incorrecto"])
@@ -115,6 +118,8 @@ def test_missing_api_token_fails_closed(clients, monkeypatch):
     with clients() as client:
         assert client.post("/api/v1/recommendations", json=BODY, headers=AUTH).status_code == 503
         assert client.get("/ready").status_code == 503
+        assert client.get("/api/v1/operations").status_code == 401
+        assert client.get("/api/v1/operations", headers=ADMIN_AUTH).status_code == 200
 
 
 @pytest.mark.parametrize(
@@ -194,6 +199,7 @@ def test_no_coverage_needs_no_provider_key(clients, monkeypatch):
     assert response.status_code == 200
     assert response.json()["outcome"] == "insufficient_coverage"
     assert response.json()["recommendation_id"] is None
+    assert response.json()["navigation"] == []
 
 
 def test_liveness_and_readiness_do_not_migrate_the_database(clients, tmp_path):
@@ -237,3 +243,246 @@ def test_application_owns_its_default_engine_lifecycle(clients, database_url, mo
     with clients(engine=None) as client:
         assert client.get("/ready").status_code == 200
     dispose.assert_called_once()
+
+
+def query_events(caplog):
+    import json
+
+    return [
+        json.loads(record.message)
+        for record in caplog.records
+        if record.name == "nafta2go.presentation.telemetry"
+    ]
+
+
+@pytest.fixture(autouse=True)
+def admin_token(monkeypatch):
+    monkeypatch.setenv("NAFTA2GO_ADMIN_TOKEN", "codigo-admin-de-prueba")
+
+
+def test_operations_accept_only_separate_admin_token(clients):
+    with clients() as client:
+        assert client.get("/api/v1/operations", headers=AUTH).status_code == 401
+        admin = {"Authorization": "Bearer codigo-admin-de-prueba"}
+        response = client.get("/api/v1/operations", headers=admin)
+        assert response.status_code == 200 and response.headers["cache-control"] == "no-store"
+        assert client.post("/api/v1/recommendations", json=BODY, headers=admin).status_code == 401
+
+
+@pytest.mark.parametrize("token", ["", "token-local-de-prueba"])
+def test_operations_fail_closed_without_a_distinct_admin_token(clients, monkeypatch, token):
+    monkeypatch.setenv("NAFTA2GO_ADMIN_TOKEN", token)
+    with clients() as client:
+        response = client.get("/api/v1/operations", headers=AUTH)
+        assert response.status_code == 503
+        assert response.json() == {"detail": {"code": "admin_not_configured"}}
+        assert client.get("/ready").status_code == 200
+
+
+def test_query_telemetry_is_correlated_private_and_authenticated(clients, caplog):
+    from datetime import datetime
+    from uuid import UUID
+
+    caplog.set_level("INFO", logger="nafta2go.presentation.telemetry")
+    with clients() as client:
+        denied = client.get("/api/v1/operations")
+        assert denied.status_code == 401
+        initial = client.get("/api/v1/operations", headers=ADMIN_AUTH).json()
+        assert initial["queries"]["completed"] == 0
+        response = client.post(
+            "/api/v1/recommendations?ubicacion=secreto-en-query",
+            json=BODY,
+            headers={**AUTH, "X-Request-ID": "secreto-del-cliente"},
+        )
+        metrics = client.get("/api/v1/operations", headers=ADMIN_AUTH).json()
+    (event,) = query_events(caplog)
+    assert UUID(response.headers["x-request-id"]).hex == event["request_id"]
+    assert datetime.fromisoformat(event["started_at_utc"]).utcoffset().total_seconds() == 0
+    assert event["duration_ms"] >= 0 and event["http_status"] == 200
+    assert event["outcome"] == "recommended"
+    assert set(event) == {
+        "event",
+        "request_id",
+        "started_at_utc",
+        "duration_ms",
+        "http_status",
+        "outcome",
+    }
+    assert metrics["scope"] == "process"
+    assert metrics["queries"]["completed"] == 1
+    assert metrics["queries"]["outcome"] == {"recommended": 1}
+    assert metrics["routes"].keys() == {
+        "hits",
+        "misses",
+        "requests",
+        "errors",
+        "limited",
+        "busy",
+        "entries",
+    }
+    for private in ("-34.6037", "-58.4565", "token-local-de-prueba", "secreto"):
+        assert private not in str(event) + str(metrics)
+
+
+@pytest.mark.parametrize("kind,status", [("unauthorized", 401), ("invalid", 422), ("timeout", 504)])
+def test_telemetry_counts_errors_and_preserves_safe_responses(clients, caplog, kind, status):
+    class Failing:
+        def matrix(self, sources, destinations):
+            raise ProviderTimeout("secreto-en-excepcion")
+
+    caplog.set_level("INFO", logger="nafta2go.presentation.telemetry")
+    with clients(provider_factory=Failing) as client:
+        response = client.post(
+            "/api/v1/recommendations",
+            json={} if kind == "invalid" else BODY,
+            headers={} if kind == "unauthorized" else AUTH,
+        )
+        metrics = client.get("/api/v1/operations", headers=ADMIN_AUTH).json()["queries"]
+    assert response.status_code == status
+    assert metrics["http_status"] == {str(status): 1}
+    assert metrics["outcome"] == {"http_error": 1}
+    assert query_events(caplog)[0]["http_status"] == status
+    assert "secreto" not in caplog.text
+
+
+def test_unexpected_failure_is_recorded_once_without_exception_text(clients, caplog):
+    def failing():
+        raise RuntimeError("secreto-inesperado")
+
+    caplog.set_level("INFO", logger="nafta2go.presentation.telemetry")
+    with clients(provider_factory=failing) as client:
+        response = client.post("/api/v1/recommendations", json=BODY, headers=AUTH)
+        assert response.status_code == 500
+        assert response.json() == {"detail": {"code": "internal_error"}}
+        assert response.headers["x-request-id"]
+        assert (
+            client.get("/api/v1/operations", headers=ADMIN_AUTH).json()["queries"]["completed"] == 1
+        )
+    (event,) = query_events(caplog)
+    assert event["http_status"] == 500 and event["outcome"] == "http_error"
+    assert event["error_type"] == "RuntimeError"
+    assert "secreto" not in caplog.text
+
+
+def test_query_telemetry_isolated_and_counts_concurrent_requests(clients):
+    from concurrent.futures import ThreadPoolExecutor
+
+    with clients() as client, clients() as other:
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            responses = list(
+                pool.map(lambda _: client.post("/api/v1/recommendations", json={}), range(24))
+            )
+        identifiers = {response.headers["x-request-id"] for response in responses}
+        assert len(identifiers) == 24
+        assert (
+            client.get("/api/v1/operations", headers=ADMIN_AUTH).json()["queries"]["completed"]
+            == 24
+        )
+        assert (
+            other.get("/api/v1/operations", headers=ADMIN_AUTH).json()["queries"]["completed"] == 0
+        )
+
+
+@pytest.mark.parametrize("limit", [3, 20])
+def test_http_accepts_and_propagates_candidate_limit(clients, engine, limit):
+    from nafta2go.adapters.routing import DistanceMatrix
+
+    sizes = []
+
+    class Matrix:
+        def matrix(self, sources, destinations):
+            sizes.append(len(sources) - 1)
+            return DistanceMatrix(
+                [[60.0] * len(destinations) for _ in sources],
+                [[1000.0] * len(destinations) for _ in sources],
+                list(sources),
+                list(destinations),
+            )
+
+    with clients(provider_factory=Matrix, routing_provider="synthetic-test") as client:
+        response = client.post(
+            "/api/v1/recommendations", json={**BODY, "max_candidates": limit}, headers=AUTH
+        )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["query"]["max_candidates"] == limit
+    assert (
+        len(payload["evaluations"]) == 3 if limit == 3 else 10 < len(payload["evaluations"]) <= 20
+    )
+    assert sizes == [len(payload["evaluations"])]
+    with engine.connect() as conn:
+        saved = repo.get_recommendation(conn, payload["recommendation_id"])
+    assert saved["request"]["max_candidates"] == limit
+    assert saved["result"]["query"]["max_candidates"] == limit
+
+
+@pytest.mark.parametrize("limit", [2, 21, 3.0, True, "20", None])
+def test_invalid_candidate_limit_does_not_load_routes(clients, limit):
+    def forbidden():
+        pytest.fail("No se deben cargar rutas con un límite inválido")
+
+    with clients(provider_factory=forbidden) as client:
+        response = client.post(
+            "/api/v1/recommendations", json={**BODY, "max_candidates": limit}, headers=AUTH
+        )
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "invalid_request"
+
+
+def test_navigation_uses_station_coordinates_without_persisting_links(clients, engine, caplog):
+    import json
+    from urllib.parse import parse_qs, urlsplit
+
+    with clients() as client:
+        response = client.post("/api/v1/recommendations", json=BODY, headers=AUTH)
+    assert response.status_code == 200
+    payload = response.json()
+    stations = {str(row["station_id"]): (row["lat"], row["lon"]) for row in load_scenario().rows}
+    assert {link["station_id"] for link in payload["navigation"]} == {
+        row["station_id"] for row in payload["alternatives"]
+    }
+    assert payload["navigation_notice"]
+    assert "navigation_destinations" not in payload
+    for link in payload["navigation"]:
+        query = parse_qs(urlsplit(link["url"]).query)
+        assert tuple(map(float, query["destination"][0].split(","))) == stations[link["station_id"]]
+        assert not {"origin", "waypoints", "key"} & query.keys()
+    with engine.connect() as conn:
+        saved = repo.get_recommendation(conn, payload["recommendation_id"])
+    encoded = json.dumps(saved, default=str)
+    assert "google.com/maps" not in encoded and "navigation_destinations" not in encoded
+    assert "-34.6037" not in encoded and "-58.4565" not in encoded
+    assert "google.com/maps" not in caplog.text
+
+
+@pytest.mark.parametrize("value", ["", "31", "secreto"])
+def test_bad_coverage_policy_disables_readiness_and_returns_safe_503(
+    clients, monkeypatch, caplog, value
+):
+    class NoRoutes:
+        def matrix(self, sources, destinations):
+            pytest.fail("No debe consultar rutas con política inválida")
+
+    monkeypatch.setenv("NAFTA2GO_MAX_PRICE_AGE_DAYS", value)
+    with clients(provider_factory=NoRoutes) as client:
+        assert client.get("/ready").status_code == 503
+        response = client.post("/api/v1/recommendations", json=BODY, headers=AUTH)
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "coverage_not_configured"
+    assert "secreto" not in response.text + caplog.text
+
+
+def test_server_controls_age_policy_and_client_cannot_override_it(clients, monkeypatch):
+    monkeypatch.setenv("NAFTA2GO_MAX_PRICE_AGE_DAYS", "14")
+    with clients() as client:
+        response = client.post(
+            "/api/v1/recommendations", json={**BODY, "max_price_age_days": 90}, headers=AUTH
+        )
+        assert response.status_code == 422
+        response = client.post(
+            "/api/v1/recommendations",
+            headers=AUTH,
+            json={**BODY, "origin": {"lat": -34.71, "lon": -58.33}, "destination": None},
+        )
+        assert response.status_code == 200
+        assert response.json()["query"]["max_price_age_days"] == 14

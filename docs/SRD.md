@@ -84,7 +84,7 @@ Las reglas de dependencia son estas:
 El primer incremento HTTP de MVP-02 agrega `presentation/`, con FastAPI sobre
 `application.query`: la presentación no calcula precios ni accede directamente a
 tablas. Contrato, token local y controles de salud en [API](API.md); decisión en
-[ADR-009](../adr/ADR-009-api-http-con-fastapi.md). La web sigue pendiente.
+[ADR-009](../adr/ADR-009-api-http-con-fastapi.md). La primera web local se describe en [WEB](WEB.md).
 
 En el MVP se suman una capa de **presentación** (API HTTP y web) por encima de
 la aplicación, y el **diagnóstico ML** como un componente separado que la
@@ -388,7 +388,7 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 
 | Parte | Simplificación | Plan para el MVP |
 |---|---|---|
-| Interfaz | API HTTP local autenticada y caché por proceso; web pendiente | Interfaz web, coordinación entre réplicas y despliegue público |
+| Interfaz | API HTTP y web local con código de demo y caché por proceso | QA de navegador, coordinación entre réplicas y despliegue público |
 | Ranking | Tres prioridades determinísticas; equilibrio con igual peso a ganancia neta y km extra normalizados | Comparación general/conservadora con diagnóstico ML |
 | Candidatas | Límite configurable hasta 20; diez por defecto para reproducir la POC | Validar cuota y latencia de veinte candidatas en vivo |
 | Corredor | Desvío estimado en línea recta | Se mantiene como prefiltro; el desvío real ya lo calcula el motor |
@@ -407,6 +407,16 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 | El proveedor de rutas cambia de host o de cuota (ya pasó con el host anterior) | Protocolo `RoutingProvider`; OSRM como alternativa; cuota diaria y límite por minuto verificados para la cuenta de la POC, con evidencia fechada ([RUTAS](RUTAS.md)) |
 | La fuente cambia columnas o formato | `UnexpectedSchema` falla nombrando lo que falta y la ejecución queda `failed` |
 | Coordenadas mal cargadas (dos estaciones con provincia CABA están fuera de la ciudad) | Alerta `fuera_de_caba`, que se excluye de la selección |
+
+El incremento de navegación de MVP-03 genera Maps URLs en `presentation/` a
+partir de coordenadas públicas de las estaciones elegidas, entregadas por
+aplicación después del registro de la recomendación. No persiste enlaces ni
+incluye ubicaciones del conductor; no modifica motor, ranking ni proveedor de
+rutas. API y CLI comparten esa presentación; contrato y pendientes en [MAPS](MAPS.md).
+
+La web local de MVP-03 sirve HTML/CSS/JS propios desde FastAPI, comparte origen
+con la API y no duplica reglas del motor. Contrato, acceso de demo y límites en
+[WEB](WEB.md); alternativas en [ADR-012](../adr/ADR-012-web-local-con-assets-propios.md).
 
 El incremento de monitoreo de MVP-01 agrega `python -m nafta2go.monitor`: detecta
 fallos, ejecuciones excedidas y ausencias, y persiste detección y resolución en
@@ -439,3 +449,40 @@ corte temporal. No accede a la base ni entrena/serve modelos. Su mediana móvil
 es un baseline estadístico, con cobertura y abstención explícitas. No usa las
 alertas mensuales de normalización, que podrían incorporar información futura.
 Supuestos, alternativas y límites en [ADR-013](../adr/ADR-013-evaluacion-temporal-de-precios.md).
+
+## Telemetría HTTP local
+
+La presentación ASGI registra el ciclo de POST de recomendaciones sin inspeccionar
+su cuerpo ni URL. Emite JSON con ID propio, fecha UTC, duración, estado y resultado
+acotado; expone contadores por aplicación y caché por proceso mediante lectura
+administrativa autenticada. El arranque suprime access logs con URLs y errores
+inesperados anteriores a la respuesta se sanitizan. No incorpora persistencia de
+ubicaciones, agregación entre réplicas, métricas ML ni supervisión sostenida.
+Contrato y límites: [API](API.md#telemetría-local-de-consultas).
+
+La lectura administrativa de ingestas pasa por aplicación y repositorio, proyecta
+únicamente metadatos permitidos y agrega conteos en SQL. Distingue intento y
+versión exitosa, reutiliza las reglas del monitor para un diagnóstico actual y
+limita la respuesta a veinte condiciones con total explícito. No sincroniza
+alertas ni muta ingestas desde GET. Contrato: [API](API.md#estado-de-ingestas-para-operación).
+
+La presentación `/operacion` usa assets propios y las dos lecturas operativas
+autenticadas del mismo origen. No consulta al cargar ni escribe datos; actualiza
+manual y conjuntamente las vistas, descarta lecturas parciales/anteriores ante
+fallos y cancela al limpiar o salir. Código sólo en memoria de pestaña. Separa conductor y administración; no hay despliegue público; [contrato y QA](WEB.md#panel-local-de-operación).
+
+## Telemetría CLI
+
+La CLI de consultas emite un evento JSON por ejecución en stderr mediante un
+logger aislado, con ID propio, fecha UTC, duración y resultado. stdout mantiene
+su contrato. Los errores y el parser usan mensajes seguros sin repetir valores
+ni excepciones originales. Los eventos CLI no se agregan a los contadores HTTP;
+contrato y retención en [POC-05](POC-05.md#telemetría-cli-agregada-en-mvp).
+
+La vigencia máxima de la consulta es configuración operativa por entorno
+(1–30 días, 30 predeterminado). Aplicación la lee una vez, la propaga a ambos
+orígenes y conserva el valor efectivo con cada recomendación; las capas de
+selección siguen recibiendo parámetros explícitos. Configuración inválida
+desactiva readiness y devuelve error seguro, sin rutas. No habilita override
+público, precios mayores de treinta días ni cambios administrativos en vivo;
+[contrato](COBERTURA.md#vigencia-configurable-en-mvp).

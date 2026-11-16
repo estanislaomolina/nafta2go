@@ -123,3 +123,34 @@ Persisten las simplificaciones declaradas: diez candidatas, prefiltro geográfic
 en línea recta, rectángulo de CABA, ingesta manual, escenario fijo, sin ML ni web.
 Las entradas de más de 28 cifras significativas se rechazan por campo; la
 política y las comparaciones exactas de restricciones están en [MOTOR](MOTOR.md).
+
+## Telemetría CLI agregada en MVP
+
+`python -m nafta2go.query` conserva el resultado JSON/texto en stdout. stderr
+agrega exactamente un evento JSON `query_completed` por consulta que finaliza,
+con `channel=cli`, ID generado, fecha UTC de inicio, duración monotónica en ms,
+resultado, código de salida y código de error (nulo si hubo éxito). Incluye falta
+de cobertura y ausencia de alternativas; no representan errores de ejecución.
+No se guardan argumentos, ubicaciones, URLs, rutas de archivos ni credenciales
+en el evento. El logger aislado evita duplicar el evento por configuración global.
+
+Los fallos usan código 2 y mensajes fijos: `invalid_request`, `file_unavailable`,
+`data_unavailable`, `routes_not_configured`, `routes_timeout`,
+`routes_quota_exceeded`, `routes_unavailable` o `internal_error`. Los errores externos no repiten
+mensajes ni trazas. Las validaciones locales indican el campo sin repetir valores. Los errores de argumentos usan
+`invalid_arguments` y salida 2 sin repetir valores ingresados; consultar
+`--help` para el formato. Ayuda termina en 0 sin evento. Una interrupción por
+teclado devuelve 130 y evento `interrupted` con mensaje fijo.
+
+Los consumidores deben leer el resultado desde stdout, no mezclarlo con stderr.
+Los eventos no se persisten ni agregan al resumen HTTP: si se redirige stderr,
+la retención es responsabilidad del operador. Una terminación forzada del proceso
+no garantiza un evento final. No mide p95, supervisión sostenida ni métricas ML.
+La opción explícita `--save-matrix` sigue pudiendo guardar coordenadas en el
+archivo de evidencia solicitado: no es un log y requiere cuidar su retención.
+
+En MVP, `query.max_price_age_days` registra el umbral efectivo configurado por
+entorno (1–30 días); CLI y web lo muestran. La reproducción original usa 30 y
+conserva su matriz grabada; otra política puede cambiar las estaciones elegidas
+y requerir otra matriz verificable, sin inventar recorridos. Ver
+[COBERTURA](COBERTURA.md#vigencia-configurable-en-mvp).

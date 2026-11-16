@@ -16,6 +16,10 @@ from pathlib import Path
 
 from nafta2go.adapters.routing import Point
 from nafta2go.application.coverage_report import coverage_report
+from nafta2go.application.coverage_rules import (
+    CoverageConfigurationError,
+    configured_max_price_age_days,
+)
 from nafta2go.persistence.database import create_db_engine, database_url, upgrade_to_head
 
 
@@ -25,6 +29,11 @@ def main(argv: list[str] | None = None) -> int:
         print("--reference-at: debe incluir zona horaria", file=sys.stderr)
         return 2
 
+    try:
+        configured_max_price_age_days()
+    except CoverageConfigurationError:
+        print("Cobertura no disponible (coverage_not_configured)", file=sys.stderr)
+        return 2
     url = database_url()
     upgrade_to_head(url)
     engine = create_db_engine(url)
