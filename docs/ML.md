@@ -61,6 +61,9 @@ habilitan alertas ni prueban mejora ML o precisión de precios actuales.
 [Evidencia](evidencia/ml-baseline-2026-11-13/manifest.json),
 [reporte](evidencia/ml-baseline-2026-11-13/baseline-report.json) y
 [verificación Docker](evidencia/ml-baseline-2026-11-13/docker-proof.json).
+El commit `b20035c` de esa corrida queda preservado por el tag anotado
+[`evidencia/ml-baseline-2026-11-13`](https://github.com/estanislaomolina/nafta2go/tree/evidencia/ml-baseline-2026-11-13),
+independientemente de los rebases o la eliminación posterior de ramas.
 La captura tiene 779.141.214 bytes; normalización conserva 80.056 filas y el
 preparador excluye 84 por geometría. Con corte 01/01/2026 en hora Argentina,
 ventana de treinta días y mínimo cinco, hay 73.396 ejemplos de train y 3.910
