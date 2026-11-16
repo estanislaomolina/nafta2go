@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "formatters": {"plain": {"format": "%(message)s"}},
+  "handlers": {
+    "stderr": {
+      "class": "logging.StreamHandler",
+      "stream": "ext://sys.stderr",
+      "formatter": "plain"
+    }
+  },
+  "root": {"level": "WARNING", "handlers": ["stderr"]},
+  "loggers": {
+    "nafta2go.presentation.telemetry": {
+      "level": "INFO", "handlers": ["stderr"], "propagate": false
+    },
+    "uvicorn.error": {
+      "level": "INFO", "handlers": ["stderr"], "propagate": false
+    },
+    "uvicorn.access": {"level": "CRITICAL", "handlers": [], "propagate": false}
+  }
+}
