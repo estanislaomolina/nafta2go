@@ -33,8 +33,8 @@ emulado. Axe-core registró cero violaciones e incompletos en doce estados de
 la corrida local; no se declara conformidad completa con WCAG. Falta teléfono
 físico, otros navegadores y lector de pantalla.
 El diagnóstico ML, ranking conservador, perfiles y autenticación pública siguen
-pendientes en sus respectivos issues. La web conserva diez candidatas hasta
-integrar el incremento de veinte; no completa por sí sola MVP-03.
+pendientes en sus respectivos issues. La web usa diez candidatas por defecto;
+la API admite un límite de 3 a 20. No completa por sí sola MVP-03.
 
 ## Panel local de operación
 

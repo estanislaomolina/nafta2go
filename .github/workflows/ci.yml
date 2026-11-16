@@ -88,6 +88,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Verificar configuración externa de caché y cupo
+        env:
+          ORS_CACHE_TTL_SECONDS: "19"
+          ORS_CACHE_MAX_ENTRIES: "17"
+          ORS_REQUESTS_PER_MINUTE: "2"
+          ORS_REQUESTS_PER_DAY: "9"
+        run: |
+          docker compose --profile mvp --profile poc config --format json > compose-config.json
+          python -c "import json, os; services=json.load(open('compose-config.json'))['services']; names=('ORS_CACHE_TTL_SECONDS','ORS_CACHE_MAX_ENTRIES','ORS_REQUESTS_PER_MINUTE','ORS_REQUESTS_PER_DAY'); assert all(services[s]['environment'][k] == os.environ[k] for s in ('api','query') for k in names)"
       - name: Construir la imagen
         run: docker compose build
       - name: Migrar la base dentro del contenedor
@@ -107,6 +116,8 @@ jobs:
         env:
           NAFTA2GO_API_TOKEN: token-descartable-del-job-ci
         run: docker compose --profile mvp up --wait --wait-timeout 30 api
+      - name: Verificar el snapshot Docker aislado sin APIs externas
+        run: python tests/integration/compose_smoke.py
       - name: Bajar servicios y volúmenes
         if: always()
         run: docker compose --profile mvp down --volumes
