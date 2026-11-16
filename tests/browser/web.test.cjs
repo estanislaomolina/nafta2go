@@ -73,6 +73,11 @@ async function enter(page, selector, value) { await reach(page, selector); await
 test('formulario, respuesta del backend con fixtures y accesibilidad en escritorio', async () => {
   const page = await pageFor();
   try {
+    const ors = page.locator('footer a[href="https://openrouteservice.org/"]');
+    const osm = page.locator('footer a[href="https://www.openstreetmap.org/copyright"]');
+    assert.equal(await ors.isVisible(), true); assert.equal(await osm.isVisible(), true);
+    assert.equal(await ors.getAttribute('rel'), 'noopener noreferrer');
+    assert.equal(await osm.getAttribute('rel'), 'noopener noreferrer');
     await accessible(page); await ready(page, true);
     const request = page.waitForRequest(r => r.url().endsWith('/api/v1/recommendations'));
     await send(page); const sent = (await request).postDataJSON();
