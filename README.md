@@ -25,7 +25,7 @@ Santiago Bunge
 - [Preparación AWS](docs/AWS.md): acceso del sandbox, plantilla de red, validación y límites; aplicación aún sin desplegar.
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
-- [API local](docs/API.md): base HTTP, controles de salud, OpenAPI y ejecución con Python o Docker (incremento de MVP-02).
+- [API local](docs/API.md): consulta HTTP autenticada, OpenAPI, validaciones, errores y ejecución con Python o Docker (incremento de MVP-02).
 - [Normalización de precios](docs/NORMALIZACION.md): formato real de las fechas, reglas de rechazo y alertas, duplicados y corrida real (POC-01).
 - [Cobertura de precios](docs/COBERTURA.md): mínimo de cobertura en el corredor del recorrido, escenario histórico rotulado y reporte (POC-02).
 - [Consigna del TP](res/%5BSHR%5D%5BS2%5D%20-%20Consigna%20TP%20I408.pdf): requisitos y formato de las entregas.
@@ -109,7 +109,7 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración. Esta t
 | Componente | Tarea | Estado |
 |---|---|---|
 | Integración continua: links, lint, tests y secretos | POC-07 | Implementado |
-| API del recomendador | MVP-02 | Base HTTP y salud implementadas; consulta autenticada pendiente en PR dependiente; ver docs/API.md |
+| API del recomendador | MVP-02 | Implementada localmente con token, caché por proceso y tests HTTP; web y despliegue público pendientes; ver docs/API.md |
 | Normalización de precios | POC-01 | Implementado: descarga verificada, reglas con rechazos y alertas, y corrida real documentada en docs/NORMALIZACION.md |
 | Cobertura de precios y escenario histórico | POC-02 | Implementado: mínimo de 3 estaciones recientes en el corredor, escenario congelado del 24/10 rotulado como histórico y reporte en docs/COBERTURA.md |
 | Persistencia e ingesta mínimas | POC-06 | Implementado: esquema, migraciones e ingesta trazable, conectada a la normalización de POC-01 |
@@ -119,7 +119,7 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración. Esta t
 | Flujo de punta a punta | POC-05 | Implementado: consulta explicada, ranking, rutas reales guardadas y registro trazable; ver docs/POC-05.md |
 | Levantar el sistema completo con contenedores | POC-07 | Implementado para la POC: migraciones y comando de consulta, con reproducción completa en CI |
 | Diagnóstico estadístico con ML | MVP | Fuera del alcance de la POC |
-| Recomendador completo | MVP-02 | Primer incremento: límite explícito de hasta veinte candidatas, conservado en el resultado y la recomendación; API e integración completa pendientes; ver docs/MOTOR.md |
+| Recomendador completo | MVP-02 | CLI y caso de uso admiten hasta veinte candidatas; API con diez por defecto y parámetro HTTP pendiente en #84; validación integral pendiente; ver docs/MOTOR.md |
 
 ## Consulta completa con datos reales (POC-05)
 

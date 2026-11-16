@@ -43,9 +43,8 @@ existentes. La migración se ejecuta antes del servidor, no durante una consulta
 
 ### Confirmation
 
-Esta base prueba salud, readiness sin migración, privacidad ante fallos y cierre
-del motor propio. La PR dependiente #62 probará autorización, entradas inválidas,
-flujo completo y rollback. Ver [API](../docs/API.md). La numeración 008 está
+Probar autorización, entradas inválidas, flujo completo, rollback, privacidad y
+readiness sin migración. Ver [API](../docs/API.md). La numeración 008 está
 reservada para la programación de ingesta de MVP-01, pendiente de integración.
 
 ## Pros and Cons of the Options

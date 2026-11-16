@@ -82,8 +82,8 @@ Las reglas de dependencia son estas:
 - Ninguna capa de negocio escribe SQL: todo pasa por `repository`.
 
 El primer incremento HTTP de MVP-02 agrega `presentation/`, con FastAPI sobre
-la capa de aplicación. Esta base expone salud y readiness; la consulta HTTP se
-incorpora en una PR dependiente. Configuración en [API](API.md); decisión en
+`application.query`: la presentación no calcula precios ni accede directamente a
+tablas. Contrato, token local y controles de salud en [API](API.md); decisión en
 [ADR-009](../adr/ADR-009-api-http-con-fastapi.md). La web sigue pendiente.
 
 En el MVP se suman una capa de **presentación** (API HTTP y web) por encima de
@@ -388,7 +388,7 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 
 | Parte | Simplificación | Plan para el MVP |
 |---|---|---|
-| Interfaz | Base HTTP local con salud; consulta autenticada y web pendientes | Caché, interfaz web y despliegue público |
+| Interfaz | API HTTP local autenticada y caché por proceso; web pendiente | Interfaz web, coordinación entre réplicas y despliegue público |
 | Ranking | Tres prioridades determinísticas; equilibrio con igual peso a ganancia neta y km extra normalizados | Comparación general/conservadora con diagnóstico ML |
 | Candidatas | Límite configurable hasta 20; diez por defecto para reproducir la POC | Validar cuota y latencia de veinte candidatas en vivo |
 | Corredor | Desvío estimado en línea recta | Se mantiene como prefiltro; el desvío real ya lo calcula el motor |
