@@ -18,7 +18,8 @@ from nafta2go.application.coverage_rules import (
     MIN_RECENT_CANDIDATES,
 )
 from nafta2go.application.recommendation import (
-    MAX_POC_CANDIDATES,
+    DEFAULT_CANDIDATE_LIMIT,
+    MAX_CANDIDATES,
     Candidate,
     StationEvaluation,
     evaluate_stations,
@@ -142,7 +143,7 @@ def select_stored_candidates(
     destination: Point | None = None,
     max_detour_km: float = MAX_DETOUR_KM,
     max_age_days: int = MAX_PRICE_AGE_DAYS,
-    limit: int = MAX_POC_CANDIDATES,
+    limit: int = DEFAULT_CANDIDATE_LIMIT,
     minimum_candidates: int = MIN_RECENT_CANDIDATES,
 ) -> CandidateSelection:
     """Selecciona precios válidos de una única versión de datos vigente.
@@ -188,7 +189,7 @@ def select_candidates(
     destination: Point | None = None,
     max_detour_km: float = MAX_DETOUR_KM,
     max_age_days: int = MAX_PRICE_AGE_DAYS,
-    limit: int = MAX_POC_CANDIDATES,
+    limit: int = DEFAULT_CANDIDATE_LIMIT,
     minimum_candidates: int = MIN_RECENT_CANDIDATES,
     data_run_id: int | None = None,
 ) -> CandidateSelection:
@@ -292,12 +293,8 @@ def _validate_options(
         raise ValueError("schedule_id: debe ser 2 (diurno) o 3 (nocturno)")
     if not isinstance(reference_at, datetime) or reference_at.utcoffset() is None:
         raise ValueError("reference_at: debe ser una fecha con zona horaria")
-    if (
-        isinstance(limit, bool)
-        or not isinstance(limit, int)
-        or not 1 <= limit <= MAX_POC_CANDIDATES
-    ):
-        raise ValueError("limit: debe estar entre 1 y 10")
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= MAX_CANDIDATES:
+        raise ValueError("limit: debe estar entre 1 y 20")
     if (
         isinstance(minimum_candidates, bool)
         or not isinstance(minimum_candidates, int)
@@ -333,7 +330,7 @@ def evaluate_from_database(
     reference_at: datetime,
     max_detour_km: float = MAX_DETOUR_KM,
     max_age_days: int = MAX_PRICE_AGE_DAYS,
-    limit: int = MAX_POC_CANDIDATES,
+    limit: int = DEFAULT_CANDIDATE_LIMIT,
     minimum_candidates: int = MIN_RECENT_CANDIDATES,
 ) -> StoredQueryResult:
     """Lee una versión de precios y enruta sólo si alcanza el mínimo configurado."""
@@ -365,6 +362,7 @@ def select_with_coverage(
     fuel_type: str,
     schedule_id: int,
     reference_at: datetime,
+    limit: int = DEFAULT_CANDIDATE_LIMIT,
     scenario_loader: Callable[[], ScenarioPrices] = load_scenario,
 ) -> CoverageQueryResult:
     """Elige la captura actual si alcanza la cobertura; si no, el escenario histórico rotulado.
@@ -373,7 +371,7 @@ def select_with_coverage(
     coverage_rules. En el escenario, la vigencia se mide contra su fecha de referencia
     y la selección lleva el rótulo `scenario`.
     """
-    options = {"fuel_type": fuel_type, "schedule_id": schedule_id}
+    options = {"fuel_type": fuel_type, "schedule_id": schedule_id, "limit": limit}
     corridor = {"origin": origin, "destination": destination}
     current = select_stored_candidates(conn, reference_at=reference_at, **options, **corridor)
     if current.status == CoverageStatus.READY:
@@ -410,6 +408,7 @@ def evaluate_with_coverage(
     fuel_type: str,
     schedule_id: int,
     reference_at: datetime,
+    limit: int = DEFAULT_CANDIDATE_LIMIT,
     scenario_loader: Callable[[], ScenarioPrices] = load_scenario,
 ) -> CoverageQueryResult:
     """Como select_with_coverage, y enruta y evalúa solo si hay cobertura en algún origen."""
@@ -420,6 +419,7 @@ def evaluate_with_coverage(
         fuel_type=fuel_type,
         schedule_id=schedule_id,
         reference_at=reference_at,
+        limit=limit,
         scenario_loader=scenario_loader,
     )
     if result.status == CoverageStatus.INSUFFICIENT_COVERAGE:

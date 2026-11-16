@@ -9,8 +9,11 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
+from alembic.migration import MigrationContext
+from alembic.script import ScriptDirectory
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.engine import make_url
+from sqlalchemy.exc import SQLAlchemyError
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_URL = f"sqlite:///{ROOT / 'data' / 'nafta2go.db'}"
@@ -41,6 +44,16 @@ def alembic_config(url: str | None = None) -> Config:
 
 def upgrade_to_head(url: str | None = None) -> None:
     command.upgrade(alembic_config(url), "head")
+
+
+def database_is_ready(engine: Engine) -> bool:
+    """Comprobar conexión y revisión sin crear tablas ni aplicar migraciones."""
+    try:
+        with engine.connect() as conn:
+            current = MigrationContext.configure(conn).get_current_heads()
+        return set(current) == set(ScriptDirectory.from_config(alembic_config()).get_heads())
+    except SQLAlchemyError:
+        return False
 
 
 def _is_sqlite(url: str) -> bool:

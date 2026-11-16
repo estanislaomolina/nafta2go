@@ -37,10 +37,25 @@ def ingest(
     normalize: Normalizer,
     clock: Callable[[], datetime] = utc_now,
 ) -> int:
+    return ingest_from_source(engine, capture.source, lambda: capture, normalize, clock)
+
+
+def ingest_from_source(
+    engine: Engine,
+    source: str,
+    acquire: Callable[[], RawCapture],
+    normalize: Normalizer,
+    clock: Callable[[], datetime] = utc_now,
+) -> int:
+    """Registra la ejecución antes de consultar el catálogo o descargar el CSV."""
+    started_at = clock()
     with engine.begin() as conn:
-        run_id = repo.start_run(conn, capture.source, clock())
+        run_id = repo.start_run(conn, source, started_at)
 
     try:
+        capture = acquire()
+        if capture.source != source:
+            raise ValueError("El origen de la captura no coincide con el de la ejecución")
         result = normalize(capture)
         _check_report(result)
         with engine.begin() as conn:
@@ -51,24 +66,42 @@ def ingest(
             repo.add_raw_capture(conn, run_id, capture)
             repo.add_prices(conn, run_id, result.rows)
             repo.add_rejections(conn, run_id, result.rejections)
+            finished_at = clock()
             repo.finish_run(
                 conn,
                 run_id,
                 "succeeded",
-                clock(),
+                finished_at,
                 report=report,
                 rules_version=result.rules_version,
             )
     except Exception as exc:
         error = f"{type(exc).__name__}: {exc}"[:MAX_ERROR_LENGTH]
+        finished_at = clock()
         with engine.begin() as conn:
-            repo.finish_run(conn, run_id, "failed", clock(), error=error)
-        logger.error("ingesta fallida", extra={"run_id": run_id, "error": error})
+            repo.finish_run(conn, run_id, "failed", finished_at, error=error)
+        logger.error(
+            "ingesta fallida",
+            extra={
+                "run_id": run_id,
+                "source": source,
+                "status": "failed",
+                "duration_seconds": (finished_at - started_at).total_seconds(),
+                "error_type": type(exc).__name__,
+            },
+        )
         raise IngestionFailed(run_id, f"La ejecución {run_id} falló: {error}") from exc
 
     logger.info(
         "ingesta exitosa",
-        extra={"run_id": run_id, "rows": len(result.rows), "rejections": len(result.rejections)},
+        extra={
+            "run_id": run_id,
+            "source": source,
+            "status": "succeeded",
+            "duration_seconds": (finished_at - started_at).total_seconds(),
+            "rows": len(result.rows),
+            "rejections": len(result.rejections),
+        },
     )
     return run_id
 

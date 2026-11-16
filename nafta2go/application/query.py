@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from sqlalchemy import Connection
 
 from nafta2go.adapters.routing import Point, RoutingProvider
+from nafta2go.application.recommendation import DEFAULT_CANDIDATE_LIMIT
 from nafta2go.application.scenario import load_scenario
 from nafta2go.application.stored_query import CoverageStatus, evaluate_with_coverage
 from nafta2go.domain.engine import FuelRequest
@@ -13,7 +14,7 @@ from nafta2go.domain.ranking import rank_alternatives
 from nafta2go.normalization.rules import CABA_BBOX
 from nafta2go.persistence import repository as repo
 
-ENGINE_VERSION = "poc-05-v1"
+ENGINE_VERSION = "mvp-02-v1"
 SOURCE = {
     "name": "Secretaría de Energía — Precios en surtidor",
     "url": "https://datos.energia.gob.ar/dataset/precios-en-surtidor",
@@ -32,6 +33,7 @@ def recommend(
     schedule_id: int,
     reference_at: datetime,
     routing_provider: str,
+    max_candidates: int = DEFAULT_CANDIDATE_LIMIT,
     scenario_loader=load_scenario,
 ) -> dict:
     for name, point in (("origin", origin), ("destination", destination)):
@@ -49,6 +51,7 @@ def recommend(
         fuel_type=fuel_type,
         schedule_id=schedule_id,
         reference_at=reference_at,
+        limit=max_candidates,
         scenario_loader=scenario_loader,
     )
     selection = result.selection
@@ -62,7 +65,7 @@ def recommend(
         **{key: str(value) for key, value in asdict(request).items()},
         "fuel_type": fuel_type,
         "schedule_id": schedule_id,
-        "max_candidates": 10,
+        "max_candidates": max_candidates,
     }
     capture = (
         repo.raw_capture_for_run(conn, selection.data_run_id)

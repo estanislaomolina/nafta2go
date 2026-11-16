@@ -1,4 +1,4 @@
-# Imagen de la POC: migraciones, ingesta y consulta por comandos.
+# Imagen de Nafta2Go: migraciones, ingesta, consulta y API local.
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \

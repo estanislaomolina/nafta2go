@@ -24,7 +24,14 @@ from nafta2go.persistence.database import (
     upgrade_to_head,
 )
 
-TABLES = {"ingestion_runs", "raw_captures", "station_prices", "rejected_rows", "recommendations"}
+TABLES = {
+    "ingestion_runs",
+    "ingestion_alerts",
+    "raw_captures",
+    "station_prices",
+    "rejected_rows",
+    "recommendations",
+}
 
 
 def test_upgrade_creates_all_tables(engine):

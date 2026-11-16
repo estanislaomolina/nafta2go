@@ -1,0 +1,10 @@
+[Unit]
+Description=Comprobar la ingesta de Nafta2Go cada hora
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=nafta2go-monitor.service
+
+[Install]
+WantedBy=timers.target

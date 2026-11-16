@@ -8,6 +8,9 @@ from time import monotonic
 
 from nafta2go.adapters.routing import ProviderUnavailable, QuotaExceeded
 
+# Cubre el timeout de conexión más el de lectura del cliente de OpenRouteService (5 + 15 s).
+FETCH_WAIT_SECONDS = 20
+
 
 class RouteCache:
     def __init__(self, ttl=300, capacity=128, per_minute=30, per_day=450, clock=monotonic):
@@ -22,7 +25,8 @@ class RouteCache:
         self._entries = OrderedDict()
         self._requests = defaultdict(deque)
         self._blocked = {}
-        self._state, self._fetch = Lock(), Lock()
+        self._state = Lock()
+        self._inflight = {}
         self._metrics = Counter(hits=0, misses=0, requests=0, errors=0, limited=0, busy=0)
 
     def snapshot(self):
@@ -62,10 +66,12 @@ class RouteCache:
             value = self._lookup(key)
             if value is not None:
                 return value, True
-        # Serializar faltantes evita duplicados y acota la espera de otro proveedor lento.
-        if not self._fetch.acquire(timeout=2):
+        # Un lock por clave evita llamadas duplicadas sin frenar faltantes de otras rutas.
+        fetch = self._join_fetch(key)
+        if not fetch.acquire(timeout=FETCH_WAIT_SECONDS):
             with self._state:
                 self._metrics["busy"] += 1
+            self._leave_fetch(key)
             raise ProviderUnavailable("Proveedor de rutas ocupado")
         try:
             with self._state:
@@ -92,4 +98,19 @@ class RouteCache:
                         self._entries.popitem(last=False)
             return deepcopy(value), False
         finally:
-            self._fetch.release()
+            fetch.release()
+            self._leave_fetch(key)
+
+    def _join_fetch(self, key):
+        with self._state:
+            lock, waiting = self._inflight.get(key, (Lock(), 0))
+            self._inflight[key] = (lock, waiting + 1)
+            return lock
+
+    def _leave_fetch(self, key):
+        with self._state:
+            lock, waiting = self._inflight[key]
+            if waiting == 1:
+                del self._inflight[key]
+            else:
+                self._inflight[key] = (lock, waiting - 1)

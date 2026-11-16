@@ -5,6 +5,10 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import Mock
+
+import pytest
+import requests
 
 from nafta2go.normalization.__main__ import capture_from_file, main
 from nafta2go.persistence import repository as repo
@@ -45,3 +49,55 @@ def test_capture_from_file_uses_local_mtime(tmp_path):
     assert capture.fetched_at == datetime(2026, 10, 24, 18, 30, 5)
     assert capture.size_bytes == stored.stat().st_size
     assert capture.stored_path == str(stored.resolve())
+
+
+@pytest.mark.parametrize("stage", ["catalog", "download"])
+def test_network_failures_have_run_id_and_json(tmp_path, monkeypatch, capsys, stage):
+    url = f"sqlite:///{tmp_path / 'network.db'}"
+    monkeypatch.setenv("DATABASE_URL", url)
+    target = "nafta2go.normalization.__main__"
+    monkeypatch.setattr(f"{target}.discover_resources", Mock(return_value={"vigente": object()}))
+    failing = "discover_resources" if stage == "catalog" else "download"
+    monkeypatch.setattr(f"{target}.{failing}", Mock(side_effect=requests.Timeout("token=secreto")))
+    assert main(["--source", "vigente", "--json"]) == 1
+    output = capsys.readouterr()
+    summary = json.loads(output.out)
+    assert summary["status"] == "failed"
+    assert summary["duration_seconds"] >= 0
+    assert summary["started_at"].endswith("Z")
+    assert "secreto" not in output.out + output.err
+    engine = create_db_engine(url)
+    with engine.connect() as conn:
+        assert repo.get_run(conn, summary["run_id"])["status"] == "failed"
+    engine.dispose()
+
+
+def test_success_json_keeps_report_and_version(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'json.db'}")
+    assert (
+        main(["--source", "historico", "--file", str(FIX / "historico_sample.csv"), "--json"]) == 0
+    )
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["status"] == "succeeded"
+    assert summary["report"]["filas_validas"] == 4
+    assert summary["rules_version"]
+
+
+def test_missing_file_is_registered(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'missing.db'}")
+    assert main(["--source", "vigente", "--file", str(tmp_path / "missing.csv"), "--json"]) == 1
+    assert json.loads(capsys.readouterr().out)["status"] == "failed"
+
+
+def test_downloaded_capture_is_normalized(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'download.db'}")
+    target = "nafta2go.normalization.__main__"
+    resource = object()
+    monkeypatch.setattr(f"{target}.discover_resources", Mock(return_value={"historico": resource}))
+    download = Mock(return_value=capture_from_file(FIX / "historico_sample.csv", "historico"))
+    monkeypatch.setattr(f"{target}.download", download)
+    assert main(["--source", "historico", "--json"]) == 0
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["status"] == "succeeded"
+    assert summary["report"]["filas_validas"] == 4
+    assert download.call_args.args[:2] == (resource, "historico")

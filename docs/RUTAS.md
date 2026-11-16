@@ -33,6 +33,10 @@ como `routes.cache_hit`; la CLI lo rotula como rutas reutilizadas. Un 429 detien
 nuevos intentos hasta `Retry-After` o el reinicio de cuota anunciado; si no se
 puede interpretar, aplica 60 s. No hay reintentos automáticos ni uso de datos vencidos.
 
+Los faltantes se coordinan por clave: una consulta idéntica a otra en curso la
+espera hasta 20 s y reutiliza su resultado; una ruta distinta se consulta en
+paralelo, sin esperar al proveedor ocupado (#97).
+
 Las coordenadas solo viven en RAM: TTL limita reutilización, las entradas vencidas
 se purgan al consultar y las expulsadas o el proceso terminado liberan su estado.
 No se escribe caché en archivos, base ni logs. `RouteCache.snapshot()` y el log
