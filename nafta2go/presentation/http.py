@@ -147,6 +147,7 @@ def create_app(
                 schedule_id=body.schedule_id,
                 reference_at=clock(),
                 routing_provider=routing_provider,
+                max_candidates=body.max_candidates,
             )
             request.scope["nafta2go.outcome"] = result["outcome"]
             return present_recommendation(result)
