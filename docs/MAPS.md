@@ -46,7 +46,7 @@ no abre Maps ni transmite datos a Google. La misma información está en
 
 La [web local](WEB.md) presenta enlaces con texto descriptivo, aviso de recálculo
 y vigencia. Abre otra pestaña con `rel="noopener noreferrer"` e inserta los textos
-como texto, no HTML. Las pruebas automatizadas de teclado y navegador se entregan
-en una PR dependiente; falta validar en un teléfono físico.
+como texto, no HTML. Las [pruebas de navegador](../tests/browser/README.md) verifican foco y enlace
+mediante teclado y vista móvil emulada; falta validar en un teléfono físico.
 Los tests actuales cubren coordenadas, codificación, destino, conservación del
 ranking, contrato HTTP/CLI y ausencia de enlaces en la persistencia, sin red.
