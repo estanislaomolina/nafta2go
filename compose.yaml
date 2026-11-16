@@ -40,6 +40,7 @@ services:
       DATABASE_URL: sqlite:////app/data/nafta2go.db
       ORS_API_KEY: ${ORS_API_KEY:-}
       NAFTA2GO_API_TOKEN: ${NAFTA2GO_API_TOKEN:-}
+      NAFTA2GO_ADMIN_TOKEN: ${NAFTA2GO_ADMIN_TOKEN:-}
     volumes:
       - nafta2go-data:/app/data
     depends_on:

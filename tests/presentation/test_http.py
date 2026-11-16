@@ -25,6 +25,7 @@ from nafta2go.presentation.http import create_app
 
 MATRIX = Path(__file__).resolve().parents[2] / "docs/evidencia/poc-05-flujo-2026-10-26/matrix.json"
 AUTH = {"Authorization": "Bearer token-local-de-prueba"}
+ADMIN_AUTH = {"Authorization": "Bearer codigo-admin-de-prueba"}
 BODY = {
     "origin": {"lat": -34.6037, "lon": -58.3816},
     "destination": {"lat": -34.5627, "lon": -58.4565},
@@ -115,7 +116,8 @@ def test_missing_api_token_fails_closed(clients, monkeypatch):
     with clients() as client:
         assert client.post("/api/v1/recommendations", json=BODY, headers=AUTH).status_code == 503
         assert client.get("/ready").status_code == 503
-        assert client.get("/api/v1/operations").status_code == 503
+        assert client.get("/api/v1/operations").status_code == 401
+        assert client.get("/api/v1/operations", headers=ADMIN_AUTH).status_code == 200
 
 
 @pytest.mark.parametrize(
@@ -250,6 +252,30 @@ def query_events(caplog):
     ]
 
 
+@pytest.fixture(autouse=True)
+def admin_token(monkeypatch):
+    monkeypatch.setenv("NAFTA2GO_ADMIN_TOKEN", "codigo-admin-de-prueba")
+
+
+def test_operations_accept_only_separate_admin_token(clients):
+    with clients() as client:
+        assert client.get("/api/v1/operations", headers=AUTH).status_code == 401
+        admin = {"Authorization": "Bearer codigo-admin-de-prueba"}
+        response = client.get("/api/v1/operations", headers=admin)
+        assert response.status_code == 200 and response.headers["cache-control"] == "no-store"
+        assert client.post("/api/v1/recommendations", json=BODY, headers=admin).status_code == 401
+
+
+@pytest.mark.parametrize("token", ["", "token-local-de-prueba"])
+def test_operations_fail_closed_without_a_distinct_admin_token(clients, monkeypatch, token):
+    monkeypatch.setenv("NAFTA2GO_ADMIN_TOKEN", token)
+    with clients() as client:
+        response = client.get("/api/v1/operations", headers=AUTH)
+        assert response.status_code == 503
+        assert response.json() == {"detail": {"code": "admin_not_configured"}}
+        assert client.get("/ready").status_code == 200
+
+
 def test_query_telemetry_is_correlated_private_and_authenticated(clients, caplog):
     from datetime import datetime
     from uuid import UUID
@@ -258,14 +284,14 @@ def test_query_telemetry_is_correlated_private_and_authenticated(clients, caplog
     with clients() as client:
         denied = client.get("/api/v1/operations")
         assert denied.status_code == 401
-        initial = client.get("/api/v1/operations", headers=AUTH).json()
+        initial = client.get("/api/v1/operations", headers=ADMIN_AUTH).json()
         assert initial["queries"]["completed"] == 0
         response = client.post(
             "/api/v1/recommendations?ubicacion=secreto-en-query",
             json=BODY,
             headers={**AUTH, "X-Request-ID": "secreto-del-cliente"},
         )
-        metrics = client.get("/api/v1/operations", headers=AUTH).json()
+        metrics = client.get("/api/v1/operations", headers=ADMIN_AUTH).json()
     (event,) = query_events(caplog)
     assert UUID(response.headers["x-request-id"]).hex == event["request_id"]
     assert datetime.fromisoformat(event["started_at_utc"]).utcoffset().total_seconds() == 0
@@ -308,7 +334,7 @@ def test_telemetry_counts_errors_and_preserves_safe_responses(clients, caplog, k
             json={} if kind == "invalid" else BODY,
             headers={} if kind == "unauthorized" else AUTH,
         )
-        metrics = client.get("/api/v1/operations", headers=AUTH).json()["queries"]
+        metrics = client.get("/api/v1/operations", headers=ADMIN_AUTH).json()["queries"]
     assert response.status_code == status
     assert metrics["http_status"] == {str(status): 1}
     assert metrics["outcome"] == {"http_error": 1}
@@ -326,7 +352,9 @@ def test_unexpected_failure_is_recorded_once_without_exception_text(clients, cap
         assert response.status_code == 500
         assert response.json() == {"detail": {"code": "internal_error"}}
         assert response.headers["x-request-id"]
-        assert client.get("/api/v1/operations", headers=AUTH).json()["queries"]["completed"] == 1
+        assert (
+            client.get("/api/v1/operations", headers=ADMIN_AUTH).json()["queries"]["completed"] == 1
+        )
     (event,) = query_events(caplog)
     assert event["http_status"] == 500 and event["outcome"] == "http_error"
     assert event["error_type"] == "RuntimeError"
@@ -343,5 +371,10 @@ def test_query_telemetry_isolated_and_counts_concurrent_requests(clients):
             )
         identifiers = {response.headers["x-request-id"] for response in responses}
         assert len(identifiers) == 24
-        assert client.get("/api/v1/operations", headers=AUTH).json()["queries"]["completed"] == 24
-        assert other.get("/api/v1/operations", headers=AUTH).json()["queries"]["completed"] == 0
+        assert (
+            client.get("/api/v1/operations", headers=ADMIN_AUTH).json()["queries"]["completed"]
+            == 24
+        )
+        assert (
+            other.get("/api/v1/operations", headers=ADMIN_AUTH).json()["queries"]["completed"] == 0
+        )

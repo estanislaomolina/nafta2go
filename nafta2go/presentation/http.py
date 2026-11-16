@@ -35,7 +35,20 @@ bearer = HTTPBearer(auto_error=False)
 def authorize(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
 ) -> None:
-    expected = os.environ.get("NAFTA2GO_API_TOKEN", "").strip()
+    _authorize(credentials, os.environ.get("NAFTA2GO_API_TOKEN", "").strip())
+
+
+def authorize_admin(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
+) -> None:
+    expected = os.environ.get("NAFTA2GO_ADMIN_TOKEN", "").strip()
+    driver = os.environ.get("NAFTA2GO_API_TOKEN", "").strip()
+    if not expected or compare_digest(expected.encode(), driver.encode()):
+        raise HTTPException(503, detail={"code": "admin_not_configured"})
+    _authorize(credentials, expected)
+
+
+def _authorize(credentials, expected):
     if not expected:
         raise HTTPException(503, detail={"code": "api_not_configured"})
     if credentials is None or not compare_digest(
@@ -144,13 +157,16 @@ def create_app(
                 },
             ) from exc
 
-    @application.get("/api/v1/operations", dependencies=[Depends(authorize)])
+    @application.get("/api/v1/operations", dependencies=[Depends(authorize_admin)])
     def operations():
-        return {
-            "scope": "process",
-            "queries": telemetry.snapshot(),
-            "routes": shared_cache().snapshot(),
-        }
+        return JSONResponse(
+            content={
+                "scope": "process",
+                "queries": telemetry.snapshot(),
+                "routes": shared_cache().snapshot(),
+            },
+            headers={"Cache-Control": "no-store"},
+        )
 
     return application
 

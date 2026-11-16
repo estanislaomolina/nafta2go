@@ -74,7 +74,7 @@ un error inesperado anterior a la respuesta devuelve 500 con `internal_error`,
 sin propagar el mensaje original al servidor. Una transmisión interrumpida se
 registra como fallo y sólo propaga un mensaje fijo.
 
-`GET /api/v1/operations` exige el mismo Bearer administrativo y devuelve conteos
+`GET /api/v1/operations` exige `NAFTA2GO_ADMIN_TOKEN`, distinto del token de conductor y devuelve conteos
 por estado/resultado, suma de duraciones y contadores de caché/rutas. No consulta
 ORS ni lee datos del conductor. La configuración inválida de caché devuelve el
 error seguro de dependencia. El proceso genera sus propios IDs; no se guardan
@@ -90,3 +90,9 @@ Otros servidores/proxies deben aplicar la misma política antes de exponerlos.
 Los contadores se reinician al reiniciar la aplicación/caché, no se agregan entre
 réplicas ni constituyen p95 o disponibilidad sostenida. No incluye aún consultas
 CLI, un panel, métricas integradas de ingesta/modelo ni alertas de consultas (#21).
+
+El token administrativo ausente o igual al del conductor produce
+503/`admin_not_configured`; el código del conductor no autoriza operación.
+Las respuestas operativas usan `Cache-Control: no-store`. Readiness y las
+recomendaciones siguen dependiendo sólo del token de conductor. Propuesta y
+límites en [ADR-016](../adr/ADR-016-acceso-administrativo-separado.md).

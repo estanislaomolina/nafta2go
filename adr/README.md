@@ -30,5 +30,8 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 | [ADR-010](ADR-010-cache-volatil-y-cupo-de-rutas.md) | Caché volátil y cupo por proceso para matrices de rutas | Aceptado |
 | [ADR-011](ADR-011-base-de-red-con-cloudformation.md) | Base de red reproducible con CloudFormation | Propuesto |
 | [ADR-013](ADR-013-evaluacion-temporal-de-precios.md) | Evaluación retrospectiva temporal de precios y supuesto de disponibilidad | Propuesto |
+| [ADR-016](ADR-016-acceso-administrativo-separado.md) | Acceso administrativo separado del código de conductor | Propuesto |
+
+ADRs 014 y 015 están reservados en las PRs #102 y #104.
 
 ADR-012 está reservado para la web local en la PR #81.
