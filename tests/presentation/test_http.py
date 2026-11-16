@@ -245,32 +245,6 @@ def test_application_owns_its_default_engine_lifecycle(clients, database_url, mo
     dispose.assert_called_once()
 
 
-def test_navigation_uses_station_coordinates_without_persisting_links(clients, engine, caplog):
-    import json
-    from urllib.parse import parse_qs, urlsplit
-
-    with clients() as client:
-        response = client.post("/api/v1/recommendations", json=BODY, headers=AUTH)
-    assert response.status_code == 200
-    payload = response.json()
-    stations = {str(row["station_id"]): (row["lat"], row["lon"]) for row in load_scenario().rows}
-    assert {link["station_id"] for link in payload["navigation"]} == {
-        row["station_id"] for row in payload["alternatives"]
-    }
-    assert payload["navigation_notice"]
-    assert "navigation_destinations" not in payload
-    for link in payload["navigation"]:
-        query = parse_qs(urlsplit(link["url"]).query)
-        assert tuple(map(float, query["destination"][0].split(","))) == stations[link["station_id"]]
-        assert not {"origin", "waypoints", "key"} & query.keys()
-    with engine.connect() as conn:
-        saved = repo.get_recommendation(conn, payload["recommendation_id"])
-    encoded = json.dumps(saved, default=str)
-    assert "google.com/maps" not in encoded and "navigation_destinations" not in encoded
-    assert "-34.6037" not in encoded and "-58.4565" not in encoded
-    assert "google.com/maps" not in caplog.text
-
-
 def query_events(caplog):
     import json
 
@@ -407,3 +381,75 @@ def test_query_telemetry_isolated_and_counts_concurrent_requests(clients):
         assert (
             other.get("/api/v1/operations", headers=ADMIN_AUTH).json()["queries"]["completed"] == 0
         )
+
+
+@pytest.mark.parametrize("limit", [3, 20])
+def test_http_accepts_and_propagates_candidate_limit(clients, engine, limit):
+    from nafta2go.adapters.routing import DistanceMatrix
+
+    sizes = []
+
+    class Matrix:
+        def matrix(self, sources, destinations):
+            sizes.append(len(sources) - 1)
+            return DistanceMatrix(
+                [[60.0] * len(destinations) for _ in sources],
+                [[1000.0] * len(destinations) for _ in sources],
+                list(sources),
+                list(destinations),
+            )
+
+    with clients(provider_factory=Matrix, routing_provider="synthetic-test") as client:
+        response = client.post(
+            "/api/v1/recommendations", json={**BODY, "max_candidates": limit}, headers=AUTH
+        )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["query"]["max_candidates"] == limit
+    assert (
+        len(payload["evaluations"]) == 3 if limit == 3 else 10 < len(payload["evaluations"]) <= 20
+    )
+    assert sizes == [len(payload["evaluations"])]
+    with engine.connect() as conn:
+        saved = repo.get_recommendation(conn, payload["recommendation_id"])
+    assert saved["request"]["max_candidates"] == limit
+    assert saved["result"]["query"]["max_candidates"] == limit
+
+
+@pytest.mark.parametrize("limit", [2, 21, 3.0, True, "20", None])
+def test_invalid_candidate_limit_does_not_load_routes(clients, limit):
+    def forbidden():
+        pytest.fail("No se deben cargar rutas con un límite inválido")
+
+    with clients(provider_factory=forbidden) as client:
+        response = client.post(
+            "/api/v1/recommendations", json={**BODY, "max_candidates": limit}, headers=AUTH
+        )
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "invalid_request"
+
+
+def test_navigation_uses_station_coordinates_without_persisting_links(clients, engine, caplog):
+    import json
+    from urllib.parse import parse_qs, urlsplit
+
+    with clients() as client:
+        response = client.post("/api/v1/recommendations", json=BODY, headers=AUTH)
+    assert response.status_code == 200
+    payload = response.json()
+    stations = {str(row["station_id"]): (row["lat"], row["lon"]) for row in load_scenario().rows}
+    assert {link["station_id"] for link in payload["navigation"]} == {
+        row["station_id"] for row in payload["alternatives"]
+    }
+    assert payload["navigation_notice"]
+    assert "navigation_destinations" not in payload
+    for link in payload["navigation"]:
+        query = parse_qs(urlsplit(link["url"]).query)
+        assert tuple(map(float, query["destination"][0].split(","))) == stations[link["station_id"]]
+        assert not {"origin", "waypoints", "key"} & query.keys()
+    with engine.connect() as conn:
+        saved = repo.get_recommendation(conn, payload["recommendation_id"])
+    encoded = json.dumps(saved, default=str)
+    assert "google.com/maps" not in encoded and "navigation_destinations" not in encoded
+    assert "-34.6037" not in encoded and "-58.4565" not in encoded
+    assert "google.com/maps" not in caplog.text

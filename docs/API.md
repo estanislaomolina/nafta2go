@@ -55,10 +55,11 @@ servidor configurado, conexión y esquema en la revisión esperada; si no, devue
 503 sin aplicar migraciones. Ambos controles y OpenAPI son públicos y no exponen
 precios, ubicaciones ni credenciales. La consulta requiere `Authorization: Bearer`.
 
-El contrato HTTP conserva diez candidatas; el parámetro para elegir hasta veinte
-se agrega en #84. La CLI y el caso de uso ya admiten hasta veinte (#64). La caché
-y el control de cuota por proceso están integrados; ver [RUTAS](RUTAS.md).
-Antes del uso público faltan coordinación entre réplicas, HTTPS,
+La API acepta `max_candidates` como entero estricto entre 3 y 20; usa diez por
+defecto y conserva el límite en la selección y la recomendación persistida. Puede
+haber menos evaluaciones si la cobertura es menor. La caché y el cupo por proceso
+ya están integrados; ver [RUTAS](RUTAS.md). Antes del uso público faltan
+coordinación entre réplicas, HTTPS,
 autenticación apropiada para usuarios y observabilidad completa (#21). El token
 local no debe incrustarse en JavaScript público. La [web local](WEB.md) se sirve en `/` del mismo proceso. AWS y el despliegue
 público siguen pendientes. Los tests usan bases temporales y rutas grabadas, sin red.
@@ -93,8 +94,7 @@ access log de Uvicorn: una URL arbitraria puede contener datos privados. Los
 eventos no incluyen URL, headers, cuerpo, mensajes de excepción ni ubicaciones.
 Otros servidores/proxies deben aplicar la misma política antes de exponerlos.
 Los contadores se reinician al reiniciar la aplicación/caché, no se agregan entre
-réplicas ni constituyen p95 o disponibilidad sostenida. No incluye aún consultas
-CLI, métricas de modelo ni alertas de consultas (#21).
+réplicas ni constituyen p95 o disponibilidad sostenida. No incluye aún métricas integradas de ingesta/modelo ni alertas de consultas (#21).
 
 El token administrativo ausente o igual al del conductor produce
 503/`admin_not_configured`; el código del conductor no autoriza operación.
@@ -128,3 +128,9 @@ campos privados ni escribir en la base. No ejecuta ingestas ni sincroniza alerta
 marcas persistidas de detección/resolución siguen siendo tarea del monitor
 programado. Una lectura saludable no resuelve una alerta previa. Base/esquema no
 disponibles producen 503 seguro. El [panel local](WEB.md#panel-local-de-operación) consume esta lectura; no reemplaza supervisión sostenida.
+
+## Telemetría CLI
+
+La CLI emite eventos seguros separados del resultado; contrato y límites en
+[POC-05](POC-05.md#telemetría-cli-agregada-en-mvp). Sus eventos no se agregan
+a los contadores HTTP.

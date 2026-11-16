@@ -109,9 +109,10 @@ def create_app(
                 application.state.engine.dispose()
 
     application = FastAPI(title="Nafta2Go", version="0.1.0", lifespan=lifespan)
-    install_web(application)
     telemetry = QueryTelemetry()
     application.add_middleware(QueryTelemetryMiddleware, telemetry=telemetry)
+
+    install_web(application)
     application.add_exception_handler(RequestValidationError, validation_error)
     for error in (RoutingError, SQLAlchemyError, ScenarioIntegrityError, OSError):
         application.add_exception_handler(error, dependency_error)
@@ -147,6 +148,7 @@ def create_app(
                 schedule_id=body.schedule_id,
                 reference_at=clock(),
                 routing_provider=routing_provider,
+                max_candidates=body.max_candidates,
             )
             request.scope["nafta2go.outcome"] = result["outcome"]
             return present_recommendation(result)
