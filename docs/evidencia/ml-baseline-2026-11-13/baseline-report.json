@@ -1,0 +1,19 @@
+{
+  "excluded_geometry_or_product": 84,
+  "partitions": {
+    "train": {
+      "abstained": 2574,
+      "baseline_coverage": 0.9661182045544294,
+      "baseline_mae_ars_per_l": 21.79577320289934,
+      "examples": 73396,
+      "observations": 75970
+    },
+    "validation": {
+      "abstained": 92,
+      "baseline_coverage": 0.9770114942528736,
+      "baseline_mae_ars_per_l": 79.13401534526854,
+      "examples": 3910,
+      "observations": 4002
+    }
+  }
+}
