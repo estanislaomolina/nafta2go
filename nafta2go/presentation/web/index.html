@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nafta2Go · Elegí dónde cargar</title>
+  <link rel="stylesheet" href="/assets/styles.css"><script src="/assets/app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#query">Ir al formulario</a>
+<header><a class="brand" href="/" aria-label="Nafta2Go, inicio">Nafta<span>2</span>Go</a><span class="scope">Para recorridos en CABA</span></header>
+<main>
+  <div class="intro"><p class="eyebrow">Cada litro cuenta</p><h1>Elegí dónde cargar,<br>con las cuentas claras.</h1><p>Compará precio, combustible y desvío. Si faltan datos, te lo decimos.</p></div>
+  <div class="workspace">
+  <section class="panel" aria-labelledby="form-title">
+    <h2 id="form-title">Armá tu consulta</h2><p class="muted">Revisá los valores según tu vehículo.</p>
+    <noscript>Necesitás habilitar JavaScript para consultar estaciones.</noscript>
+    <form id="query" method="post" action="/" autocomplete="off" tabindex="-1">
+      <fieldset><legend>1. Tu recorrido</legend><p class="hint">Coordenadas en grados decimales, dentro de CABA.</p>
+        <div class="pair"><label>Latitud de origen<input name="origin_lat" type="number" min="-90" max="90" step="any" placeholder="Ej.: -34.60" required></label><label>Longitud de origen<input name="origin_lon" type="number" min="-180" max="180" step="any" placeholder="Ej.: -58.38" required></label></div>
+        <button id="locate" class="secondary" type="button">Usar mi ubicación</button><p id="location-status" class="hint" role="status"></p>
+        <label class="check"><input id="return" type="checkbox" checked> Volver al origen después de cargar</label>
+        <fieldset id="destination" hidden disabled><legend>Destino del viaje</legend><div class="pair"><label>Latitud de destino<input name="destination_lat" type="number" min="-90" max="90" step="any" required></label><label>Longitud de destino<input name="destination_lon" type="number" min="-180" max="180" step="any" required></label></div></fieldset>
+      </fieldset>
+      <fieldset><legend>2. Tu vehículo</legend><div class="pair">
+        <label>Consumo (L/100 km)<input name="consumption_l_per_100km" type="number" min="0" step="any" value="10" required></label>
+        <label>Capacidad del tanque (L)<input name="tank_capacity_l" type="number" min="0" step="any" value="50" required></label>
+        <label>Combustible disponible (L)<input name="remaining_l" type="number" min="0" step="any" value="10" required></label>
+        <label>Reserva que querés conservar (L)<input name="reserve_l" type="number" min="0" step="any" value="2" required></label>
+      </div></fieldset>
+      <fieldset><legend>3. Tu carga</legend><div class="pair">
+        <label>Nafta<select name="fuel_type"><option value="super">Súper</option><option value="premium">Premium</option></select></label>
+        <label>Horario de carga<select name="schedule_id"><option value="2">Diurno</option><option value="3">Nocturno</option></select></label>
+      </div><label>Presupuesto (ARS)<input name="budget_ars" type="number" min="0" step="any" value="12000" required></label></fieldset>
+      <fieldset><legend>4. Acceso a la demo</legend><label>Código de acceso<input id="access" type="password" autocomplete="off" required></label><p class="hint">Se usa solo en esta pestaña. No lo guardamos en el navegador.</p></fieldset>
+      <button id="submit" type="submit" disabled>Comparar estaciones</button>
+    </form>
+  </section>
+  <section class="results" aria-labelledby="results-title">
+    <div class="results-top"><p class="eyebrow">Una decisión explicada</p><h2 id="results-title">Tus alternativas</h2></div>
+    <p id="status" role="status" aria-live="polite">Completá el formulario para comparar estaciones.</p>
+    <p id="error" class="notice error" role="alert" tabindex="-1" hidden></p>
+    <div id="results" role="region" tabindex="-1" aria-label="Resultados de la consulta">
+      <div class="empty"><span class="compass" aria-hidden="true">↗</span><h3>Tu próxima parada empieza acá.</h3><p>Vas a ver opciones para ganar combustible, reducir el desvío o equilibrar ambos.</p></div>
+    </div>
+  </section>
+  </div>
+</main>
+<footer>Precios publicados por la Secretaría de Energía · La publicación no confirma stock ni precio efectivo al cargar.</footer>
+</body>
+</html>

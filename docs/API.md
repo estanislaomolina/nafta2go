@@ -60,8 +60,13 @@ se agrega en #84. La CLI y el caso de uso ya admiten hasta veinte (#64). La cach
 y el control de cuota por proceso están integrados; ver [RUTAS](RUTAS.md).
 Antes del uso público faltan coordinación entre réplicas, HTTPS,
 autenticación apropiada para usuarios y observabilidad completa (#21). El token
-local no debe incrustarse en JavaScript público. AWS y la web no se despliegan en
-este incremento. Los tests usan bases temporales y rutas grabadas, sin red.
+local no debe incrustarse en JavaScript público. La [web local](WEB.md) se sirve en `/` del mismo proceso. AWS y el despliegue
+público siguen pendientes. Los tests usan bases temporales y rutas grabadas, sin red.
+
+La presentación agrega `navigation` (enlaces por estación elegida con ID, URL y
+etiqueta) y `navigation_notice`. No incluye el origen del conductor ni persiste
+los enlaces. Contrato y límites en [MAPS](MAPS.md); la [web local](WEB.md) presenta estos enlaces; las pruebas de navegador se
+entregan en una PR dependiente.
 
 ## Telemetría local de consultas
 
