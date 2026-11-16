@@ -1,0 +1,39 @@
+{
+  "scope": "Ensayo local sin red, con fixture real recortada y unidades transitorias de systemd",
+  "periodic_timers_enabled": false,
+  "alembic_revision": "0003",
+  "fixture": "tests/fixtures/vigente_sample.csv",
+  "fixture_sha256": "d6fba51484c629d3cb4c654bd3a07c30b9db4ca015dd8dd73fa4e188fbeb1c01",
+  "systemd_probes": [
+    {
+      "unit": "nafta2go-monitor-verificacion-alerta.service",
+      "invocation_id": "6bcb5569e97b4d0fb42991c072cb634a",
+      "exit_code": 1,
+      "status": "alerting",
+      "checked_at": "2026-11-09T16:44:41.172334+00:00"
+    },
+    {
+      "unit": "nafta2go-monitor-verificacion-recuperacion.service",
+      "invocation_id": "b15bed4cf83e453692c055b447c4c1e8",
+      "exit_code": 0,
+      "status": "healthy",
+      "checked_at": "2026-11-09T16:46:38.695408+00:00"
+    }
+  ],
+  "persisted_alerts": [
+    {
+      "key": "vigente:missing:2026-11-09",
+      "source": "vigente",
+      "kind": "missing",
+      "run_id": null,
+      "detected_at": "2026-11-09T16:44:41.172334Z",
+      "last_seen_at": "2026-11-09T16:44:41.172334Z",
+      "resolved_at": "2026-11-09T16:46:38.695408Z"
+    }
+  ],
+  "limitations": [
+    "No prueba ejecuciones diarias ni disponibilidad continua",
+    "No envía notificaciones a un receptor externo",
+    "Los precios de la fixture no representan precios actuales"
+  ]
+}
