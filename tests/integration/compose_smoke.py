@@ -24,11 +24,14 @@ assert requests.get(base + '/assets/operation.js', timeout=3).status_code == 200
 denied = requests.post(base + '/api/v1/recommendations?token=private-probe', json={}, timeout=3)
 assert denied.status_code == 401 and denied.headers['x-request-id']
 metrics = requests.get(base + '/api/v1/operations', timeout=3,
-    headers={'Authorization': 'Bearer ' + os.environ['NAFTA2GO_API_TOKEN']}).json()
+    headers={'Authorization': 'Bearer ' + os.environ['NAFTA2GO_ADMIN_TOKEN']}).json()
 assert metrics['queries']['http_status'] == {'401': 1}
 assert requests.get(base + '/api/v1/operations/ingestion', timeout=3).status_code == 401
+for endpoint in ('/api/v1/operations', '/api/v1/operations/ingestion'):
+    assert requests.get(base + endpoint, timeout=3,
+        headers={'Authorization': 'Bearer ' + os.environ['NAFTA2GO_API_TOKEN']}).status_code == 401
 ingestion = requests.get(base + '/api/v1/operations/ingestion', timeout=3,
-    headers={'Authorization': 'Bearer ' + os.environ['NAFTA2GO_API_TOKEN']}).json()
+    headers={'Authorization': 'Bearer ' + os.environ['NAFTA2GO_ADMIN_TOKEN']}).json()
 assert ingestion['status'] == 'alerting' and ingestion['latest_successful'] is None
 assert ingestion['conditions'][0]['kind'] == 'missing'
 schema = requests.get(base + '/openapi.json', timeout=3).json()
@@ -44,6 +47,7 @@ def main():
     root = Path(__file__).resolve().parents[2]
     environment = os.environ | {
         "NAFTA2GO_API_TOKEN": secrets.token_urlsafe(32),
+        "NAFTA2GO_ADMIN_TOKEN": secrets.token_urlsafe(32),
         "ORS_API_KEY": "",
         "ORS_CACHE_TTL_SECONDS": "19",
         "ORS_CACHE_MAX_ENTRIES": "17",
@@ -88,6 +92,7 @@ def main():
             ).stdout
             assert '"event": "query_completed"' in logs and "private-probe" not in logs
             assert environment["NAFTA2GO_API_TOKEN"] not in logs
+            assert environment["NAFTA2GO_ADMIN_TOKEN"] not in logs
             output = subprocess.run(
                 [
                     *command,
