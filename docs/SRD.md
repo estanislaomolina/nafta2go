@@ -445,6 +445,16 @@ es un baseline estadístico, con cobertura y abstención explícitas. No usa las
 alertas mensuales de normalización, que podrían incorporar información futura.
 Supuestos, alternativas y límites en [ADR-013](../adr/ADR-013-evaluacion-temporal-de-precios.md).
 
+## Telemetría HTTP local
+
+La presentación ASGI registra el ciclo de POST de recomendaciones sin inspeccionar
+su cuerpo ni URL. Emite JSON con ID propio, fecha UTC, duración, estado y resultado
+acotado; expone contadores por aplicación y caché por proceso mediante lectura
+administrativa autenticada. El arranque suprime access logs con URLs y errores
+inesperados anteriores a la respuesta se sanitizan. No incorpora persistencia de
+ubicaciones, agregación entre réplicas, métricas ML ni supervisión sostenida.
+Contrato y límites: [API](API.md#telemetría-local-de-consultas).
+
 ## Telemetría CLI
 
 La CLI de consultas emite un evento JSON por ejecución en stderr mediante un
