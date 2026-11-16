@@ -136,4 +136,4 @@ sin alertas, 1 con alertas y 2 si no puede consultar o registrar el estado. Dete
 la última ejecución terminada con fallo, `running` de al menos dos horas y ausencia
 de intentos desde las 06:00 de Argentina al llegar las 08:00 (antes revisa el día
 anterior). Conserva detección y resolución en `ingestion_alerts` sin alterar las
-ingestas ni exportar mensajes sensibles. La programación automática va en otra PR.
+ingestas ni exportar mensajes sensibles. La programación y sus límites están en [INGESTA](INGESTA.md).
