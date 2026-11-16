@@ -4,6 +4,9 @@ import logging
 import math
 import os
 from collections.abc import Sequence
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
+from hashlib import sha256
 
 import requests
 
@@ -40,10 +43,16 @@ class OpenRouteServiceClient:
         timeout: tuple[float, float] = DEFAULT_TIMEOUT,
     ) -> None:
         self._api_key = api_key
-        self._session = session or requests.Session()
+        self.credential_scope = sha256(api_key.encode()).digest()
+        self._session = session if session is not None else requests.Session()
+        self._owns_session = session is None
         self.matrix_url = f"{base_url.rstrip('/')}/v2/matrix/{profile}"
         self._timeout = timeout
         self.last_rate_limit: dict[str, str] = {}
+
+    def close(self):
+        if self._owns_session:
+            self._session.close()
 
     def matrix(self, sources: Sequence[Point], destinations: Sequence[Point]) -> DistanceMatrix:
         locations: list[Point] = []
@@ -110,10 +119,28 @@ def _error_for(response: requests.Response) -> RoutingError:
     if status in (401, 403):
         return InvalidCredentials(message, status, code)
     if status == 429:
-        return QuotaExceeded(message, status, code)
+        return QuotaExceeded(
+            message, status, code, retry_after_seconds=retry_after(response.headers)
+        )
     if 400 <= status < 500:
         return InvalidRequest(message, status, code)
     return ProviderUnavailable(message, status, code)
+
+
+def retry_after(headers, now=None):
+    """Segundos hasta Retry-After o el reinicio anunciado si el cupo restante es cero."""
+    now = datetime.now(UTC) if now is None else now
+    value = headers.get("Retry-After")
+    try:
+        if value is not None:
+            if str(value).isdigit():
+                return min(int(value), 31536000)
+            return max(0, math.ceil((parsedate_to_datetime(value) - now).total_seconds()))
+        if headers.get("x-ratelimit-remaining") == "0":
+            return max(0, math.ceil(float(headers["x-ratelimit-reset"]) - now.timestamp()))
+    except (ValueError, TypeError, KeyError, OverflowError):
+        pass
+    return None
 
 
 def _provider_code(response: requests.Response) -> int | None:

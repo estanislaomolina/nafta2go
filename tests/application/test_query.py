@@ -7,6 +7,8 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import func, select
 
+from nafta2go.adapters.recorded_routes import CapturedRoutes
+from nafta2go.adapters.route_cache import RouteCache
 from nafta2go.adapters.routing import DistanceMatrix, Point, ProviderTimeout
 from nafta2go.application.query import recommend
 from nafta2go.application.scenario import ScenarioPrices, load_scenario
@@ -158,3 +160,41 @@ def test_timeout_is_propagated_without_writing_a_recommendation(engine):
 def test_untraceable_scenario_is_rejected(engine, scenario):
     with pytest.raises(ValueError, match="scenario"), engine.begin() as conn:
         repo.record_recommendation(conn, None, "test", "fake", {}, {}, REFERENCE, scenario=scenario)
+
+
+def test_cache_reduces_calls_without_caching_prices_or_recommendations(engine, monkeypatch):
+    class Client(Routes):
+        matrix_url = "https://proveedor.invalid/matrix/driving-car"
+        credential_scope = b"credencial-de-prueba"
+
+        def close(self):
+            pass
+
+    client = Client()
+    monkeypatch.setattr("nafta2go.adapters.recorded_routes.client_from_env", lambda: client)
+    cache = RouteCache()
+    baseline = query(engine, Routes())
+    first = query(engine, CapturedRoutes(cache))
+    second = query(engine, CapturedRoutes(cache))
+    assert baseline["evaluations"] == first["evaluations"] == second["evaluations"]
+    assert baseline["alternatives"] == first["alternatives"] == second["alternatives"]
+    assert second["routes"]["cache_hit"] and client.calls == 1
+
+    from nafta2go.persistence.schema import station_prices
+
+    with engine.begin() as conn:
+        run_id = repo.start_run(conn, "vigente", REFERENCE.replace(tzinfo=None))
+        conn.execute(
+            station_prices.insert(),
+            [
+                {**row, "id": None, "run_id": run_id, "price": row["price"] * 2}
+                for row in load_scenario().rows
+            ],
+        )
+        repo.finish_run(conn, run_id, "succeeded", REFERENCE.replace(tzinfo=None))
+    changed = query(engine, CapturedRoutes(cache))
+    assert client.calls == 1 and changed["routes"]["cache_hit"]
+    assert changed["data_run_id"] == run_id
+    assert (
+        changed["evaluations"][0]["price_ars_per_l"] != first["evaluations"][0]["price_ars_per_l"]
+    )
