@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from secrets import compare_digest
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -22,10 +22,16 @@ from nafta2go.adapters.routing import (
     QuotaExceeded,
     RoutingError,
 )
+from nafta2go.application.price_diagnostic import DiagnosticUnavailable, price_diagnostic
 from nafta2go.application.query import recommend_from_database
 from nafta2go.application.scenario import ScenarioIntegrityError
 from nafta2go.persistence.database import create_db_engine, database_is_ready
-from nafta2go.presentation.models import ErrorOutput, RecommendationInput, RecommendationOutput
+from nafta2go.presentation.models import (
+    ErrorOutput,
+    PriceDiagnosticOutput,
+    RecommendationInput,
+    RecommendationOutput,
+)
 
 logger = logging.getLogger(__name__)
 bearer = HTTPBearer(auto_error=False)
@@ -99,6 +105,31 @@ def create_app(
     @application.get("/health")
     def health():
         return {"status": "ok"}
+
+    @application.get(
+        "/api/v1/price-diagnostics/{station_id}",
+        dependencies=[Depends(authorize)],
+        response_model=PriceDiagnosticOutput,
+    )
+    def diagnostic(
+        station_id: int,
+        response: Response,
+        request: Request,
+        product_id: Annotated[int, Query(ge=2, le=3)] = 2,
+        schedule_id: Annotated[int, Query(ge=2, le=3)] = 2,
+    ):
+        if set(request.query_params) - {"product_id", "schedule_id"}:
+            raise HTTPException(422, detail={"code": "invalid_request"})
+        try:
+            result = price_diagnostic(
+                application.state.engine, station_id, product_id, schedule_id, clock()
+            )
+        except (DiagnosticUnavailable, ValueError) as exc:
+            raise HTTPException(503, detail={"code": "price_diagnostic_unavailable"}) from exc
+        if result is None:
+            raise HTTPException(404, detail={"code": "published_price_not_found"})
+        response.headers["Cache-Control"] = "no-store"
+        return result
 
     @application.get("/ready")
     def ready():

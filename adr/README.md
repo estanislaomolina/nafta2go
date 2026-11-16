@@ -31,5 +31,6 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 | [ADR-011](ADR-011-base-de-red-con-cloudformation.md) | Base de red reproducible con CloudFormation | Propuesto |
 | [ADR-013](ADR-013-evaluacion-temporal-de-precios.md) | Evaluación retrospectiva temporal de precios y supuesto de disponibilidad | Propuesto |
 | [ADR-014](ADR-014-seleccion-de-modelo-de-precios.md) | Selección del método de referencia de precios sin usar la validación | Propuesto |
+| [ADR-015](ADR-015-referencia-servida-y-abstencion-de-alertas.md) | Referencia seleccionada servida y abstención de alertas sin calibración | Propuesto |
 
 ADR-012 está reservado para la web local en la PR #81.
