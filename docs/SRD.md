@@ -408,6 +408,12 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 | La fuente cambia columnas o formato | `UnexpectedSchema` falla nombrando lo que falta y la ejecución queda `failed` |
 | Coordenadas mal cargadas (dos estaciones con provincia CABA están fuera de la ciudad) | Alerta `fuera_de_caba`, que se excluye de la selección |
 
+El incremento de navegación de MVP-03 genera Maps URLs en `presentation/` a
+partir de coordenadas públicas de las estaciones elegidas, entregadas por
+aplicación después del registro de la recomendación. No persiste enlaces ni
+incluye ubicaciones del conductor; no modifica motor, ranking ni proveedor de
+rutas. API y CLI comparten esa presentación; contrato y pendientes en [MAPS](MAPS.md).
+
 El incremento de monitoreo de MVP-01 agrega `python -m nafta2go.monitor`: detecta
 fallos, ejecuciones excedidas y ausencias, y persiste detección y resolución en
 `ingestion_alerts` (migración `0003`). La programación local usa systemd (vigente a las 06:00 de Argentina y monitor

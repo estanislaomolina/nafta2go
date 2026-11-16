@@ -45,6 +45,12 @@ class RecommendationInput(BaseModel):
         return self
 
 
+class NavigationLink(BaseModel):
+    station_id: str
+    url: str
+    label: str
+
+
 class RecommendationOutput(BaseModel):
     status: Literal["ready", "historical_scenario", "insufficient_coverage"]
     outcome: Literal["recommended", "insufficient_coverage", "no_feasible_stations"]
@@ -62,6 +68,8 @@ class RecommendationOutput(BaseModel):
     alternatives: list[dict[str, Any]]
     evaluations: list[dict[str, Any]]
     recommendation_id: int | None
+    navigation: list[NavigationLink]
+    navigation_notice: str | None
 
 
 class ErrorDetail(BaseModel):

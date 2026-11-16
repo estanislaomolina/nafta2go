@@ -26,6 +26,7 @@ from nafta2go.application.query import recommend_from_database
 from nafta2go.application.scenario import ScenarioIntegrityError
 from nafta2go.persistence.database import create_db_engine, database_is_ready
 from nafta2go.presentation.models import ErrorOutput, RecommendationInput, RecommendationOutput
+from nafta2go.presentation.navigation import present_recommendation
 
 logger = logging.getLogger(__name__)
 bearer = HTTPBearer(auto_error=False)
@@ -117,7 +118,7 @@ def create_app(
     )
     def recommendations(body: RecommendationInput) -> dict:
         try:
-            return recommend_from_database(
+            result = recommend_from_database(
                 application.state.engine,
                 body.fuel_request(),
                 body.origin.point(),
@@ -128,6 +129,7 @@ def create_app(
                 reference_at=clock(),
                 routing_provider=routing_provider,
             )
+            return present_recommendation(result)
         except ValueError as exc:
             if isinstance(exc, ScenarioIntegrityError):
                 raise

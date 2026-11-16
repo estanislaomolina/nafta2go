@@ -86,6 +86,7 @@ def test_current_data_response_refers_to_its_ingestion(clients, engine):
     payload = response.json()
     assert payload["status"] == "ready" and payload["scenario"] is None
     assert payload["data_run_id"] == run_id
+    assert payload["navigation"]
 
 
 def test_infeasible_query_returns_an_explained_result(clients):
@@ -96,6 +97,7 @@ def test_infeasible_query_returns_an_explained_result(clients):
     assert response.status_code == 200
     assert response.json()["outcome"] == "no_feasible_stations"
     assert response.json()["alternatives"] == []
+    assert response.json()["navigation"] == []
 
 
 @pytest.mark.parametrize("authorization", [None, "Bearer incorrecto", "Basic incorrecto"])
@@ -194,6 +196,7 @@ def test_no_coverage_needs_no_provider_key(clients, monkeypatch):
     assert response.status_code == 200
     assert response.json()["outcome"] == "insufficient_coverage"
     assert response.json()["recommendation_id"] is None
+    assert response.json()["navigation"] == []
 
 
 def test_liveness_and_readiness_do_not_migrate_the_database(clients, tmp_path):
@@ -237,3 +240,29 @@ def test_application_owns_its_default_engine_lifecycle(clients, database_url, mo
     with clients(engine=None) as client:
         assert client.get("/ready").status_code == 200
     dispose.assert_called_once()
+
+
+def test_navigation_uses_station_coordinates_without_persisting_links(clients, engine, caplog):
+    import json
+    from urllib.parse import parse_qs, urlsplit
+
+    with clients() as client:
+        response = client.post("/api/v1/recommendations", json=BODY, headers=AUTH)
+    assert response.status_code == 200
+    payload = response.json()
+    stations = {str(row["station_id"]): (row["lat"], row["lon"]) for row in load_scenario().rows}
+    assert {link["station_id"] for link in payload["navigation"]} == {
+        row["station_id"] for row in payload["alternatives"]
+    }
+    assert payload["navigation_notice"]
+    assert "navigation_destinations" not in payload
+    for link in payload["navigation"]:
+        query = parse_qs(urlsplit(link["url"]).query)
+        assert tuple(map(float, query["destination"][0].split(","))) == stations[link["station_id"]]
+        assert not {"origin", "waypoints", "key"} & query.keys()
+    with engine.connect() as conn:
+        saved = repo.get_recommendation(conn, payload["recommendation_id"])
+    encoded = json.dumps(saved, default=str)
+    assert "google.com/maps" not in encoded and "navigation_destinations" not in encoded
+    assert "-34.6037" not in encoded and "-58.4565" not in encoded
+    assert "google.com/maps" not in caplog.text
