@@ -454,3 +454,11 @@ administrativa autenticada. El arranque suprime access logs con URLs y errores
 inesperados anteriores a la respuesta se sanitizan. No incorpora persistencia de
 ubicaciones, agregación entre réplicas, métricas ML ni supervisión sostenida.
 Contrato y límites: [API](API.md#telemetría-local-de-consultas).
+
+## Telemetría CLI
+
+La CLI de consultas emite un evento JSON por ejecución en stderr mediante un
+logger aislado, con ID propio, fecha UTC, duración y resultado. stdout mantiene
+su contrato. Los errores y el parser usan mensajes seguros sin repetir valores
+ni excepciones originales. Los eventos CLI no se agregan a los contadores HTTP;
+contrato y retención en [POC-05](POC-05.md#telemetría-cli-agregada-en-mvp).

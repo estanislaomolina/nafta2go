@@ -94,11 +94,16 @@ access log de Uvicorn: una URL arbitraria puede contener datos privados. Los
 eventos no incluyen URL, headers, cuerpo, mensajes de excepción ni ubicaciones.
 Otros servidores/proxies deben aplicar la misma política antes de exponerlos.
 Los contadores se reinician al reiniciar la aplicación/caché, no se agregan entre
-réplicas ni constituyen p95 o disponibilidad sostenida. No incluye aún consultas
-CLI, un panel, métricas integradas de ingesta/modelo ni alertas de consultas (#21).
+réplicas ni constituyen p95 o disponibilidad sostenida. No incluye aún un panel, métricas integradas de ingesta/modelo ni alertas de consultas (#21).
 
 El token administrativo ausente o igual al del conductor produce
 503/`admin_not_configured`; el código del conductor no autoriza operación.
 Las respuestas operativas usan `Cache-Control: no-store`. Readiness y las
 recomendaciones siguen dependiendo sólo del token de conductor. Propuesta y
 límites en [ADR-016](../adr/ADR-016-acceso-administrativo-separado.md).
+
+## Telemetría CLI
+
+La CLI emite eventos seguros separados del resultado; contrato y límites en
+[POC-05](POC-05.md#telemetría-cli-agregada-en-mvp). Sus eventos no se agregan
+a los contadores HTTP.
