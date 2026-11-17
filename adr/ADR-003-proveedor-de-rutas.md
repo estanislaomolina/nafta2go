@@ -54,7 +54,7 @@ La prueba también encontró dos cosas que no estaban previstas:
 * El host `api.openrouteservice.org` está deprecado y se apaga entre el 02/11 y el 06/11/2026. El adaptador pasó a `api.heigit.org/openrouteservice`, con la misma key. Sobre el host viejo la cuota observada era de 50 diarias.
 * ORS no rechaza puntos fuera de la red vial: los ajusta a la vía más cercana y responde 200. Validar el área de servicio de las coordenadas queda a cargo de la normalización (POC-01) y del flujo (POC-05).
 
-Queda pendiente mostrar en la interfaz la atribución que exigen las condiciones de uso de ORS y OpenStreetMap; es parte del MVP. El detalle está en `docs/RUTAS.md`.
+La web del MVP muestra en su pie la atribución de openrouteservice by HeiGIT y OpenStreetMap contributors, con enlaces al proveedor y a su copyright/licencia. Ver `docs/WEB.md` y `docs/RUTAS.md`.
 
 ## Pros and Cons of the Options
 
