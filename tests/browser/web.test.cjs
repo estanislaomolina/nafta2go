@@ -399,6 +399,11 @@ test('referencia: sólo bajo pedido, con consulta congelada, privacidad y texto 
     assert.equal(await page.evaluate(() => window.referenceAttack), undefined);
     assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
     await accessible(page);
+    answer.version = 'e'.repeat(64); await readReference(page, card);
+    await card.locator('.price-reference-result summary').click();
+    await page.setViewportSize({width: 320, height: 800});
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await accessible(page);
   } finally { await page.context().close(); }
 });
 test('referencia: errores, cambios de publicación y abstención retiran datos anteriores', async () => {
