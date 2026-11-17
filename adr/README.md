@@ -34,3 +34,4 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 | [ADR-014](ADR-014-seleccion-de-modelo-de-precios.md) | Selección del método de referencia de precios sin usar la validación | Propuesto |
 | [ADR-015](ADR-015-referencia-servida-y-abstencion-de-alertas.md) | Referencia seleccionada servida y abstención de alertas sin calibración | Propuesto |
 | [ADR-016](ADR-016-acceso-administrativo-separado.md) | Acceso administrativo separado del código de conductor | Propuesto |
+| [ADR-017](ADR-017-evaluacion-temporal-de-umbrales.md) | Evaluación temporal de umbrales candidatos antes de activar alertas | Propuesto |
