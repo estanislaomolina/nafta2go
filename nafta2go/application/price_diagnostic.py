@@ -83,25 +83,14 @@ def price_diagnostic(engine, station_id, product_id, schedule_id, now):
         capture = repo.raw_capture_for_run(conn, historical)
         if capture is None or capture["sha256"] != model["source_sha256"]:
             raise DiagnosticUnavailable
-        rows = repo.prices_for_run(conn, current)
-        targets = [
-            r
-            for r in rows
-            if r["station_id"] == station_id
-            and r["product_id"] == product_id
-            and r["schedule_id"] == schedule_id
-            and r["valid_from"] <= local_now
-        ]
-        if not targets:
+        target = repo.diagnostic_publication(
+            conn, current, station_id, product_id, schedule_id, local_now
+        )
+        if target is None:
             return None
-        target = max(targets, key=lambda r: r["valid_from"])
-        history = [
-            r
-            for r in repo.prices_for_run(conn, historical)
-            if r["valid_from"] < target["valid_from"]
-            and r["product_id"] == product_id
-            and r["schedule_id"] == schedule_id
-        ]
+        history = repo.diagnostic_history(
+            conn, historical, product_id, schedule_id, target["valid_from"]
+        )
     # Misma preparación que el entrenamiento; todo el instante objetivo queda fuera del contexto.
     examples, _ = build_temporal_dataset(
         [*history, target],

@@ -216,6 +216,51 @@ def prices_for_run(conn: Connection, run_id: int, fuel_type: str | None = None) 
     return [dict(row._mapping) for row in conn.execute(query.order_by(station_prices.c.id))]
 
 
+def _diagnostic_query(run_id: int, product_id: int, schedule_id: int):
+    columns = (
+        "source_row",
+        "station_id",
+        "product_id",
+        "schedule_id",
+        "valid_from",
+        "price",
+        "lat",
+        "lon",
+        "brand",
+    )
+    return select(*(station_prices.c[key] for key in columns)).where(
+        station_prices.c.run_id == run_id,
+        station_prices.c.product_id == product_id,
+        station_prices.c.schedule_id == schedule_id,
+    )
+
+
+def diagnostic_publication(
+    conn: Connection, run_id: int, station_id: int, product_id: int, schedule_id: int, at: datetime
+) -> dict | None:
+    query = (
+        _diagnostic_query(run_id, product_id, schedule_id)
+        .where(station_prices.c.station_id == station_id, station_prices.c.valid_from <= at)
+        .order_by(station_prices.c.valid_from.desc())
+        .limit(1)
+    )
+    row = conn.execute(query).mappings().first()
+    return dict(row) if row is not None else None
+
+
+def diagnostic_history(
+    conn: Connection, run_id: int, product_id: int, schedule_id: int, before: datetime
+) -> list[dict]:
+    # No recortar por antigüedad: el fallback usa el último precio propio,
+    # incluso si es anterior a la ventana de medianas de mercado.
+    query = (
+        _diagnostic_query(run_id, product_id, schedule_id)
+        .where(station_prices.c.valid_from < before)
+        .order_by(station_prices.c.id)
+    )
+    return [dict(row) for row in conn.execute(query).mappings()]
+
+
 def add_rejections(conn: Connection, run_id: int, rows: Iterable[Mapping[str, object]]) -> int:
     values = []
     for row in rows:

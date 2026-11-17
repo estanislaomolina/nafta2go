@@ -258,3 +258,82 @@ def test_auth_validation_and_missing_configuration(engine, monkeypatch):
         extra = http.get(URL + "?price=secreto", headers=AUTH)
         assert extra.status_code == 422 and "secreto" not in extra.text
         assert http.get(URL, headers=AUTH).status_code == 503
+
+
+def test_diagnostic_does_not_materialize_entire_ingestions(engine, prepared, monkeypatch):
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("El diagnóstico no debe cargar ingestas completas")
+
+    monkeypatch.setattr(repo, "prices_for_run", forbidden)
+    with client(engine) as http:
+        response = http.get(URL, headers=AUTH)
+    assert response.status_code == 200
+    assert response.json()["official_price_ars_per_l"] == "150.000"
+
+
+def test_diagnostic_reads_only_compatible_past_rows(engine, prepared):
+    runs, history, target, _ = prepared
+    with engine.begin() as conn:
+        conn.execute(
+            station_prices.insert(),
+            [
+                {
+                    **history[0],
+                    "id": None,
+                    "source_row": 1000 + index,
+                    "station_id": 100 + index,
+                    "run_id": runs["historico"],
+                    "product_id": product,
+                    "schedule_id": schedule,
+                    "valid_from": when,
+                }
+                for index, (product, schedule, when) in enumerate(
+                    [
+                        (3, 2, history[0]["valid_from"]),
+                        (2, 3, history[0]["valid_from"]),
+                        (2, 2, target["valid_from"]),
+                        (2, 2, target["valid_from"] + timedelta(days=1)),
+                    ]
+                )
+            ],
+        )
+    with engine.connect() as conn:
+        selected = repo.diagnostic_history(conn, runs["historico"], 2, 2, target["valid_from"])
+        published = repo.diagnostic_publication(
+            conn, runs["vigente"], 7, 2, 2, datetime(2026, 1, 4)
+        )
+    assert {r["source_row"] for r in selected} == {r["source_row"] for r in history}
+    assert all(
+        not {"address", "company", "price_raw", "valid_from_raw", "alerts"} & r.keys()
+        for r in [*selected, published]
+    )
+    assert published["price"] == target["price"]
+
+
+def test_last_station_price_older_than_window_is_preserved(engine, prepared):
+    runs, history, target, manifest = prepared
+    model = json.loads(manifest.read_bytes())
+    model["chosen_method"] = "ultimo_precio"
+    write(manifest, model)
+    with engine.begin() as conn:
+        conn.execute(
+            station_prices.update()
+            .where(station_prices.c.run_id == runs["historico"], station_prices.c.station_id == 7)
+            .values(valid_from=target["valid_from"] - timedelta(days=60))
+        )
+        conn.execute(
+            station_prices.insert(),
+            {
+                **history[0],
+                "id": None,
+                "run_id": runs["historico"],
+                "station_id": 8,
+                "source_row": 2000,
+                "price": 115,
+            },
+        )
+    with client(engine) as http:
+        response = http.get(URL, headers=AUTH)
+    assert response.status_code == 200
+    assert response.json()["reference_ars_per_l"] == "125.000"
+    assert response.json()["official_price_ars_per_l"] == "150.000"

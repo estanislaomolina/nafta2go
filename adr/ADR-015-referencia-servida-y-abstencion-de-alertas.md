@@ -43,5 +43,7 @@ de qué conocía el sistema entonces. No estima el precio actual de datos antigu
 * `not_calibrated` no significa normal ni anómalo. No cambia ranking ni vigencia.
 * Tests de paridad con entrenamiento, fallback de bandera, causalidad, datos
   ausentes, manifiestos incompatibles, acceso y ausencia de escrituras.
-* Leer historia por solicitud no acredita p95 ni capacidad bajo carga. Faltan
+* Las lecturas proyectan campos y filtran producto/franja/tiempo en SQL; no
+  recortan el precio previo por antigüedad. Aún no acreditan p95 ni capacidad
+  bajo carga. Faltan
   calibración, serving aprendido, métricas e integración visual; #19 sigue abierta.
