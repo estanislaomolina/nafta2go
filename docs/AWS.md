@@ -1,5 +1,8 @@
 # AWS: preparación del sandbox y base de red
 
+La siguiente etapa se prepara en [servidor de demo](AWS-DEMO.md): plantilla
+propuesta, acceso SSM y apagado por arranque. Todavía no se creó cómputo.
+
 ## Estado verificado por el titular
 
 El 11/11/2026 el titular reportó un lease activo de **USD 17 totales**, con

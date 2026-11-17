@@ -1,0 +1,167 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Nafta2Go: servidor de demo por SSM; crea computo facturable, sin acceso publico a la aplicacion.",
+  "Parameters": {
+    "VpcId": {
+      "Type": "AWS::EC2::VPC::Id",
+      "Description": "VPC del stack nafta2go-network"
+    },
+    "SubnetId": {
+      "Type": "AWS::EC2::Subnet::Id",
+      "Description": "Subred con ruta al internet gateway"
+    },
+    "ImageId": {
+      "Type": "AWS::EC2::Image::Id",
+      "Description": "AMI Amazon Linux 2023 x86_64 revisada en Ohio; registrar el ID antes de crear el change set"
+    }
+  },
+  "Resources": {
+    "DemoSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Nafta2Go demo: sin entrada; salida HTTPS para SSM y dependencias",
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "SecurityGroupIngress": [],
+        "SecurityGroupEgress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 443,
+            "ToPort": 443,
+            "CidrIp": "0.0.0.0/0"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "Nafta2Go"
+          },
+          {
+            "Key": "ManagedBy",
+            "Value": "CloudFormation"
+          }
+        ]
+      }
+    },
+    "DemoRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ec2.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "Nafta2Go"
+          },
+          {
+            "Key": "ManagedBy",
+            "Value": "CloudFormation"
+          }
+        ]
+      }
+    },
+    "DemoProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Roles": [
+          {
+            "Ref": "DemoRole"
+          }
+        ]
+      }
+    },
+    "DemoInstance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": {
+          "Ref": "ImageId"
+        },
+        "InstanceType": "t3.small",
+        "IamInstanceProfile": {
+          "Ref": "DemoProfile"
+        },
+        "CreditSpecification": {
+          "CPUCredits": "standard"
+        },
+        "Monitoring": false,
+        "InstanceInitiatedShutdownBehavior": "stop",
+        "MetadataOptions": {
+          "HttpTokens": "required",
+          "HttpPutResponseHopLimit": 1,
+          "HttpEndpoint": "enabled"
+        },
+        "NetworkInterfaces": [
+          {
+            "DeviceIndex": "0",
+            "AssociatePublicIpAddress": true,
+            "DeleteOnTermination": true,
+            "SubnetId": {
+              "Ref": "SubnetId"
+            },
+            "GroupSet": [
+              {
+                "Ref": "DemoSecurityGroup"
+              }
+            ]
+          }
+        ],
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/xvda",
+            "Ebs": {
+              "VolumeType": "gp3",
+              "VolumeSize": 16,
+              "Encrypted": true,
+              "DeleteOnTermination": true
+            }
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": "#!/bin/bash\nset -euo pipefail\ncat > /etc/systemd/system/nafta2go-demo-stop.service <<'UNIT'\n[Unit]\nDescription=Apagar la instancia temporal de Nafta2Go\n[Service]\nType=oneshot\nExecStart=/usr/bin/systemctl poweroff\nUNIT\ncat > /etc/systemd/system/nafta2go-demo-stop.timer <<'UNIT'\n[Unit]\nDescription=Limitar cada arranque de demo de Nafta2Go a dos horas\n[Timer]\nOnBootSec=2h\nUnit=nafta2go-demo-stop.service\n[Install]\nWantedBy=timers.target\nUNIT\nsystemctl daemon-reload\nsystemctl enable --now nafta2go-demo-stop.timer\ndnf install -y docker\nsystemctl enable --now docker\n"
+        },
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "Nafta2Go"
+          },
+          {
+            "Key": "ManagedBy",
+            "Value": "CloudFormation"
+          },
+          {
+            "Key": "Name",
+            "Value": {
+              "Ref": "AWS::StackName"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "InstanceId": {
+      "Value": {
+        "Ref": "DemoInstance"
+      }
+    },
+    "Access": {
+      "Value": "AWS-StartPortForwardingSession al puerto 8000; sin SSH ni HTTP entrante"
+    }
+  }
+}
