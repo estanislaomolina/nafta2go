@@ -1,0 +1,29 @@
+{
+  "identical_bytes": true,
+  "report_sha256": "00e7168eb658f54851cb22ed1d6b6b1edeafc8cc639172b8fdf92ac046b15fd9",
+  "parameters_unchanged": true,
+  "model_loaded": false,
+  "runtime_enabled": false,
+  "profile": {
+    "calibration": {
+      "examples": 3288,
+      "first_target": "2026-01-01T03:00:00+00:00",
+      "last_target": "2026-06-30T23:44:00+00:00",
+      "stations": 70,
+      "station_product_time_groups": 1646
+    },
+    "audit": {
+      "examples": 574,
+      "first_target": "2026-07-01T03:00:00+00:00",
+      "last_target": "2026-10-23T09:00:00+00:00",
+      "stations": 61,
+      "station_product_time_groups": 288
+    }
+  },
+  "environment": {
+    "python": "3.12.12",
+    "sqlalchemy": "2.1.9",
+    "tzdata": "2026.6",
+    "scikit-learn": "1.9.1"
+  }
+}

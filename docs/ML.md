@@ -1,4 +1,4 @@
-# Preparación y baseline temporal de precios — MVP-04 en progreso
+# Preparación, entrenamiento y evaluación temporal de precios
 
 El primer serving de referencias seleccionadas se describe en [API](API.md) y
 [ADR-015](../adr/ADR-015-referencia-servida-y-abstencion-de-alertas.md): reutiliza
@@ -134,8 +134,9 @@ Lectura:
 - YPF tiene solo 36 ejemplos en la validación 2026; sus métricas por bandera no son
   concluyentes.
 
-Pendiente para el equipo: decidir si se adopta la referencia elegida para #19 o si se
-evalúa el protocolo de validación cruzada temporal con una captura futura.
+El serving de ADR-015 usa la referencia elegida para #19. Evaluar otra selección
+requiere un protocolo explícito y otro período de evaluación; no se cambia la
+elección por las métricas de validación ya inspeccionadas.
 
 ## Evaluación de umbrales candidatos (MVP-05)
 
@@ -158,3 +159,14 @@ filas individuales ni carga del pickle no elegido. La tasa de excedencias no es
 precisión, recall ni probabilidad de error del precio. Una corrida sintética sólo
 verifica el software. Falta evaluar el histórico real y revisar la política antes
 de activar alertas o ranking conservador; [ADR-017](../adr/ADR-017-evaluacion-temporal-de-umbrales.md).
+
+## Auditoría real del 17/11/2026
+
+La [evidencia de auditoría](evidencia/alertas-precios-2026-11-17/README.md) conserva
+el protocolo previo, manifiestos recibidos, reporte y reproducción exacta. Con
+cuantil 0,95 se obtienen candidatos de 5,4244% para súper y 5,4570% para premium:
+0 excedencias en 574 ejemplos auditados. No valida sensibilidad ni una política
+para producción; las franjas contienen publicaciones relacionadas entre sí.
+El ranking sigue siendo determinístico y `runtime_enabled=false`. #19/#20 siguen
+abiertos. La comparación nominal/relativa del baseline v2 se documenta por separado
+para responder al seguimiento de #100 sin confundir capturas v1 y v2.
