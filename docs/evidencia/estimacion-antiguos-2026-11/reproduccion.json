@@ -1,0 +1,14 @@
+{
+  "format_version": 1,
+  "code_commit": "3447783",
+  "tag": "evidencia/estimacion-antiguos-2026-11",
+  "git_dirty": false,
+  "command": "python -m nafta2go.ml.evaluate_stale --dataset \"$DATASET_DIR\" --output \"$OUTPUT_DIR\" --selection-start 2025-01-01T00:00:00-03:00",
+  "dataset_dir": "evaluacion-v2 del paquete ml-precios-v2-2026-11-15.tar.gz",
+  "runs": [
+    {"output": "stale-1", "sha256": "eb838d47d6eab4671d41574087bb54f7cb6cab113339ca13ea63f5f301132c71"},
+    {"output": "stale-2", "sha256": "eb838d47d6eab4671d41574087bb54f7cb6cab113339ca13ea63f5f301132c71"}
+  ],
+  "identical": true,
+  "model_loaded": false
+}
