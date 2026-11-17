@@ -16,7 +16,6 @@ El workflow [ci.yml](../.github/workflows/ci.yml) corre en cada push y PR hacia
 | `Tests` | `pytest` con pytest-cov sobre `nafta2go` y las dependencias de `requirements-dev.txt` | Falla un test, la cobertura de líneas es < 90% o el job supera 5 min |
 | `Secretos` | [gitleaks](https://github.com/gitleaks/gitleaks) sobre los commits nuevos de cada push y PR | Aparece algo con forma de credencial (API keys, tokens, claves privadas) |
 | `Contenedores` | Construye la imagen con `docker compose build`, corre las migraciones, verifica el esquema y reproduce la consulta completa con la matriz real guardada | El `Dockerfile` no construye, una migración falla dentro del contenedor, el esquema no llega a `head` o la consulta no produce un resultado histórico trazable |
-
 | `Web y accesibilidad` | Flujos de navegador, teclado, privacidad y accesibilidad con Chromium/Playwright y axe-core | Falla un escenario o aparece una violación de accesibilidad en los estados cubiertos |
 
 `Docs y notebooks`, `Lint`, `Tests` y `Secretos` son **checks requeridos** en el
