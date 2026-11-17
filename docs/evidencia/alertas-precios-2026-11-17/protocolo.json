@@ -1,0 +1,26 @@
+{
+  "format_version": 1,
+  "purpose": "offline_candidate_evaluation_not_runtime_policy",
+  "selected_method": "bandera_reciente",
+  "parameters": {
+    "audit_start": "2026-07-01T00:00:00-03:00",
+    "quantile": 0.95,
+    "min_examples": 30
+  },
+  "rationale": {
+    "audit_start": "Separar el primer semestre de 2026 del período posterior disponible, sin optimizar el corte con las excedencias.",
+    "quantile": "Evaluar un único candidato de cola superior al 5%; no implica 95% de confianza ni calidad validada.",
+    "min_examples": "Conservar el mínimo del evaluador, sin reducirlo para obtener resultados por franja."
+  },
+  "inputs": {
+    "archive_sha256": "94936a01e0f67371b9d4e1dfebe6fe04013ef0b68da56ccb76dda8f1d62adaf2",
+    "dataset_manifest_sha256": "f5094a384516448b06ecd05a71b8679384c9b6cb7ed6b9385b0a8795e2d4162b",
+    "model_manifest_sha256": "91cb07a3ac0b99edd70e12b203318c1b498a1d06766011cbda5dd557852b5892"
+  },
+  "limitations": [
+    "Parámetros registrados en Git antes de esta corrida, sin registro externo ni aprobación de política productiva.",
+    "El año 2026 ya tiene métricas globales publicadas; esta evaluación no es prospectiva ni una prueba ciega nueva.",
+    "No cambiar el corte, cuantil o soporte según la auditoría sin reservar otro período de evaluación.",
+    "Los manifiestos recibidos conservan git_dirty=true; el hash de archivos coincide con la evidencia publicada."
+  ]
+}
