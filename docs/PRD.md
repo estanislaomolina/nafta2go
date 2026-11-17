@@ -170,3 +170,8 @@ La principal limitación observada es la vigencia de los precios. En la explorac
   - La autonomía depende de los datos proporcionados por el usuario.
   - Las rutas, distancias y duraciones dependen de un proveedor externo.
   - El diagnóstico estadístico no determina que un precio sea verdadero o incorrecto.
+
+La [auditoría retrospectiva del 17/11/2026](evidencia/alertas-precios-2026-11-17/README.md)
+registra candidatos y sus límites, sin cambiar los compromisos RF10/RF11: todavía
+faltan política de alertas e integración del ranking conservador. La factibilidad
+y el ranking general permanecen determinísticos, según la devolución de Entrega 2.

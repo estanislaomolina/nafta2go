@@ -486,3 +486,9 @@ selección siguen recibiendo parámetros explícitos. Configuración inválida
 desactiva readiness y devuelve error seguro, sin rutas. No habilita override
 público, precios mayores de treinta días ni cambios administrativos en vivo;
 [contrato](COBERTURA.md#vigencia-configurable-en-mvp).
+
+La auditoría offline de alertas se reproduce con el protocolo y manifiestos de
+[17/11/2026](evidencia/alertas-precios-2026-11-17/README.md). El método seleccionado
+continúa siendo la referencia `bandera_reciente`; los modelos comparados no se
+sirven por haber ganado sólo en validación. Los umbrales siguen siendo candidatos
+inactivos y la API conserva la abstención; no se completa RF10/RF11 por esta corrida.
