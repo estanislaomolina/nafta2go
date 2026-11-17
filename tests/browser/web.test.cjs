@@ -348,3 +348,113 @@ test('panel: código pegado con espacios conserva acceso y header normalizado', 
     assert.ok(await page.locator('#operation-results article').count());
   } finally { await page.context().close(); }
 });
+
+// Respuestas de referencia sintéticas: verifican presentación, no calidad estadística.
+async function referenceScenario(page) {
+  let data;
+  await ready(page);
+  await page.route('**/api/v1/recommendations', async route => {
+    const response = await route.fetch();
+    data = {...await response.json(), status: 'ready', data_run_id: 42};
+    await route.fulfill({response, json: data});
+  });
+  await send(page);
+  const row = data.evaluations.find(r => r.station_id === data.alternatives[0].station_id);
+  const answer = {scope: 'published_price_retrospective', status: 'reference_only',
+    station_id: Number(row.station_id), product_id: 2, schedule_id: 2, data_run_id: 42,
+    official_price_ars_per_l: row.price_ars_per_l,
+    published_at: new Date(row.published_at_local + '-03:00').toISOString(),
+    reference_ars_per_l: '1000.000', difference_ars_per_l: '25.000',
+    alert_level: 'not_calibrated', method: 'bandera_reciente', version: 'e'.repeat(64)};
+  return {data, row, answer, card: page.locator('article').first()};
+}
+async function readReference(page, card) {
+  await card.locator('.price-reference-button').click();
+  await page.waitForFunction(() => !document.querySelector('.price-reference-button').disabled);
+  return card.locator('.price-reference-result').innerText();
+}
+test('referencia: sólo bajo pedido, con consulta congelada, privacidad y texto seguro', async () => {
+  const page = await pageFor(); const requests = [];
+  try {
+    page.on('request', r => { if (r.url().includes('/price-diagnostics/')) requests.push(r); });
+    const {answer, card} = await referenceScenario(page);
+    assert.equal(requests.length, 0);
+    await page.locator('[name=fuel_type]').selectOption('premium');
+    await page.locator('[name=schedule_id]').selectOption('3');
+    await page.locator('#access').fill('  codigo-web-de-prueba  ');
+    await page.context().addCookies([{name: 'private-cookie', value: 'qa', url: base}]);
+    answer.version = '<img src=x onerror="window.referenceAttack=1">';
+    await page.route('**/api/v1/price-diagnostics/**', route => route.fulfill({json: answer}));
+    const text = await readReference(page, card);
+    assert.match(text, /Referencia histórica de esta publicación/);
+    assert.match(text, /No estima el precio actual/); assert.match(text, /no hay una alerta validada/);
+    const url = new URL(requests[0].url());
+    assert.equal(url.search, '?product_id=2&schedule_id=2');
+    assert.equal(requests[0].headers().authorization, 'Bearer codigo-web-de-prueba');
+    assert.equal(requests[0].headers().cookie, undefined);
+    assert.equal(new URL(page.url()).search, '');
+    await card.locator('.price-reference-result summary').click();
+    assert.match(await card.locator('.price-reference-result').innerText(), /<img/);
+    assert.equal(await card.locator('.price-reference-result img').count(), 0);
+    assert.equal(await page.evaluate(() => window.referenceAttack), undefined);
+    assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
+    await accessible(page);
+  } finally { await page.context().close(); }
+});
+test('referencia: errores, cambios de publicación y abstención retiran datos anteriores', async () => {
+  const page = await pageFor();
+  try {
+    const {answer, card} = await referenceScenario(page); let reply = {json: answer};
+    await page.route('**/api/v1/price-diagnostics/**', route => reply === 'network' ? route.abort('failed') : route.fulfill(reply));
+    assert.match(await readReference(page, card), /Referencia histórica/);
+    for (const [value, expected] of [
+      [{status: 401, json: {detail: 'secreto'}}, /código de acceso/],
+      [{status: 404, json: {detail: 'secreto'}}, /Volvé a buscar/],
+      [{status: 503, json: {detail: 'secreto'}}, /no está disponible/],
+      [{json: {...answer, data_run_id: 99}}, /no coincide/],
+      [{json: {...answer, official_price_ars_per_l: '1'}}, /no coincide/],
+      [{json: {...answer, published_at: '2020-01-01T00:00:00Z'}}, /no coincide/],
+      [{json: {...answer, status: 'unavailable', reference_ars_per_l: null}}, /historia comparable/],
+      [{json: {...answer, alert_level: 'normal'}}, /referencia válida/],
+      [{status: 200, contentType: 'text/html', body: 'secreto'}, /Revisá la conexión/],
+      ['network', /Revisá la conexión/],
+    ]) {
+      reply = value; const text = await readReference(page, card);
+      assert.match(text, expected); assert.doesNotMatch(text, /secreto|Referencia histórica de esta publicación/);
+    }
+  } finally { await page.context().close(); }
+});
+test('referencia: cancelar al buscar o salir evita respuestas tardías y permite reintentar', async () => {
+  const page = await pageFor(); let release;
+  try {
+    const {answer, card} = await referenceScenario(page);
+    const delayed = new Promise(resolve => { release = resolve; });
+    await page.route('**/api/v1/price-diagnostics/**', async route => { await delayed; await route.fulfill({json: answer}).catch(() => {}); });
+    const requested = page.waitForRequest(r => r.url().includes('/price-diagnostics/'));
+    await card.locator('.price-reference-button').click(); await requested;
+    await send(page); release();
+    assert.equal(await page.locator('.price-reference-result').first().innerText(), '');
+    await page.unroute('**/api/v1/price-diagnostics/**');
+    await page.route('**/api/v1/price-diagnostics/**', route => route.fulfill({json: answer}));
+    await readReference(page, page.locator('article').first());
+    await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+    assert.equal(await page.locator('#access').inputValue(), '');
+    assert.equal(await page.locator('.price-reference-result').first().innerText(), '');
+    await page.locator('#access').fill('codigo-web-de-prueba');
+    assert.match(await readReference(page, page.locator('article').first()), /Referencia histórica/);
+  } finally { release?.(); await page.context().close(); }
+});
+test('referencia: espera acotada y ausencia en escenarios históricos', async () => {
+  const page = await pageFor(); let release;
+  try {
+    await ready(page); await send(page);
+    assert.equal(await page.locator('.price-reference-button').count(), 0);
+    const {answer, card} = await referenceScenario(page);
+    await page.clock.install(); const delayed = new Promise(resolve => { release = resolve; });
+    await page.route('**/api/v1/price-diagnostics/**', async route => { await delayed; await route.fulfill({json: answer}).catch(() => {}); });
+    await card.locator('.price-reference-button').click(); await page.clock.runFor(15001);
+    await page.waitForFunction(() => !document.querySelector('.price-reference-button').disabled);
+    assert.match(await card.locator('.price-reference-result').innerText(), /demoró demasiado/);
+    release();
+  } finally { release?.(); await page.context().close(); }
+});

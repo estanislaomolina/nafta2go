@@ -28,7 +28,7 @@ La referencia no modifica motor, precio oficial, ranking ni vigencia.
 
 Es optativo: sin estas variables, la consulta habitual sigue funcionando y
 readiness no exige diagnóstico. Faltan calibración de alertas, serving aprendido
-e integración visual antes de cerrar #19. Alternativas en
+y ranking conservador antes de cerrar #19. La [web](WEB.md#referencia-histórica-de-una-publicación) permite consultar esta referencia bajo pedido. Alternativas en
 [ADR-015](../adr/ADR-015-referencia-servida-y-abstencion-de-alertas.md).
 
 La presentación HTTP usa FastAPI ([ADR-009](../adr/ADR-009-api-http-con-fastapi.md))
