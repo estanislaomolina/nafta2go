@@ -26,6 +26,13 @@ anomalía ni error. Sin contexto devuelve 200/`unavailable`, referencia/diferenc
 nulas; sin publicación, 404; sin datos/configuración compatibles, 503 seguro.
 La referencia no modifica motor, precio oficial, ranking ni vigencia.
 
+Las lecturas filtran en SQL la última publicación no futura de la estación y el
+histórico del mismo producto/franja estrictamente anterior al objetivo. Sólo
+materializan los campos de preparación temporal. El histórico conserva precios
+antiguos del grupo: el último precio propio puede ser anterior a la ventana de
+medianas y sigue siendo necesario para el fallback. Esto reduce lecturas ajenas
+al diagnóstico; no acredita p95 ni un límite de memoria para un grupo grande.
+
 Es optativo: sin estas variables, la consulta habitual sigue funcionando y
 readiness no exige diagnóstico. Faltan calibración de alertas, serving aprendido
 e integración visual antes de cerrar #19. Alternativas en
