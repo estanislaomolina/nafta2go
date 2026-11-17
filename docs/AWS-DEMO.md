@@ -8,7 +8,8 @@ La [plantilla](../infra/aws/demo-server.json) prepara un host con Docker sobre l
 
 Ohio, una `t3.small` Linux, disco gp3 cifrado de 16 GiB, AMI x86_64 fijada al revisar
 el cambio, IMDSv2, rol `AmazonSSMManagedInstanceCore` y grupo sin entrada. Salida
-HTTPS con IPv4 pública asignada a la instancia, sin EIP ni NAT. La API continuará
+HTTPS por defecto con IPv4 pública asignada a la instancia, sin EIP ni NAT.
+Existe una excepción HTTP opcional y acotada para la fuente de Energía (abajo). La API continuará
 ligada a loopback; el túnel de Session Manager exige autorización IAM/SSO.
 No entrega una URL pública ni reemplaza la autenticación de conductor/administrador.
 
@@ -61,6 +62,35 @@ Revisar las cuatro altas (grupo, rol, profile e instancia), AMI, costo completo 
 permisos con el titular antes de ejecutar. No se incluyen secretos en parámetros
 ni UserData. Resolver una AMI actual no equivale a probarla: registrar su ID en la
 evidencia privada. No subir IDs de cuenta, sesiones ni credenciales al repo.
+
+## Excepción opcional para la ingesta pública
+
+El 17/11/2026 se verificó que el [catálogo oficial de precios](http://datos.energia.gob.ar/api/3/action/package_show?id=precios-en-surtidor)
+redirige HTTPS a HTTP y publica los CSV vigente e histórico en HTTP, en
+`datos.energia.gob.ar`. El [adaptador](../nafta2go/adapters/energy_source.py)
+usa ese contrato. Con la salida predeterminada sólo por 443, la ingesta desde el
+host queda bloqueada. La plantilla no descarga datos durante el bootstrap.
+
+`EnergyHttpCidr` queda vacío por defecto: no habilita el puerto 80. Para permitir
+la ingesta en una futura demo se debe verificar la IPv4 actual del catálogo,
+los CSV y sus redirecciones, y fijar **una única IPv4/32**. Por ejemplo, resolver
+el host desde el entorno de despliegue con `getent ahostsv4 datos.energia.gob.ar`
+y comprobar los destinos de las URLs devueltas por el catálogo. Si aparecen
+varias IP o cambia el host, revisar el alcance antes de preparar el cambio.
+No copiar una IP histórica sin verificarla ni ampliar a una subred o a internet.
+
+Una vez verificado el destino, agregar al comando anterior de preparación del
+change set `EnergyHttpCidr="${ENERGY_HTTP_CIDR:?}"`, junto con los otros parámetros.
+Revisar en el change set la salida TCP/80 hacia esa /32. El security group filtra
+IP, no nombres: un cambio de DNS puede requerir actualizar el parámetro. La
+excepción sólo permite salida; no abre entrada ni instala la aplicación.
+
+HTTP no autentica el origen ni cifra estos datos públicos. Los hashes registran
+contenido, pero no reemplazan TLS. No enviar credenciales por esta excepción:
+ORS conserva HTTPS y el acceso a la app sigue por SSM. También se puede conservar
+el valor vacío y transferir capturas verificadas desde otro entorno; esa
+transferencia todavía requiere implementación. [ADR-019](../adr/ADR-019-salida-http-acotada-de-energia.md)
+compara las alternativas. No se ejecutó ningún cambio en AWS para esta corrección.
 
 ## Verificación posterior y apagado
 

@@ -5,6 +5,8 @@ import re
 import subprocess
 from pathlib import Path
 
+import pytest
+
 TEMPLATE = json.loads(
     (Path(__file__).resolve().parents[2] / "infra/aws/demo-server.json").read_text()
 )
@@ -27,13 +29,32 @@ def test_compute_is_bounded_without_optional_billed_services():
     assert not any(r.get("DeletionPolicy") == "Retain" for r in RESOURCES.values())
 
 
-def test_ssm_access_does_not_open_ingress_and_only_uses_https_outbound():
+@pytest.mark.parametrize("energy_http", [False, True])
+def test_ssm_access_stays_closed_and_http_is_limited_to_explicit_host(energy_http):
     group = RESOURCES["DemoSecurityGroup"]["Properties"]
     assert group["VpcId"] == {"Ref": "VpcId"}
     assert not group.get("SecurityGroupIngress")
     assert group["SecurityGroupEgress"]  # Vacío habilita salida general por defecto.
+    effective = []
     for rule in group["SecurityGroupEgress"]:
-        assert (rule["IpProtocol"], rule["FromPort"], rule["ToPort"]) == ("tcp", 443, 443)
+        if "Fn::If" in rule:
+            condition, allowed, otherwise = rule["Fn::If"]
+            assert condition == "AllowEnergyHttp" and otherwise == {"Ref": "AWS::NoValue"}
+            if energy_http:
+                effective.append(allowed)
+        else:
+            effective.append(rule)
+    assert len(effective) == (2 if energy_http else 1)
+    for rule in effective:
+        assert rule["IpProtocol"] == "tcp" and rule["FromPort"] == rule["ToPort"]
+        if rule["ToPort"] == 80:
+            assert rule["CidrIp"] == {"Ref": "EnergyHttpCidr"}
+        else:
+            assert rule["ToPort"] == 443 and rule["CidrIp"] == "0.0.0.0/0"
+    assert TEMPLATE["Parameters"]["EnergyHttpCidr"]["Default"] == ""
+    assert TEMPLATE["Conditions"]["AllowEnergyHttp"] == {
+        "Fn::Not": [{"Fn::Equals": [{"Ref": "EnergyHttpCidr"}, ""]}]
+    }
     (interface,) = INSTANCE["NetworkInterfaces"]
     assert interface["GroupSet"] == [{"Ref": "DemoSecurityGroup"}]
     assert interface["SubnetId"] == {"Ref": "SubnetId"}
@@ -55,7 +76,9 @@ def test_disk_and_identity_do_not_leak_secrets_or_leave_retained_disks():
         {"Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"}
     ]
     assert "Policies" not in role
-    assert all("Default" not in p for p in TEMPLATE["Parameters"].values())
+    assert all(
+        "Default" not in TEMPLATE["Parameters"][key] for key in ("VpcId", "SubnetId", "ImageId")
+    )
     assert INSTANCE["ImageId"] == {"Ref": "ImageId"}  # AMI fijada al revisar el change set.
     script = INSTANCE["UserData"]["Fn::Base64"]
     assert "git clone" not in script and "TOKEN" not in script and "API_KEY" not in script
@@ -80,3 +103,19 @@ def test_stop_timer_is_enabled_each_boot_before_dependency_installation(tmp_path
         paths.append(str(path))
     assert len(paths) == 2
     subprocess.run(["systemd-analyze", "verify", *paths], check=True, capture_output=True)
+
+
+@pytest.mark.parametrize(
+    "value,valid",
+    [
+        ("", True),
+        ("168.101.26.134/32", True),
+        ("0.0.0.0/0", False),
+        ("168.101.26.0/24", False),
+        ("999.101.26.134/32", False),
+        ("datos.energia.gob.ar", False),
+    ],
+)
+def test_optional_http_cidr_only_accepts_one_ipv4(value, valid):
+    pattern = TEMPLATE["Parameters"]["EnergyHttpCidr"]["AllowedPattern"]
+    assert bool(re.fullmatch(pattern, value)) is valid
