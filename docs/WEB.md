@@ -72,3 +72,24 @@ Los enlaces abren otra pestaña sin referrer ni acceso a la ventana original;
 no cargan recursos externos ni consultan al proveedor al abrir la pantalla.
 La regresión de navegador verifica que los créditos estén visibles y preserva
 los recorridos de teclado, móvil emulado y análisis de accesibilidad existentes.
+
+
+## Referencia histórica de una publicación
+
+Para resultados de una ingesta vigente, cada alternativa ofrece «Consultar
+referencia de precio». Sólo al pulsarlo consulta el diagnóstico autenticado;
+no envía coordenadas y usa el producto/franja de la recomendación mostrada,
+aunque se edite el formulario. Los escenarios históricos no ofrecen ese control:
+el endpoint diagnostica la publicación de la última ingesta vigente.
+
+La respuesta debe coincidir en ingesta, estación, producto, franja, precio y fecha;
+si cambió la publicación se pide buscar de nuevo. La pantalla conserva el precio
+oficial y muestra referencia, diferencia, fecha y trazabilidad por separado.
+Explica que no estima el precio actual ni demuestra un error y que todavía no
+hay una alerta validada. No modifica la factibilidad ni el ranking.
+
+Falta de contexto, acceso, dependencia, red, respuesta inválida y timeout de quince
+segundos tienen mensajes seguros. Una búsqueda nueva o salir cancela las lecturas
+y retira referencias anteriores; el código sólo permanece en memoria de pestaña.
+No se agrega almacenamiento, polling ni requests a terceros. QA usa respuestas de
+referencia sintéticas; no acredita calidad del modelo ni disponibilidad real.

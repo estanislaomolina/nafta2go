@@ -20,10 +20,10 @@ sesiones del navegador del usuario ni consulta APIs de Google/ORS/Energía.
 El servidor no se usa para una demo productiva ni para afirmar rutas reales.
 Las otras respuestas interceptadas verifican estados de la presentación.
 
-Diecinueve pruebas cubren UC01/UC02 con teclado, descartes UC06, validación/corrección,
+La suite cubre UC01/UC02 con teclado, descartes UC06, validación/corrección,
 401, cuota, timeout, red, privacidad, geolocalización simulada/denegada, XSS y
 layouts de 1440, 390 y 320 px. Playwright 1.65.0 usa Chromium 158.0.8127.18;
-axe-core 4.14.0 revisa etiquetas WCAG 2/2.1 A-AA y 2.2 AA en doce estados.
+axe-core 4.14.0 revisa etiquetas WCAG 2/2.1 A-AA y 2.2 AA en los estados cubiertos.
 El entorno exacto, violaciones e incompletos quedan en JSON junto a las capturas.
 Cualquier violación automatizada falla la prueba; los incompletos se conservan
 para revisión humana. No se declara conformidad universal con WCAG.
@@ -54,3 +54,10 @@ Una regresión rechaza el código del conductor en el panel y permite el adminis
 
 El servidor de QA fija `NAFTA2GO_MAX_PRICE_AGE_DAYS=29` para comprobar una política
 no predeterminada y su presentación; sigue usando rutas sintéticas explícitas.
+
+El incremento de referencia de precios agrega cuatro casos: lectura opcional con
+consulta congelada y DOM seguro, errores/publicación cambiada/abstención, cancelación
+por búsqueda o salida y timeout/ausencia en escenarios históricos. Se intercepta
+la respuesta de diagnóstico y se rotula como sintética: no valida precisión ni
+supone que la base temporal contenga el histórico/modelo real. La corrida del
+17/11/2026 aprobó 23 pruebas; el nuevo estado de referencia se analiza con axe.

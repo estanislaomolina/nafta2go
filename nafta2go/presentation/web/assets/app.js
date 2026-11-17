@@ -16,6 +16,52 @@ function number(value, unit = "") {
 function date(value) {
   return new Intl.DateTimeFormat("es-AR", {dateStyle: "short", timeStyle: "short", hour12: false, timeZone: "America/Argentina/Buenos_Aires"}).format(new Date(value));
 }
+const referenceRequests = new Set();
+let referenceGeneration = 0;
+function clearReferences() {
+  referenceGeneration++; for (const request of referenceRequests) request.abort(); referenceRequests.clear();
+  for (const button of output.querySelectorAll('.price-reference-button')) button.disabled = false;
+  for (const result of output.querySelectorAll('.price-reference-result')) { result.replaceChildren(); result.removeAttribute('aria-busy'); }
+}
+function priceReference(data, row) {
+  const section = document.createElement('section'), button = node('button', 'Consultar referencia de precio', 'secondary price-reference-button');
+  button.type = 'button'; button.setAttribute('aria-label', 'Consultar referencia de precio de ' + (row.brand || 'estación ' + row.station_id) + ' ' + (row.address || ''));
+  const result = node('div', '', 'price-reference-result'); result.setAttribute('role', 'status'); result.tabIndex = -1;
+  const product = {super: 2, premium: 3}[data.query.fuel_type], schedule = data.query.schedule_id;
+  button.addEventListener('click', async () => {
+    const generation = referenceGeneration;
+    const controller = new AbortController(); referenceRequests.add(controller);
+    const timer = setTimeout(() => controller.abort(), 15000);
+    result.replaceChildren(node('p', 'Consultando referencia…')); result.setAttribute('aria-busy', 'true'); button.disabled = true;
+    try {
+      const response = await fetch('/api/v1/price-diagnostics/' + encodeURIComponent(row.station_id) + '?product_id=' + product + '&schedule_id=' + schedule,
+        {signal: controller.signal, credentials: 'omit', redirect: 'error', cache: 'no-store', referrerPolicy: 'no-referrer', headers: {Authorization: 'Bearer ' + access.value.trim()}});
+      if (!response.ok) throw new QueryError(response.status === 401 ? 'Revisá el código de acceso para consultar la referencia.' : response.status === 404 ? 'No encontramos esa publicación. Volvé a buscar estaciones.' : 'La referencia no está disponible por ahora. El precio publicado conserva su valor y fecha.');
+      const value = await response.json();
+      if (generation !== referenceGeneration || !result.isConnected) return;
+      const publication = Date.parse(row.published_at_local + '-03:00');
+      if (value.scope !== 'published_price_retrospective' || value.data_run_id !== data.data_run_id || String(value.station_id) !== String(row.station_id) || value.product_id !== product || value.schedule_id !== schedule || Number(value.official_price_ars_per_l) !== Number(row.price_ars_per_l) || Date.parse(value.published_at) !== publication)
+        throw new QueryError('La publicación cambió o no coincide con esta recomendación. Volvé a buscar estaciones.');
+      if (value.status === 'unavailable') throw new QueryError('No hay suficiente historia comparable para esta publicación. No se emite una alerta.');
+      if (value.status !== 'reference_only' || value.alert_level !== 'not_calibrated' || value.reference_ars_per_l == null || !Number.isFinite(Number(value.reference_ars_per_l)) || Number(value.reference_ars_per_l) <= 0 || value.difference_ars_per_l == null || !Number.isFinite(Number(value.difference_ars_per_l)))
+        throw new QueryError('No pudimos obtener una referencia válida para esta publicación.');
+      result.replaceChildren(node('h4', 'Referencia histórica de esta publicación'));
+      const details = document.createElement('dl');
+      for (const [label, text] of [['Referencia', number(value.reference_ars_per_l, ' ARS/L')], ['Diferencia: publicado menos referencia', number(value.difference_ars_per_l, ' ARS/L')]]) details.append(node('dt', label), node('dd', text));
+      result.append(details, node('p', 'Corresponde a la publicación del ' + date(value.published_at) + '. No estima el precio actual ni demuestra que el precio publicado sea incorrecto.', 'hint'), node('p', 'Todavía no hay una alerta validada para esta comparación.', 'notice warning'));
+      const trace = document.createElement('details'); trace.append(node('summary', 'Detalles de la referencia'));
+      const methods = {mediana_previa: 'Mediana comparable previa', ultimo_precio: 'Último precio publicado de la estación', bandera_reciente: 'Mediana reciente de la bandera'};
+      trace.append(node('p', (methods[value.method] || 'Referencia histórica') + ' · Versión: ' + value.version, 'source')); result.append(trace);
+    } catch (failure) {
+      if (generation !== referenceGeneration || !result.isConnected) return;
+      result.replaceChildren(node('p', failure.name === 'AbortError' ? 'La referencia demoró demasiado. Podés volver a intentar.' : failure instanceof QueryError ? failure.message : 'No pudimos consultar la referencia. Revisá la conexión e intentá más tarde.', 'notice warning'));
+    } finally {
+      clearTimeout(timer); referenceRequests.delete(controller);
+      if (generation === referenceGeneration && result.isConnected) { result.removeAttribute('aria-busy'); button.disabled = false; result.focus(); }
+    }
+  });
+  section.append(button, result); return section;
+}
 function show(data) {
   output.replaceChildren();
   output.append(node("p", "Vigencia máxima aplicada: " + data.query.max_price_age_days + " días respecto de la referencia de precios.", "hint"));
@@ -42,6 +88,7 @@ function show(data) {
     for (const [label, value] of values) detail.append(node("dt", label), node("dd", value));
     card.append(detail, node("p", "Publicado (hora Argentina): " + row.published_at_local.replace(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}).*/, "$3/$2/$1 $4"), "hint"));
     if (row.alerts.length) card.append(node("p", "Este dato tiene advertencias de calidad. Revisá su fuente y vigencia.", "notice warning"));
+    if (data.status === 'ready' && data.data_run_id != null && {super: 2, premium: 3}[data.query.fuel_type] && [2, 3].includes(data.query.schedule_id)) card.append(priceReference(data, row));
     const link = links.get(choice.station_id);
     if (link) {
       const url = new URL(link.url);
@@ -82,6 +129,7 @@ form.addEventListener("submit", async event => {
   body.schedule_id = Number(data.get("schedule_id"));
   const fields = [...form.querySelectorAll("fieldset")], disabled = fields.map(field => field.disabled);
   fields.forEach(field => field.disabled = true);
+  clearReferences();
   error.hidden = true; error.textContent = ""; output.replaceChildren(); output.setAttribute("aria-busy", "true");
   status.textContent = "Buscando estaciones…"; submit.disabled = true; submit.textContent = "Buscando…";
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 60000);
@@ -112,5 +160,5 @@ document.querySelector("#locate").addEventListener("click", event => {
     notice.textContent = "Ubicación completada. Confirmá que esté dentro de CABA."; button.disabled = false; submit.disabled = false;
   }, () => { notice.textContent = "No pudimos obtener tu ubicación. Cargá las coordenadas manualmente."; button.disabled = false; submit.disabled = false; }, {timeout: 10000, maximumAge: 0});
 });
-window.addEventListener("pagehide", () => access.value = "");
+window.addEventListener("pagehide", () => { access.value = ""; clearReferences(); });
 submit.disabled = false;
