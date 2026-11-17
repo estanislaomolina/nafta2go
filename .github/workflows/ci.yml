@@ -51,6 +51,8 @@ jobs:
         run: ruff check .
       - name: Ruff format
         run: ruff format --check .
+      - name: Validar plantillas CloudFormation sin crear recursos
+        run: cfn-lint -r us-east-2 -t infra/aws/*.json
       - name: Validar unidades de ingesta y monitor
         run: systemd-analyze verify deploy/nafta2go-*.service deploy/nafta2go-*.timer
 

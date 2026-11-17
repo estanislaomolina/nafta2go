@@ -34,3 +34,6 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 | [ADR-014](ADR-014-seleccion-de-modelo-de-precios.md) | Selección del método de referencia de precios sin usar la validación | Propuesto |
 | [ADR-015](ADR-015-referencia-servida-y-abstencion-de-alertas.md) | Referencia seleccionada servida y abstención de alertas sin calibración | Propuesto |
 | [ADR-016](ADR-016-acceso-administrativo-separado.md) | Acceso administrativo separado del código de conductor | Propuesto |
+| [ADR-018](ADR-018-servidor-efimero-de-demo.md) | Servidor efímero de demo con acceso por Session Manager | Propuesto |
+
+ADR-017 se revisa en la PR #106.
