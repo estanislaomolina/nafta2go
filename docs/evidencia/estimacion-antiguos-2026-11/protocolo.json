@@ -1,0 +1,39 @@
+{
+  "format_version": 1,
+  "issue": 57,
+  "purpose": "offline_stale_price_estimate_evaluation_not_runtime_policy",
+  "status": "propuesto_pendiente_de_confirmacion_del_equipo",
+  "objetivo": "Precio publicado en un reingreso: publicación cuyo precio previo propio (misma estación, producto y franja) tiene más de 30 días. Es un proxy: el precio actual de una estación que no vuelve a publicar no es observable.",
+  "inputs": {
+    "archive_sha256": "94936a01e0f67371b9d4e1dfebe6fe04013ef0b68da56ccb76dda8f1d62adaf2",
+    "dataset_manifest_sha256": "f5094a384516448b06ecd05a71b8679384c9b6cb7ed6b9385b0a8795e2d4162b",
+    "dataset_sha256": "ea952f51479ca2493e6dbc15428d77bf552db919ccde4010011a1c8219a6f25e",
+    "features_version": "price-temporal-v2"
+  },
+  "parameters": {
+    "min_gap_days": 30,
+    "comparacion": "estricta (>): 30,0 días sigue siendo vigente, igual que coverage_rules",
+    "segmentos_antiguedad": ["31_a_60", "61_a_120", "mas_de_120"],
+    "metodos": ["ultimo_precio", "ultimo_ajustado", "bandera_reciente", "mediana_previa", "ridge", "boosting"],
+    "seleccion": {
+      "inicio": "2025-01-01T00:00:00-03:00",
+      "criterio": "menor MAPE sobre los reingresos del período de selección (train desde el inicio)",
+      "ajuste_modelos": "ridge y boosting se ajustan con todos los ejemplos de train anteriores al inicio; para validación se reajustan con todo train",
+      "validacion": "reingresos de la partición validación 2026, reportados sin reelegir"
+    },
+    "min_examples": 30,
+    "seed": 0
+  },
+  "criterio_adopcion": {
+    "regla": "Se adopta como estimación rotulada sólo si el método elegido cumple en validación las tres condiciones; si no, se difiere.",
+    "max_mape": 0.03,
+    "max_p90_relative": 0.08,
+    "mejor_que_ultimo_precio_en_cada_segmento_con_soporte": true
+  },
+  "limitations": [
+    "Sesgo de selección: las estaciones que vuelven a publicar pueden diferir de las que no vuelven.",
+    "La fecha de vigencia se usa como proxy de disponibilidad, como en ADR-013.",
+    "El año 2026 ya tiene métricas globales publicadas (ADR-014, #110): no es una prueba prospectiva ni ciega.",
+    "Umbrales fijados antes de la corrida real; no se ajustan después de ver resultados sin reservar otro período."
+  ]
+}
