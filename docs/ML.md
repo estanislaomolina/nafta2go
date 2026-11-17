@@ -136,3 +136,25 @@ Lectura:
 
 Pendiente para el equipo: decidir si se adopta la referencia elegida para #19 o si se
 evalúa el protocolo de validación cruzada temporal con una captura futura.
+
+## Evaluación de umbrales candidatos (MVP-05)
+
+`python -m nafta2go.ml.evaluate_alerts --dataset DIR --model DIR --output DIR`
+requiere además `--audit-start` (fecha ISO con zona) y `--quantile` (entre 0 y 1).
+No hay cuantil ni corte predeterminados: fijarlos antes de examinar la auditoría.
+La validación del dataset se divide en calibración anterior al corte y auditoría
+posterior; el entrenamiento y selección previos no cambian. La porción usada para
+calibrar deja de ser una validación independiente. No reajustar con la auditoría.
+
+El reporte `alert-evaluation.json` conserva hashes y evalúa por producto/franja
+la desviación relativa respecto de la referencia elegida, con el mismo fallback y
+redondeo que la API. Usa cuantil empírico por rango superior y excedencia estricta;
+`--min-examples` exige por defecto 30 ejemplos en cada período por segmento.
+Sin soporte informa abstención; sin algún ejemplo en ambos períodos falla. La
+salida debe ser nueva y se publica mediante staging/renombrado.
+
+Es un reporte fuera de producción (`runtime_enabled=false`), sin ubicaciones,
+filas individuales ni carga del pickle no elegido. La tasa de excedencias no es
+precisión, recall ni probabilidad de error del precio. Una corrida sintética sólo
+verifica el software. Falta evaluar el histórico real y revisar la política antes
+de activar alertas o ranking conservador; [ADR-017](../adr/ADR-017-evaluacion-temporal-de-umbrales.md).

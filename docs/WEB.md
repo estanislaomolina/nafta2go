@@ -62,3 +62,13 @@ QA cubre teclado, errores, cancelación, timeout, regreso a la página, XSS y
 390/320 px emulados. Las capturas de operación son datos de prueba: el caso
 de fallo posterior al éxito y su hash son sintéticos; no son evidencia de una
 ingesta real. Falta validación con operador, teléfono físico y lector de pantalla.
+
+
+## Atribución de rutas
+
+El pie de la consulta identifica a openrouteservice by HeiGIT y a OpenStreetMap
+contributors, con enlace al proveedor y a la página de copyright/licencia ODbL.
+Los enlaces abren otra pestaña sin referrer ni acceso a la ventana original;
+no cargan recursos externos ni consultan al proveedor al abrir la pantalla.
+La regresión de navegador verifica que los créditos estén visibles y preserva
+los recorridos de teclado, móvil emulado y análisis de accesibilidad existentes.

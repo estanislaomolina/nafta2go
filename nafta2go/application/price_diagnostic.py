@@ -24,6 +24,11 @@ class DiagnosticUnavailable(Exception):
     """Falta configuración compatible o datos trazables; no exportar el error original."""
 
 
+def reference_price(features, method):
+    reference = next(features[key] for key in METHODS[method] if features[key] is not None)
+    return Decimal(str(reference)).quantize(Decimal("0.001"))
+
+
 def _selection():
     try:
         if any(
@@ -113,13 +118,7 @@ def price_diagnostic(engine, station_id, product_id, schedule_id, now):
         ),
         None,
     )
-    reference = None
-    if example:
-        features = example["features"]
-        reference = next(
-            features[key] for key in METHODS[model["chosen_method"]] if features[key] is not None
-        )
-    value = Decimal(str(reference)).quantize(Decimal("0.001")) if reference is not None else None
+    value = reference_price(example["features"], model["chosen_method"]) if example else None
     return {
         "scope": "published_price_retrospective",
         "status": "reference_only" if value is not None else "unavailable",
