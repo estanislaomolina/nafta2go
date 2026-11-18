@@ -20,7 +20,8 @@ sesiones del navegador del usuario ni consulta APIs de Google/ORS/Energía.
 El servidor no se usa para una demo productiva ni para afirmar rutas reales.
 Las otras respuestas interceptadas verifican estados de la presentación.
 
-La suite cubre UC01/UC02 con teclado, descartes UC06, validación/corrección,
+La suite cubre UC01/UC02 con teclado, descartes UC06, estimaciones rotuladas de
+precios desactualizados, validación/corrección,
 401, cuota, timeout, red, privacidad, geolocalización simulada/denegada, XSS y
 layouts de 1440, 390 y 320 px. Playwright 1.65.0 usa Chromium 158.0.8127.18;
 axe-core 4.14.0 revisa etiquetas WCAG 2/2.1 A-AA y 2.2 AA en los estados cubiertos.
