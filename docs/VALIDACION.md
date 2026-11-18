@@ -50,7 +50,9 @@ Sobre las 123 recomendaciones guardadas en cada medición (120 más 3 de
 calentamiento, todas del escenario histórico): trazabilidad 123/123, frescura
 1.230/1.230 precios evaluados y privacidad 123/123. La prueba integral
 (`tests/integration/test_local_mvp.py`) audita además tres recomendaciones de
-ingestas vigentes hechas por HTTP, con 100 % en los tres criterios.
+ingestas vigentes hechas por HTTP, con 100 % en los tres criterios. Todas son
+recomendaciones generadas para la validación: la auditoría todavía no corrió sobre la
+base de un despliegue real (#22).
 
 ## Requisitos funcionales
 
@@ -64,7 +66,7 @@ ingestas vigentes hechas por HTTP, con 100 % en los tres criterios.
 | RF06 Tres alternativas | Cumple | `tests/test_ranking.py`, `tests/application/test_recommendation.py` | — |
 | RF07 Explicar cada resultado | Cumple | `tests/application/test_query.py`, `tests/browser/web.test.cjs`, [WEB](WEB.md) | Prueba de comprensión con usuarios (ver criterios) |
 | RF08 Ingesta diaria | Cumple | `tests/services/test_ingestion.py`, `tests/normalization/`, [INGESTA](INGESTA.md), [ADR-008](../adr/ADR-008-programacion-de-ingesta.md) | Operación continua: ver criterio de ingesta |
-| RF09 Vigencia configurable | Cumple | `tests/application/test_coverage_rules.py`, frescura 100 % en la auditoría | — |
+| RF09 Vigencia configurable | Cumple | `tests/application/test_coverage_rules.py`, frescura 100 % en la auditoría de las recomendaciones generadas en la medición y la prueba integral | — |
 | RF10 Diagnóstico del precio | Parcial | `tests/presentation/test_price_diagnostic.py`, [ADR-015](../adr/ADR-015-referencia-servida-y-abstencion-de-alertas.md) | Sirve la referencia y su versión, pero `alert_level` sigue en `not_calibrated`: falta una política de alertas aprobada (#19) |
 | RF11 Ranking conservador | Pendiente | Auditoría de umbrales en [ML](ML.md#auditoría-real-del-17112026) | Depende de la política de alertas (#20) |
 | RF12 Autenticación administrativa | Cumple | `tests/presentation/test_ingestion_status.py`, `tests/presentation/test_http.py`, [ADR-016](../adr/ADR-016-acceso-administrativo-separado.md) | — |
@@ -78,9 +80,9 @@ ingestas vigentes hechas por HTTP, con 100 % en los tres criterios.
 |---|---|---|---|
 | RNF01 Rendimiento | Parcial | Medición en proceso y composición con ORS (arriba) | Lote real de punta a punta con ORS, UC01 y UC02 |
 | RNF02 Disponibilidad | Cumple | `tests/adapters/test_openrouteservice.py` (401/403/429/5xx, timeout, matriz inválida) | — |
-| RNF03 Privacidad | Cumple | Auditoría 100 %, `tests/integration/test_local_mvp.py`, `tests/presentation/test_telemetry.py` | — |
+| RNF03 Privacidad | Cumple | Auditoría 100 % sobre las recomendaciones generadas en la medición y la prueba integral, `tests/integration/test_local_mvp.py`, `tests/presentation/test_telemetry.py` | Auditar la base del despliegue (#22) |
 | RNF04 Seguridad | Cumple | Check Secretos del CI, pruebas de acceso administrativo, [CALIDAD](CALIDAD.md) | — |
-| RNF05 Trazabilidad | Cumple | Auditoría 100 %, restricción `ck_recommendations_data_origin`, `tests/persistence/test_repository.py` | — |
+| RNF05 Trazabilidad | Cumple | Auditoría 100 % sobre las recomendaciones generadas en la medición y la prueba integral, restricción `ck_recommendations_data_origin`, `tests/persistence/test_repository.py` | Auditar la base del despliegue (#22) |
 | RNF06 Calidad | Cumple | Cobertura 98 %, seis checks requeridos en `main` y `dev` (#121) | — |
 | RNF07 Portabilidad | Cumple | Check Contenedores (build, migración y consulta sin red), README | Readiness del despliegue en AWS (#22) |
 | RNF08 Observabilidad | Parcial | Eventos JSON de API y CLI (`tests/test_query_telemetry.py`), monitor de ingesta | Supervisión continua fuera de la máquina local |
@@ -97,9 +99,9 @@ ingestas vigentes hechas por HTTP, con 100 % en los tres criterios.
 | Explicabilidad | 100 % de resultados y descartes con motivo trazable | Pruebas de contrato del motor y de la API | Cumple |
 | Rendimiento | p95 ≤ 5 s | ≈ 1,28 s estimado por composición | Parcial |
 | Ingesta | ≥ 95 % completada o alertada en 24 h | 3 de 3 corridas observadas (2 fallas alertadas en segundos y 1 recuperación), en [la evidencia del 12/11](evidencia/mvp-01-operacion-2026-11-12.json) | Parcial: muestra chica, sin operación continua |
-| Frescura | 100 % de precios dentro del umbral | 1.230 de 1.230 en la auditoría | Cumple |
+| Frescura | 100 % de precios dentro del umbral | 1.230 de 1.230 en la auditoría de la medición | Cumple |
 | ML | Mejora material o adopción explícita del modelo simple | Se adoptó una referencia simple con protocolo previo ([ADR-014](../adr/ADR-014-seleccion-de-modelo-de-precios.md)) | Cumple |
-| Privacidad | 100 % sin ubicación persistida | 123 de 123 en la auditoría, más la prueba integral | Cumple |
+| Privacidad | 100 % sin ubicación persistida | 123 de 123 en la auditoría de la medición, más la prueba integral | Cumple |
 
 ## Recortes e incumplimientos
 
