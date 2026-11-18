@@ -110,26 +110,33 @@ modelo, aunque no sea el elegido), `validation-predictions.jsonl`, `manifest.jso
 Dos corridas completas, dataset y modelo, produjeron archivos idénticos byte a byte, y
 recargar el artefacto reproduce sus predicciones.
 
+**Corrección del 17/11/2026 (#119):** `market_change` comparaba medianas de ámbitos
+distintos (zona contra CABA) cuando cambiaba el ámbito entre dos ejemplos de la misma
+estación. Ahora queda vacío en ese caso. La tabla muestra la
+[corrida corregida](evidencia/ml-modelos-2026-11-17/README.md), con el mismo dataset y
+código `cef0c9a`. Las referencias no cambian, y la elección tampoco.
+
 | Método | Selección 2025: MAE ARS/L | Error rel. | Validación 2026: MAE ARS/L | Error rel. |
 |---|---|---|---|---|
 | Mediana de 30 días (dataset) | 45,73 | 3,12 % | 79,72 | 3,89 % |
 | Último precio de la estación | 25,40 | 1,73 % | 39,12 | 1,91 % |
 | **Mediana de la bandera, última semana** | **20,62** | **1,42 %** | 41,21 | 2,01 % |
-| Ridge | 35,37 | 2,49 % | **31,24** | **1,53 %** |
-| Árboles potenciados | 22,69 | 1,59 % | 31,39 | 1,53 % |
+| Ridge | 35,30 | 2,49 % | **31,00** | **1,52 %** |
+| Árboles potenciados | 24,24 | 1,70 % | 31,90 | 1,56 % |
 
 Lectura:
 
 - **El método elegido es una referencia, no un modelo**: la mediana de la bandera de la
   última semana gana en 2025. Según #56, el diagnóstico usaría esa referencia.
-- En la validación 2026 los dos modelos superan por un 20 % a todas las referencias.
+- En la validación 2026 los dos modelos superan a todas las referencias: erran entre
+  un 18 % y un 21 % menos que el último precio, la mejor referencia de ese año.
   El resultado se informa pero no cambia la elección: hacerlo sería elegir con datos
   reservados. Un solo año de selección puede no representar al siguiente (ADR-014).
 - Las features de la última semana mejoran a los modelos: con el dataset v1, los
   árboles daban 40,83 en validación y Ridge 35,35.
 - Referencia y modelo fallan en casos opuestos (validación, MAE ARS/L): con último
-  precio de hasta 7 días, la bandera da 53,7 y los árboles 23,3; con último precio de
-  más de 30 días, la bandera da 23,7 y los árboles 57,4. Combinarlos es una mejora
+  precio de hasta 7 días, la bandera da 53,7 y los árboles 24,0; con último precio de
+  más de 30 días, la bandera da 23,7 y los árboles 56,0. Combinarlos es una mejora
   candidata, a evaluar con datos nuevos.
 - YPF tiene solo 36 ejemplos en la validación 2026; sus métricas por bandera no son
   concluyentes.
@@ -183,6 +190,8 @@ recién después reporta la validación por tramo de antigüedad; un tramo con m
 La [evidencia del 17/11/2026](evidencia/estimacion-antiguos-2026-11/README.md), con
 protocolo previo y dos corridas idénticas, elige la mediana reciente de la bandera:
 MAPE 1,14 % frente a 2,37 % de mostrar el precio viejo, sobre 768 reingresos de 2026.
+La corrección de `market_change` (#119) no cambia la elección ni la adopción; ver la
+[corrección](evidencia/estimacion-antiguos-2026-11/README.md#corrección-de-119).
 [ADR-020](../adr/ADR-020-estimacion-de-precios-antiguos.md) propone una estimación
 rotulada sólo para precios de 31 a 120 días, separada del precio oficial y fuera del
 ranking normal. El proxy no observa estaciones cuyo precio no cambió; todavía no se

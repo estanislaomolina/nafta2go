@@ -61,7 +61,30 @@ Lectura:
 - En el tramo de más de 120 días, Ridge rinde mejor que el método elegido. No se
   reelige: hacerlo sería elegir con la validación.
 - El "último precio ajustado por el mercado" rinde mal en 2026 (MAPE 4,80 %), aunque
-  en 2025 estaba cerca del precio viejo. No se investigó la causa en esta corrida.
+  en 2025 estaba cerca del precio viejo. La causa era un error de `market_change`,
+  corregido en #119; ver la corrección más abajo.
+
+## Corrección de #119
+
+`market_change` comparaba la mediana actual con la del ejemplo anterior de la
+estación aunque una fuera de la zona y la otra de CABA. En 344 de los 768 reingresos
+de 2026 medía la diferencia entre ámbitos y no un movimiento del mercado. Ahora queda
+vacío en ese caso y `ultimo_ajustado` usa el precio viejo sin ajustar (350 fallbacks
+en validación y 820 en selección).
+
+El [reporte corregido](stale-evaluation-119.json) se generó con el mismo dataset,
+el código `cef0c9a` (árbol limpio) y el mismo comando. Dos corridas en Linux dieron
+bytes idénticos (`49303e77…202da5`). El reporte original se conserva como registro.
+
+| MAPE | Selección 2025 | Validación 2026 | 31 a 60 | 61 a 120 | Más de 120 |
+|---|---|---|---|---|---|
+| Último precio ajustado | 2,52 → 2,04 % | 4,80 → 2,19 % | 5,85 → 1,76 % | 2,00 → 1,91 % | 3,51 → 8,09 % |
+| Ridge | 2,72 → 2,66 % | 1,87 → 1,81 % | 1,75 → 1,61 % | 2,16 → 2,32 % | 2,07 → 2,14 % |
+| Árboles potenciados | 2,34 → 2,32 % | 2,68 → 2,62 % | 2,70 → 2,44 % | 1,82 → 2,16 % | 5,64 → 6,48 % |
+
+La bandera reciente y el precio viejo no usan `market_change` y no cambian. La
+elección (`bandera_reciente`) y `adopt=true` se mantienen. Con más de 120 días,
+Ridge sigue siendo el mejor del tramo (2,14 %), sin cambiar la decisión de ADR-020.
 
 ## Límites
 

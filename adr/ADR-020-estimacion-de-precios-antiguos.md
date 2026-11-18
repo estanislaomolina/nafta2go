@@ -102,5 +102,7 @@ presentación y exclusión del ranking normal en la integración.
 
 Con más de 120 días, Ridge rinde mejor que el método elegido (MAPE 2,07 % contra
 2,91 %). No se cambia la elección porque surge de la validación ya inspeccionada;
-evaluarlo requiere otro protocolo y otro período. ADR-002 y ADR-015 siguen vigentes:
-la estimación no modifica el precio oficial ni el ranking normal.
+evaluarlo requiere otro protocolo y otro período. Con la corrección de `market_change`
+(#119), Ridge da 2,14 % en ese tramo y la elección y la adopción no cambian.
+ADR-002 y ADR-015 siguen vigentes: la estimación no modifica el precio oficial ni
+el ranking normal.
