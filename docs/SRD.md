@@ -45,7 +45,7 @@ resuelto en POC-02 de esta forma:
 | RF06 Hasta tres alternativas diferenciadas | `domain/ranking`, `application/query` | Implementado: combustible neto, menor desvío y equilibrio; agrupa prioridades que eligen la misma estación |
 | RF07 Explicar cada resultado | `query` CLI y `application/query` | Implementado: dirección, precio, fecha, litros, consumo, reserva, desvío, alertas y fuente; JSON con todos los descartes |
 | RF08 Ingerir y normalizar | `adapters/energy_source`, `normalization/`, `services/ingestion` | Implementado, con corrida real documentada |
-| RF09 Umbral configurable de vigencia | `application/coverage_rules`, `stored_query` | Implementado: 30 días, configurable en un solo módulo. Estimación rotulada de 31 a 120 días evaluada offline y propuesta en ADR-020, sin integrar |
+| RF09 Umbral configurable de vigencia | `application/coverage_rules`, `stored_query` | Implementado: 30 días, configurable en un solo módulo. Estimación rotulada de 31 a 120 días (ADR-020) en `application/stale_price_estimate`, fuera del ranking |
 | RF10 y RF11 Diagnóstico ML y ranking conservador | — | Fuera de la POC, por consigna. La alerta `precio_atipico` de la normalización es una regla, no un modelo |
 | RF12 Autenticación administrativa | — | Fuera de la POC: no hay funciones administrativas expuestas |
 | RF13 Configurar sin modificar código | — | Pendiente (Debería): hoy los parámetros son constantes de código |

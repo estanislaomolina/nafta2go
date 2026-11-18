@@ -62,6 +62,31 @@ function priceReference(data, row) {
   });
   section.append(button, result); return section;
 }
+function day(value) {
+  return value.replace(/^(\d{4})-(\d{2})-(\d{2})T.*/, "$3/$2/$1");
+}
+function staleEstimates(block) {
+  const finite = value => value != null && Number.isFinite(Number(value)) && Number(value) > 0;
+  const stamp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+  const items = (block && block.status === "available" && Array.isArray(block.items) ? block.items : [])
+    .filter(item => finite(item.official_price_ars_per_l) && finite(item.estimate_ars_per_l) && finite(item.official_age_days)
+      && [item.official_published_at_local, item.reference_from_local, item.reference_to_local].every(value => stamp.test(String(value))));
+  if (!items.length) return null;
+  const section = document.createElement("section"), title = node("h3", "Estaciones con precio desactualizado");
+  title.id = "stale-title"; section.setAttribute("aria-labelledby", "stale-title"); section.className = "stale-estimates";
+  section.append(title, node("p", "No participan de la recomendación: su último precio oficial tiene más de " + block.min_age_days + " días. " + block.notice, "notice warning"));
+  for (const item of items) {
+    const card = document.createElement("article"), detail = document.createElement("dl");
+    card.append(node("p", "ESTIMADO", "badge"), node("h4", item.brand || item.company || "Estación " + item.station_id), node("p", item.address || "Dirección no informada", "address"));
+    for (const [label, value] of [
+      ["Precio oficial", number(item.official_price_ars_per_l, " ARS/L") + " · publicado el " + day(item.official_published_at_local) + " (hace " + number(item.official_age_days) + " días)"],
+      ["Precio estimado", number(item.estimate_ars_per_l, " ARS/L")],
+      ["Referencia", "Mediana de " + item.reference_count + " precios de la misma bandera entre el " + day(item.reference_from_local) + " y el " + day(item.reference_to_local)],
+    ]) detail.append(node("dt", label), node("dd", value));
+    card.append(detail); section.append(card);
+  }
+  return section;
+}
 function show(data) {
   output.replaceChildren();
   output.append(node("p", "Vigencia máxima aplicada: " + data.query.max_price_age_days + " días respecto de la referencia de precios.", "hint"));
@@ -101,6 +126,8 @@ function show(data) {
     output.append(card);
   }
   if (data.navigation_notice) output.append(node("p", data.navigation_notice, "hint"));
+  const estimates = staleEstimates(data.stale_price_estimates);
+  if (estimates) output.append(estimates);
   const discarded = data.evaluations.filter(row => !row.feasible);
   if (discarded.length || Object.keys(data.exclusions).length) {
     const details = document.createElement("details"), list = document.createElement("ul");

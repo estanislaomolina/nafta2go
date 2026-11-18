@@ -9,6 +9,14 @@ from nafta2go.adapters.routing import Point, RoutingProvider
 from nafta2go.application.coverage_rules import configured_max_price_age_days
 from nafta2go.application.recommendation import DEFAULT_CANDIDATE_LIMIT
 from nafta2go.application.scenario import load_scenario
+from nafta2go.application.stale_price_estimate import (
+    ESTIMATE_VERSION,
+    EVIDENCE,
+    MAX_AGE_DAYS,
+    METHOD,
+    MIN_AGE_DAYS,
+    estimate_stale_prices,
+)
 from nafta2go.application.stored_query import CoverageStatus, evaluate_with_coverage
 from nafta2go.domain.engine import FuelRequest
 from nafta2go.domain.ranking import rank_alternatives
@@ -21,6 +29,11 @@ SOURCE = {
     "url": "https://datos.energia.gob.ar/dataset/precios-en-surtidor",
     "license": "CC-BY-4.0",
 }
+ESTIMATE_NOTICE = (
+    "Estimación a partir de precios recientes de la misma bandera: no es un precio oficial, "
+    "no renueva su vigencia ni participa del ranking. Un presupuesto calculado con ella no "
+    "garantiza el importe en el surtidor."
+)
 
 
 def recommend_from_database(
@@ -90,6 +103,17 @@ def recommend(
         else None
     )
     payload = {
+        "stale_price_estimates": _stale_estimates(
+            conn,
+            result.current.data_run_id,
+            fuel_type=fuel_type,
+            schedule_id=schedule_id,
+            reference_at=reference_at,
+            origin=origin,
+            destination=destination,
+            max_age_days=max_age_days,
+            limit=max_candidates,
+        ),
         "status": result.status.value,
         "outcome": (
             "insufficient_coverage"
@@ -160,3 +184,35 @@ def recommend(
         choice.station_id: asdict(rows[choice.station_id].candidate.location) for choice in choices
     }
     return payload
+
+
+def _stale_estimates(conn: Connection, run_id: int | None, *, max_age_days: int, **options) -> dict:
+    """Estimaciones de ADR-020 sobre la ingesta vigente, aparte de la recomendación."""
+    items = (
+        estimate_stale_prices(
+            repo.prices_for_run(conn, run_id), max_age_days=max_age_days, **options
+        )
+        if run_id is not None
+        else ()
+    )
+    return {
+        "status": "available" if run_id is not None else "no_current_data",
+        "data_run_id": run_id,
+        "method": METHOD,
+        "version": ESTIMATE_VERSION,
+        "evidence": EVIDENCE,
+        "min_age_days": max(MIN_AGE_DAYS, max_age_days),
+        "max_age_days": MAX_AGE_DAYS,
+        "notice": ESTIMATE_NOTICE,
+        "items": [
+            {
+                **{key: str(value) for key, value in asdict(item).items()},
+                "official_published_at_local": item.official_published_at_local.isoformat(),
+                "official_age_days": item.official_age_days,
+                "reference_from_local": item.reference_from_local.isoformat(),
+                "reference_to_local": item.reference_to_local.isoformat(),
+                "reference_count": item.reference_count,
+            }
+            for item in items
+        ],
+    }

@@ -93,3 +93,19 @@ segundos tienen mensajes seguros. Una búsqueda nueva o salir cancela las lectur
 y retira referencias anteriores; el código sólo permanece en memoria de pestaña.
 No se agrega almacenamiento, polling ni requests a terceros. QA usa respuestas de
 referencia sintéticas; no acredita calidad del modelo ni disponibilidad real.
+
+## Estaciones con precio desactualizado
+
+Cuando la API devuelve `stale_price_estimates` con `status=available`, la web agrega
+después de las alternativas una sección aparte, "Estaciones con precio
+desactualizado". Cada tarjeta lleva el rótulo ESTIMADO y muestra en filas separadas
+el precio oficial con su fecha y antigüedad, el precio estimado y la referencia
+usada: cantidad de precios de la misma bandera y período. El aviso aclara que esas
+estaciones no participan de la recomendación y que la estimación no es un precio
+oficial ni garantiza el importe en el surtidor ([ADR-020](../adr/ADR-020-estimacion-de-precios-antiguos.md)).
+
+La sección descarta ítems con precios no positivos o fechas mal formadas, inserta
+todo texto remoto con `textContent` y no genera enlaces ni consultas adicionales.
+Sin ingesta vigente o sin ítems válidos no aparece. La regresión de navegador
+verifica rótulo, separación del ranking, XSS, ítems inválidos y ausencia de
+desborde horizontal, con axe a 1440 y 320 px de ancho; los datos son sintéticos.

@@ -108,6 +108,34 @@ etiqueta) y `navigation_notice`. No incluye el origen del conductor ni persiste
 los enlaces. Contrato y límites en [MAPS](MAPS.md); la [web local](WEB.md) presenta estos enlaces; las pruebas de navegador se
 entregan en una PR dependiente.
 
+## Estimación de precios desactualizados (#117)
+
+La respuesta de `POST /api/v1/recommendations` incluye `stale_price_estimates`,
+aparte de `alternatives` y `evaluations`. Lista estaciones del corredor cuyo último
+precio oficial en la ingesta vigente tiene más de `min_age_days` (el mayor entre 30
+y la vigencia configurada) y hasta `max_age_days` (120) días, como propone
+[ADR-020](../adr/ADR-020-estimacion-de-precios-antiguos.md).
+
+Cada ítem conserva en campos separados el precio oficial
+(`official_price_ars_per_l`), su fecha y antigüedad, la estimación
+(`estimate_ars_per_l`), la ventana de referencia (`reference_from_local` a
+`reference_to_local`) y la cantidad de precios usados. El bloque declara método
+(`bandera_reciente`), versión (`stale-estimate-v1`), evidencia y `notice`.
+
+La estimación es la mediana de los precios de la misma bandera, producto y franja
+publicados en CABA durante los 7 días anteriores a la consulta, igual que la
+feature `brand_recent_median` evaluada en
+[la evidencia](evidencia/estimacion-antiguos-2026-11/README.md). Sin precios
+recientes de la bandera se abstiene: la estación no aparece. A diferencia de la
+evaluación, usa la ingesta vigente, que guarda la última publicación de cada
+estación, en lugar de todas las publicaciones del histórico.
+
+No requiere `NAFTA2GO_PRICE_*`: es una regla determinística sin artefactos. Las
+estaciones estimadas nunca se enrutan, no entran al ranking, no cuentan para la
+cobertura y no renuevan la vigencia del precio oficial. Sin ingesta vigente, el
+bloque informa `status=no_current_data` y una lista vacía. Se persiste con la
+recomendación, sin ubicaciones del conductor.
+
 ## Telemetría local de consultas
 
 Cada POST de recomendaciones devuelve `X-Request-ID` generado por el servidor;

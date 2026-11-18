@@ -463,3 +463,53 @@ test('referencia: espera acotada y ausencia en escenarios históricos', async ()
     release();
   } finally { release?.(); await page.context().close(); }
 });
+function staleBlock(items) {
+  return {status: 'available', data_run_id: 1, method: 'bandera_reciente', version: 'stale-estimate-v1', evidence: 'evidencia/estimacion-antiguos-2026-11',
+    min_age_days: 30, max_age_days: 120, notice: 'Estimación a partir de precios recientes de la misma bandera: no es un precio oficial.', items};
+}
+const staleItem = {station_id: '501', company: 'EMPRESA', brand: '<img src=x onerror="window.pwned=1">', address: 'CALLE 1', official_price_ars_per_l: '1500.000',
+  official_published_at_local: '2026-09-10T08:00:00', official_age_days: 45.2, estimate_ars_per_l: '1700.000',
+  reference_from_local: '2026-10-19T09:00:00', reference_to_local: '2026-10-26T09:00:00', reference_count: 3, method: 'bandera_reciente', version: 'stale-estimate-v1'};
+test('las estimaciones de precios desactualizados se muestran aparte y rotuladas', async () => {
+  for (const viewport of [{width: 1440, height: 1000}, {width: 320, height: 800}]) {
+    const page = await pageFor({viewport});
+    try {
+      await ready(page);
+      await page.route('**/api/v1/recommendations', async route => {
+        const response = await route.fetch(), payload = await response.json();
+        payload.stale_price_estimates = staleBlock([staleItem, {...staleItem, station_id: '502', estimate_ars_per_l: null}, {...staleItem, station_id: '503', official_published_at_local: 'ayer'}]);
+        await route.fulfill({json: payload});
+      });
+      await send(page);
+      const section = page.getByRole('region', {name: 'Estaciones con precio desactualizado'});
+      assert.equal(await section.isVisible(), true);
+      assert.equal(await section.locator('article').count(), 1);
+      const text = await section.textContent();
+      assert.match(text, /ESTIMADO/);
+      assert.match(text, /no es un precio oficial/);
+      assert.match(text, /más de 30 días/);
+      assert.match(text, /1\.500 ARS\/L · publicado el 10\/09\/2026 \(hace 45,2 días\)/);
+      assert.match(text, /Precio estimado1\.700 ARS\/L/);
+      assert.match(text, /Mediana de 3 precios de la misma bandera entre el 19\/10\/2026 y el 26\/10\/2026/);
+      assert.equal(await section.locator('img').count(), 0);
+      assert.equal(await page.evaluate(() => window.pwned), undefined);
+      assert.equal(await page.locator('#results > article').filter({hasText: 'ESTIMADO'}).count(), 0);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+      await accessible(page);
+    } finally { await page.context().close(); }
+  }
+});
+test('sin estimaciones disponibles no aparece la sección', async () => {
+  const page = await pageFor();
+  try {
+    await ready(page);
+    await page.route('**/api/v1/recommendations', async route => {
+      const response = await route.fetch(), payload = await response.json();
+      payload.stale_price_estimates = {...staleBlock([staleItem]), status: 'no_current_data'};
+      await route.fulfill({json: payload});
+    });
+    await send(page);
+    assert.equal(await page.locator('.stale-estimates').count(), 0);
+    assert.doesNotMatch(await page.locator('#results').textContent(), /ESTIMADO/);
+  } finally { await page.context().close(); }
+});
