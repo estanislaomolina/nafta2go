@@ -175,3 +175,10 @@ La [auditoría retrospectiva del 17/11/2026](evidencia/alertas-precios-2026-11-1
 registra candidatos y sus límites, sin cambiar los compromisos RF10/RF11: todavía
 faltan política de alertas e integración del ranking conservador. La factibilidad
 y el ranking general permanecen determinísticos, según la devolución de Entrega 2.
+
+Sobre la pregunta de la devolución de Entrega 2 por precios de más de 30 días (#57),
+la [evaluación del 17/11/2026](evidencia/estimacion-antiguos-2026-11/README.md) y
+[ADR-020](../adr/ADR-020-estimacion-de-precios-antiguos.md) proponen una estimación
+rotulada para precios de 31 a 120 días. RF09 no cambia: la estimación no es un precio
+oficial vigente, no renueva su fecha ni entra al ranking normal, y todavía no está
+integrada.

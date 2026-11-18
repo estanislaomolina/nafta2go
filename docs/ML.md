@@ -170,3 +170,20 @@ para producción; las franjas contienen publicaciones relacionadas entre sí.
 El ranking sigue siendo determinístico y `runtime_enabled=false`. #19/#20 siguen
 abiertos. La comparación nominal/relativa del baseline v2 se documenta por separado
 para responder al seguimiento de #100 sin confundir capturas v1 y v2.
+
+## Precios de más de 30 días (#57)
+
+`python -m nafta2go.ml.evaluate_stale --dataset DIR --output DIR --selection-start ISO`
+evalúa estimaciones sobre **reingresos**: publicaciones cuyo precio previo propio
+tiene más de 30 días. Elige el método con el período de selección dentro de train y
+recién después reporta la validación por tramo de antigüedad; un tramo con menos de
+`--min-examples` casos se informa sin métricas. Es un reporte offline
+(`runtime_enabled=false`) que no carga modelos guardados ni cambia la API.
+
+La [evidencia del 17/11/2026](evidencia/estimacion-antiguos-2026-11/README.md), con
+protocolo previo y dos corridas idénticas, elige la mediana reciente de la bandera:
+MAPE 1,14 % frente a 2,37 % de mostrar el precio viejo, sobre 768 reingresos de 2026.
+[ADR-020](../adr/ADR-020-estimacion-de-precios-antiguos.md) propone una estimación
+rotulada sólo para precios de 31 a 120 días, separada del precio oficial y fuera del
+ranking normal. El proxy no observa estaciones cuyo precio no cambió; todavía no se
+integró en la API ni en la web.
