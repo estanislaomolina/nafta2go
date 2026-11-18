@@ -65,8 +65,11 @@ def examples_frame(examples: list[dict]) -> pd.DataFrame:
     frame["previous_age_days"] = frame.previous_station_age_days
     frame["prior_iqr_relative"] = frame.prior_iqr / prior
     # Cuánto se movió la mediana desde el ejemplo anterior de la misma estación y franja.
+    # Sólo entre medianas del mismo ámbito: zona contra CABA mide la diferencia entre
+    # ámbitos, no un cambio del mercado.
     identity = frame.groupby(["station_id", "product_id", "schedule_id"], sort=False)
-    frame["market_change"] = np.log(prior / identity.prior_median.shift())
+    same_scope = identity.baseline_scope.shift() == frame.baseline_scope
+    frame["market_change"] = np.log(prior / identity.prior_median.shift()).where(same_scope)
     frame["recent_relative"] = np.log(frame.recent_median / prior)
     frame["brand_recent_relative"] = np.log(frame.brand_recent_median / prior)
     frame["brand_group"] = frame.brand.where(frame.brand.isin(MAIN_BRANDS), OTHER_BRAND)

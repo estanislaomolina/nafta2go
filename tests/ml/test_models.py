@@ -126,6 +126,19 @@ def test_frame_is_relative_to_prior_median_and_uses_only_previous_examples():
     assert frame[frame.source_row == 3].brand_group.item() == "OTRA"
 
 
+def test_market_change_only_compares_medians_of_the_same_scope():
+    when = datetime(2025, 3, 1, tzinfo=UTC)
+    zone, caba, caba_later = (
+        example(1, 1, when, 100, 100),
+        example(2, 1, when + timedelta(days=40), 130, 120, (40, 100)),
+        example(3, 1, when + timedelta(days=80), 140, 132, (40, 130)),
+    )
+    caba["baseline_scope"] = caba_later["baseline_scope"] = "caba"
+    frame = examples_frame([zone, caba, caba_later]).set_index("source_row")
+    assert math.isnan(frame.market_change[2])
+    assert frame.market_change[3] == pytest.approx(math.log(132 / 120))
+
+
 def test_references_and_metrics_are_in_ars_per_liter():
     when = datetime(2025, 3, 1, tzinfo=UTC)
     frame = examples_frame([example(1, 1, when, 110, 100, (5, 105)), example(2, 2, when, 90, 100)])
