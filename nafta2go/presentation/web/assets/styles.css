@@ -23,6 +23,7 @@ button:disabled { opacity: .6; cursor: wait; } :focus-visible { outline: 3px sol
 .compass { display: inline-grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: #e0ede5; color: #08634f; font-size: 32px; }
 .notice { padding: 16px; border-radius: 12px; background: #e5efe9; } .warning { background: #fff1ce; color: #66420b; border-left: 4px solid #a36b00; } .error { background: #ffede8; color: #8c291b; }
 article { margin: 18px 0; } .priorities { font-size: 12px; font-weight: 750; color: #08634f; } .address { color: #526564; }
+.stale-estimates { margin-top: 32px; } .badge { display: inline-block; margin: 0 0 8px; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 750; background: #fff1ce; color: #66420b; }
 dl { display: grid; grid-template-columns: 1fr auto; gap: 9px 20px; margin: 20px 0; font-size: 14px; } dt { color: #526564; } dd { margin: 0; font-weight: 650; text-align: right; overflow-wrap: anywhere; }
 a.navigate { display: block; color: #07523f; padding: 12px 0; font-weight: 700; } .source, details { font-size: 13px; overflow-wrap: anywhere; } summary { cursor: pointer; padding: 12px 0; font-weight: 700; }
 li { margin: 8px 0; } footer { font-size: 12px; padding-top: 40px; padding-bottom: 32px; } [hidden] { display: none !important; }
