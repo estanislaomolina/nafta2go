@@ -38,3 +38,4 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 | [ADR-018](ADR-018-servidor-efimero-de-demo.md) | Servidor efímero de demo con acceso por Session Manager | Propuesto |
 | [ADR-019](ADR-019-salida-http-acotada-de-energia.md) | Salida HTTP opcional acotada para la fuente de Energía | Propuesto |
 | [ADR-020](ADR-020-estimacion-de-precios-antiguos.md) | Estimación rotulada para precios de 31 a 120 días | Propuesto |
+| [ADR-021](ADR-021-ranking-conservador-por-desvio.md) | Ranking conservador con una regla provisional de desvío | Propuesto |
