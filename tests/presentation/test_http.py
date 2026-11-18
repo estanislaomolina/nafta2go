@@ -486,3 +486,12 @@ def test_server_controls_age_policy_and_client_cannot_override_it(clients, monke
         )
         assert response.status_code == 200
         assert response.json()["query"]["max_price_age_days"] == 14
+
+
+def test_response_contract_keeps_stale_estimates_apart(clients):
+    with clients() as client:
+        response = client.post("/api/v1/recommendations", json=BODY, headers=AUTH)
+    estimates = response.json()["stale_price_estimates"]
+    assert estimates["status"] == "no_current_data"
+    assert estimates["items"] == []
+    assert estimates["version"] == "stale-estimate-v1"

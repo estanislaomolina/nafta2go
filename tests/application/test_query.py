@@ -1,7 +1,7 @@
 """Consulta final contra SQLite migrado: sin rutas reales ni red en los tests."""
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -263,3 +263,67 @@ def test_stricter_policy_can_abstain_on_the_real_frozen_scenario(engine, monkeyp
     assert result["outcome"] == "insufficient_coverage"
     assert result["selected_eligible_count"] == 1
     assert result["recommendation_id"] is None and provider.calls == 0
+
+
+def stale_fixture_rows():
+    local = REFERENCE.astimezone(load_scenario().reference_at.tzinfo).replace(tzinfo=None)
+    base = {
+        "company": "EMPRESA",
+        "brand": "YPF",
+        "address": "CALLE",
+        "product_id": 2,
+        "fuel_type": "super",
+        "schedule_id": 2,
+        "lat": -34.6040,
+        "lon": -58.3850,
+        "valid_from_raw": "x",
+        "price_raw": "x",
+        "alerts": "",
+    }
+    stale = {**base, "source_row": 1, "station_id": 501, "price": Decimal("1500")}
+    stale["valid_from"] = local - timedelta(days=45)
+    recent = {**base, "source_row": 2, "station_id": 502, "price": Decimal("1700")}
+    recent["valid_from"] = local - timedelta(days=1)
+    return [stale, recent]
+
+
+def put_current(engine, rows):
+    from nafta2go.persistence.schema import station_prices
+
+    with engine.begin() as conn:
+        run_id = repo.start_run(conn, "vigente", REFERENCE.replace(tzinfo=None))
+        conn.execute(station_prices.insert(), [{**r, "id": None, "run_id": run_id} for r in rows])
+        repo.finish_run(conn, run_id, "succeeded", REFERENCE.replace(tzinfo=None))
+    return run_id
+
+
+def test_stale_estimates_are_reported_apart_from_the_ranking_and_recorded(engine):
+    run_id = put_current(engine, stale_fixture_rows())
+    result = query(engine)
+    estimates = result["stale_price_estimates"]
+    assert estimates["status"] == "available"
+    assert estimates["data_run_id"] == run_id
+    assert (estimates["min_age_days"], estimates["max_age_days"]) == (30, 120)
+    assert estimates["method"] == "bandera_reciente"
+    assert "no es un precio oficial" in estimates["notice"]
+    (item,) = estimates["items"]
+    assert item["station_id"] == "501"
+    assert item["official_price_ars_per_l"] == "1500.000"
+    assert item["estimate_ars_per_l"] == "1700.000"
+    assert item["official_age_days"] == 45
+    assert item["reference_count"] == 1
+    ranked = {row["station_id"] for row in result["alternatives"] + result["evaluations"]}
+    assert "501" not in ranked
+    with engine.connect() as conn:
+        record = repo.get_recommendation(conn, result["recommendation_id"])
+    assert record["result"]["stale_price_estimates"]["items"][0]["station_id"] == "501"
+
+
+def test_without_current_ingestion_estimates_are_not_available(engine):
+    result = query(engine)
+    assert result["stale_price_estimates"] == {
+        **result["stale_price_estimates"],
+        "status": "no_current_data",
+        "data_run_id": None,
+        "items": [],
+    }
