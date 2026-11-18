@@ -341,6 +341,16 @@ def get_recommendation(conn: Connection, recommendation_id: int) -> dict | None:
     return dict(row._mapping) if row else None
 
 
+def recommendations_with_run_status(conn: Connection) -> list[dict]:
+    """Recomendaciones guardadas, con el estado de la ingesta que usaron, para auditarlas."""
+    query = (
+        select(recommendations, ingestion_runs.c.status.label("data_run_status"))
+        .select_from(recommendations.outerjoin(ingestion_runs))
+        .order_by(recommendations.c.id)
+    )
+    return [dict(row._mapping) for row in conn.execute(query)]
+
+
 def _optional_float(value: object) -> float | None:
     if value is None:
         return None
