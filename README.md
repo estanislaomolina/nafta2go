@@ -2,7 +2,7 @@
 
 Nafta2Go es un recomendador de estaciones de servicio para conductores de CABA. Combina precio publicado, presupuesto, autonomía, capacidad del tanque y desvío del recorrido para mostrar alternativas explicadas.
 
-Este repositorio contiene el diseño de la **Entrega 1**, la **Entrega 2: POC y SRD** y incrementos de API y web local de la **Entrega 3: MVP** del Trabajo Práctico Integrador. El motor y el adaptador de rutas tienen pruebas automáticas; el flujo de punta a punta con datos y rutas reales se ejecuta desde un comando y conserva evidencia reproducible.
+Este repositorio contiene el diseño de la **Entrega 1**, la **Entrega 2: POC y SRD** y el **MVP de la Entrega 3** del Trabajo Práctico Integrador: ingesta programada, API HTTP, aplicación web, panel de operación y diagnóstico de precios con ML evaluado offline. Todo corre localmente con Python o Docker; el despliegue en AWS sigue pendiente. Lo que está simulado o recortado se lista en [Partes simuladas, simplificadas o pendientes](#partes-simuladas-simplificadas-o-pendientes).
 
 ## Integrantes
 
@@ -31,6 +31,8 @@ Santiago Bunge
 - [API local](docs/API.md): consulta HTTP autenticada, OpenAPI, validaciones, errores y ejecución con Python o Docker (incremento de MVP-02).
 - [Normalización de precios](docs/NORMALIZACION.md): formato real de las fechas, reglas de rechazo y alertas, duplicados y corrida real (POC-01).
 - [Cobertura de precios](docs/COBERTURA.md): mínimo de cobertura en el corredor del recorrido, escenario histórico rotulado y reporte (POC-02).
+- [ML de precios](docs/ML.md): preparación temporal, comparación de modelos, umbrales candidatos y estimación de precios antiguos (MVP-04 y MVP-05).
+- [Calidad y CI](docs/CALIDAD.md): checks requeridos, protección de ramas, revisión cruzada y manejo de credenciales.
 - [Consigna del TP](res/%5BSHR%5D%5BS2%5D%20-%20Consigna%20TP%20I408.pdf): requisitos y formato de las entregas.
 - [GitHub Project](https://github.com/users/estanislaomolina/projects/1): seguimiento operativo del roadmap.
 
@@ -71,12 +73,11 @@ La ejecución puede tardar según la disponibilidad del catálogo oficial. Si se
 
 ## Decisiones de diseño
 
-Los ADRs de la Entrega 1 documentan las alternativas evaluadas para:
+Cada decisión estructural tiene un ADR con alternativas comparadas; el índice está en [adr/README.md](adr/README.md):
 
-- alcance en CABA y uso de datos actuales o históricos;
-- recomendador determinístico y diagnóstico estadístico con ML separado;
-- proveedor de rutas y alternativa OSRM;
-- arquitectura modular por capas.
+- **Entrega 1:** alcance en CABA, recomendador determinístico con diagnóstico ML separado, proveedor de rutas y arquitectura por capas (ADR-001 a ADR-004).
+- **Entrega 2:** persistencia, escenario histórico y trazabilidad de recomendaciones (ADR-005 a ADR-007).
+- **Entrega 3:** ingesta programada, API, caché de rutas, web, acceso administrativo, AWS, evaluación y selección de modelos, referencia servida, umbrales y estimación de precios antiguos (ADR-008 a ADR-020).
 
 ## Desarrollo local
 
@@ -107,7 +108,7 @@ Construye la imagen de la aplicación y corre las migraciones sobre una base SQL
 
 ## Estado del desarrollo
 
-La Entrega 2 (POC) incluye el flujo completo y su video de demostración. Esta tabla declara qué partes existen, cuáles están simuladas y cuáles faltan; se actualiza en la misma PR que cambia el estado de un componente.
+La Entrega 2 (POC) incluye el flujo completo y su video de demostración; la Entrega 3 suma el MVP. Esta tabla declara qué partes existen, cuáles están simuladas y cuáles faltan; se actualiza en la misma PR que cambia el estado de un componente.
 
 | Componente | Tarea | Estado |
 |---|---|---|
@@ -121,9 +122,23 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración. Esta t
 | Caché y cupo de rutas | MVP-02 (#55) | Matrices en RAM con TTL y LRU, límites por proceso y credencial, y métricas sin ubicaciones; ver docs/RUTAS.md |
 | Motor determinístico | POC-04 | Implementado y probado; PR #26 integrado |
 | Flujo de punta a punta | POC-05 | Implementado: consulta explicada, ranking, rutas reales guardadas y registro trazable; ver docs/POC-05.md |
-| Levantar el sistema completo con contenedores | POC-07 | Implementado para la POC: migraciones y comando de consulta, con reproducción completa en CI |
-| Diagnóstico estadístico con ML | MVP | Fuera del alcance de la POC |
-| Recomendador completo | MVP-02 | CLI y caso de uso admiten hasta veinte candidatas; API con diez por defecto y parámetro HTTP pendiente en #84; validación integral pendiente; ver docs/MOTOR.md |
+| Levantar el sistema completo con contenedores | POC-07, MVP-08 | Implementado: migraciones, consulta y API con web (perfil `mvp`); el CI construye la imagen, migra y consulta sin red |
+| Entrenamiento y selección de modelos | MVP-04 | Implementado offline y reproducible; el método elegido es una referencia (mediana de la bandera), no un modelo; ver docs/ML.md |
+| Diagnóstico estadístico servido | MVP-05 (#19) | Parcial: la API sirve la referencia elegida, sin nivel de alerta hasta aprobar una política; ver docs/API.md |
+| Ranking conservador | MVP-06 (#20) | Pendiente: regla propuesta en discusión |
+| Estimación de precios de 31 a 120 días | #117 | Implementada en API y web, rotulada y fuera del ranking (ADR-020) |
+| Operación y acceso administrativo | MVP-07 | Panel `/operacion` y API de estado con token administrativo separado (ADR-016); supervisión continua pendiente |
+| Despliegue en AWS | MVP-08 (#22) | Red creada en el sandbox; servidor de demo propuesto, sin provisionar; ver docs/AWS.md |
+| Recomendador completo | MVP-02 | CLI, caso de uso y API admiten hasta veinte candidatas (diez por defecto); ver docs/MOTOR.md |
+
+### Partes simuladas, simplificadas o pendientes
+
+- **Rutas en pruebas y en CI:** se reemplaza OpenRouteService por respuestas simuladas o por la matriz real guardada en POC-05. Sólo la prueba autenticada y el uso en vivo consultan la API real.
+- **Escenario histórico:** cuando no hay cobertura reciente se usa la captura congelada del 24/10/2026, rotulada como histórica.
+- **Acceso:** tokens de demo por variable de entorno (conductor y administración); no hay cuentas de usuario.
+- **Base y caché:** SQLite local y caché de rutas en memoria por proceso, sin coordinación entre réplicas.
+- **Diagnóstico ML:** sirve una referencia estadística sin alertas calibradas; los modelos aprendidos sólo se evalúan offline.
+- **Pendientes:** ranking conservador (#20), despliegue público en AWS (#22), supervisión continua de la ingesta, pruebas con usuarios y prueba en un teléfono físico.
 
 ## Consulta completa con datos reales (POC-05)
 
@@ -177,8 +192,3 @@ Las fechas y simplificaciones del caso reproducible se detallan en
 El repositorio se mantiene público por autorización de la cátedra, confirmada
 por el equipo al cerrar esta entrega. La presentación se identifica con el
 commit específico de `main` y la URL del video.
-
-Preparación offline, baseline temporal y comparación de modelos de precios (MVP-04 en
-progreso): [ML](docs/ML.md). Los modelos se entrenan offline; con el protocolo de
-[ADR-014](adr/ADR-014-seleccion-de-modelo-de-precios.md) el método elegido hoy es una
-referencia, no un modelo. No modifica el recomendador ni sirve predicciones.
