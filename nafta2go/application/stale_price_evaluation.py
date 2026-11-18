@@ -96,6 +96,9 @@ def evaluate_stale_estimates(
     max_mape: float = 0.03,
     max_p90_relative: float = 0.08,
 ) -> dict:
+    for name, value in (("min_gap_days", min_gap_days), ("min_examples", min_examples)):
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            raise ValueError(f"{name} debe ser un entero positivo")
     if output.exists():
         raise ValueError("El directorio de salida debe ser nuevo")
     if selection_start.utcoffset() is None:

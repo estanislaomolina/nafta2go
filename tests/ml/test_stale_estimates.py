@@ -224,6 +224,16 @@ def test_existing_output_and_naive_dates_are_rejected(dataset, tmp_path):
         evaluate_stale_estimates(dataset, tmp_path / "naive", datetime(2025, 1, 1))
 
 
+@pytest.mark.parametrize(
+    "options",
+    [{"min_gap_days": 0}, {"min_gap_days": -5}, {"min_gap_days": True}, {"min_examples": 0}],
+)
+def test_non_positive_parameters_are_rejected(dataset, tmp_path, options):
+    with pytest.raises(ValueError, match="entero positivo"):
+        evaluate_stale_estimates(dataset, tmp_path / "out", SELECTION, **options)
+    assert not (tmp_path / "out").exists()
+
+
 def test_tampered_dataset_is_rejected(dataset, tmp_path):
     (dataset / "examples.jsonl").write_bytes(b"{}\n")
     with pytest.raises(ValueError, match="hash"):
