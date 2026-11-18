@@ -180,5 +180,5 @@ Sobre la pregunta de la devolución de Entrega 2 por precios de más de 30 días
 la [evaluación del 17/11/2026](evidencia/estimacion-antiguos-2026-11/README.md) y
 [ADR-020](../adr/ADR-020-estimacion-de-precios-antiguos.md) proponen una estimación
 rotulada para precios de 31 a 120 días. RF09 no cambia: la estimación no es un precio
-oficial vigente, no renueva su fecha ni entra al ranking normal, y todavía no está
-integrada.
+oficial vigente, no renueva su fecha ni entra al ranking normal. La cátedra aprobó
+el alcance; la API la expone por separado del ranking (#117).

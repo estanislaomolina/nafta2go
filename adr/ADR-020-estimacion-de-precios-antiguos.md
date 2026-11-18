@@ -72,9 +72,13 @@ Reglas para una futura integración, a implementar en una issue aparte:
 ### Confirmation
 
 La evaluación es reproducible desde el tag `evidencia/estimacion-antiguos-2026-11`
-con `python -m nafta2go.ml.evaluate_stale`. Antes de activar la estimación hacen
-falta la confirmación del equipo, la consulta de alcance a la cátedra y tests de
-presentación y exclusión del ranking normal en la integración.
+con `python -m nafta2go.ml.evaluate_stale`. La cátedra aprobó el alcance el
+18/11/2026; falta la confirmación del resto del equipo para pasar a Aceptado.
+
+La integración (#117) calcula la mediana sobre la ingesta vigente, que guarda la
+última publicación de cada estación, mientras que la evaluación usó todas las
+publicaciones del histórico. Tests de la API verifican el rango de antigüedad, la
+abstención sin referencia y que las estaciones estimadas no entren al ranking.
 
 ## Pros and Cons of the Options
 

@@ -75,6 +75,7 @@ class RecommendationOutput(BaseModel):
     recommendation_id: int | None
     navigation: list[NavigationLink]
     navigation_notice: str | None
+    stale_price_estimates: dict[str, Any] | None = None
 
 
 class ErrorDetail(BaseModel):
