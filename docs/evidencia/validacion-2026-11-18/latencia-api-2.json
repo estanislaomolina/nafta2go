@@ -1,0 +1,63 @@
+{
+  "format_version": 1,
+  "measured_at_utc": "2026-11-18T17:59:13.532900+00:00",
+  "scope": "api_in_process_recorded_routes",
+  "use_case": "UC01",
+  "requests": 120,
+  "warmup_requests": 3,
+  "statuses": {
+    "200": 120
+  },
+  "outcomes": {
+    "recommended": 120
+  },
+  "latency_s": {
+    "p50": 0.0282,
+    "p95": 0.0399,
+    "max": 0.0731
+  },
+  "excludes": [
+    "llamada real a OpenRouteService",
+    "red entre cliente y servidor"
+  ],
+  "matrix_file": "docs/evidencia/poc-05-flujo-2026-10-26/matrix.json",
+  "audit": {
+    "audit_version": "recommendation-audit-v1",
+    "recommendations": 123,
+    "origins": {
+      "ingesta_vigente": 0,
+      "escenario_historico": 123
+    },
+    "trazabilidad": {
+      "cumplen": 123,
+      "total": 123,
+      "proporcion": 1.0
+    },
+    "frescura": {
+      "cumplen": 1230,
+      "total": 1230,
+      "proporcion": 1.0,
+      "unidad": "precios evaluados"
+    },
+    "privacidad": {
+      "cumplen": 123,
+      "total": 123,
+      "proporcion": 1.0
+    },
+    "fallas": {
+      "trazabilidad": {},
+      "frescura": {},
+      "privacidad": {}
+    }
+  },
+  "code": {
+    "git_commit": "ed5540d2e65d22844001dcd56c8a25aee0f9e910",
+    "git_dirty": false,
+    "files_sha256": "c8cb143a786dd32ae1aafea67cceb9c519dd1a6b8432ea5eef4fbd89e4362f67"
+  },
+  "environment": {
+    "python": "3.12.3",
+    "platform": "Linux x86_64",
+    "processor": "x86_64"
+  }
+}

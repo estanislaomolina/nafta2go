@@ -18,6 +18,7 @@ from nafta2go.adapters.openrouteservice import OpenRouteServiceClient
 from nafta2go.adapters.recorded_routes import CapturedRoutes
 from nafta2go.adapters.route_cache import RouteCache
 from nafta2go.application.ingestion_monitor import check_ingestion
+from nafta2go.application.recommendation_audit import audit_recommendations
 from nafta2go.normalization.pipeline import normalize_capture
 from nafta2go.persistence import repository as repo
 from nafta2go.persistence.models import RawCapture
@@ -162,3 +163,8 @@ def test_recovery_prices_and_cached_routes_remain_consistent(engine, tmp_path, m
         assert "-34.6037" not in encoded and "-58.4565" not in encoded
         assert "google.com/maps" not in encoded
         assert "credencial-ficticia" not in caplog.text
+        with engine.connect() as conn:
+            audit = audit_recommendations(repo.recommendations_with_run_status(conn))
+        assert audit["origins"]["ingesta_vigente"] == audit["recommendations"] == 3
+        assert audit["frescura"]["total"] > 30
+        assert not any(audit["fallas"].values())
