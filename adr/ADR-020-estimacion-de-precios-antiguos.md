@@ -43,6 +43,11 @@ validación; más allá hay 48, con mediana de 129 días, que no representan los
 de cientos de días del conjunto vigente. Para precios de más de 120 días se mantiene
 la abstención.
 
+Este límite **no estaba en el protocolo**: se decidió después de la corrida real. Con
+48 casos (mínimo 30), el tramo de más de 120 días tenía soporte y también cumplía la
+regla de adopción. Achicar el alcance es más conservador que el protocolo, pero es una
+decisión posterior a ver los resultados y queda declarada como tal.
+
 Reglas para una futura integración, a implementar en una issue aparte:
 
 * La estimación va en campos separados del precio oficial: precio oficial, fecha

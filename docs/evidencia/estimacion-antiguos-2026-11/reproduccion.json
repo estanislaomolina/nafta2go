@@ -10,5 +10,7 @@
     {"output": "stale-2", "sha256": "eb838d47d6eab4671d41574087bb54f7cb6cab113339ca13ea63f5f301132c71"}
   ],
   "identical": true,
-  "model_loaded": false
+  "model_loaded": false,
+  "runs_platform": "macOS; versiones de numpy y scikit-learn no registradas en esas corridas",
+  "cross_platform_check": {"platform": "Linux x86_64", "python": "3.12.3", "numpy": "2.5.4", "scikit-learn": "1.9.1", "pandas": "2.3.3", "sha256": "454cb3ad68eb7b146415f23f65262b5098090c188df2e3fb4ca5949b96803bb8", "byte_identical": false, "same_choice_and_adoption": true, "difference": "último decimal de algunos promedios (punto flotante)"}
 }

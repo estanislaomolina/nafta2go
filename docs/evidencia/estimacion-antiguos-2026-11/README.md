@@ -32,6 +32,9 @@ python -m nafta2go.ml.evaluate_stale \
 ```
 
 Dos corridas en salidas nuevas dieron bytes idénticos; ver [reproducción](reproduccion.json).
+En otra plataforma (Linux) el método elegido, la adopción y las métricas coinciden hasta
+la decimoquinta cifra, pero los bytes difieren en el último decimal de algunos
+promedios: la identidad byte a byte sólo vale en el mismo entorno.
 El [reporte](stale-evaluation.json) registra hashes, parámetros y procedencia del código.
 
 ## Resultados
@@ -68,6 +71,9 @@ Lectura:
 - **Antigüedad cubierta:** los reingresos de más de 120 días tienen mediana de 129
   días y máximo de 391. La evidencia no cubre los precios de cientos de días que el
   PRD observó en el conjunto vigente.
+- **Límite de 120 días posterior a la corrida:** el protocolo no lo fijaba. El tramo
+  de más de 120 días tenía soporte (48 ≥ 30) y cumplía la regla; ADR-020 lo excluye
+  por representatividad, una decisión tomada después de ver los resultados.
 - La vigencia se usa como proxy de disponibilidad (ADR-013), y 2026 ya tenía métricas
   globales publicadas (ADR-014, #110): no es una prueba prospectiva ni ciega.
 - Es una evaluación retrospectiva (`runtime_enabled=false`); no habilita nada en la
