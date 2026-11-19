@@ -26,8 +26,13 @@ def google_maps_url(lat: float, lon: float) -> str:
     )
 
 
+def _label(brand: str | None, address: str | None, station_id: str) -> str:
+    return f"Cómo llegar a {brand or 'la estación'} — {address or station_id}"
+
+
 def present_recommendation(payload: dict) -> dict:
-    result = {key: value for key, value in payload.items() if key != "navigation_destinations"}
+    hidden = {"navigation_destinations", "stale_navigation_destinations"}
+    result = {key: value for key, value in payload.items() if key not in hidden}
     destinations = payload.get("navigation_destinations", {})
     rows = {row["station_id"]: row for row in payload["evaluations"]}
     links = []
@@ -41,11 +46,25 @@ def present_recommendation(payload: dict) -> dict:
             {
                 "station_id": station_id,
                 "url": google_maps_url(location["lat"], location["lon"]),
-                "label": (
-                    f"Cómo llegar a {row['brand'] or 'la estación'} — "
-                    f"{row['address'] or station_id}"
-                ),
+                "label": _label(row["brand"], row["address"], station_id),
             }
         )
-    result.update(navigation=links, navigation_notice=NOTICE if links else None)
+    stale = payload.get("stale_price_estimates")
+    stale_destinations = payload.get("stale_navigation_destinations", {})
+    if stale and stale.get("items"):
+        items = []
+        for item in stale["items"]:
+            location = stale_destinations.get(item["station_id"])
+            if location is not None:
+                item = item | {
+                    "navigation": {
+                        "url": google_maps_url(location["lat"], location["lon"]),
+                        "label": _label(item["brand"], item["address"], item["station_id"]),
+                    }
+                }
+            items.append(item)
+        result["stale_price_estimates"] = stale | {"items": items}
+    shown_stale = (result.get("stale_price_estimates") or {}).get("items", [])
+    has_links = links or any("navigation" in item for item in shown_stale)
+    result.update(navigation=links, navigation_notice=NOTICE if has_links else None)
     return result

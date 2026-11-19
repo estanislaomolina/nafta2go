@@ -90,3 +90,35 @@ def test_label_falls_back_to_station_identifier():
         present_recommendation(payload)["navigation"][0]["label"]
         == "Cómo llegar a la estación — one"
     )
+
+
+def test_stale_stations_get_their_own_link_apart_from_the_alternatives():
+    payload = sample()
+    payload["stale_price_estimates"] = {
+        "status": "available",
+        "items": [
+            {"station_id": "501", "brand": "Bandera", "address": "Calle 1"},
+            {"station_id": "502", "brand": "", "address": ""},
+        ],
+    }
+    payload["stale_navigation_destinations"] = {"501": {"lat": -34.6, "lon": -58.45}}
+    before = deepcopy(payload)
+    shown = present_recommendation(payload)
+    assert payload == before and "stale_navigation_destinations" not in shown
+    first, second = shown["stale_price_estimates"]["items"]
+    assert first["navigation"]["label"] == "Cómo llegar a Bandera — Calle 1"
+    assert first["navigation"]["url"].startswith("https://www.google.com/maps/dir/?api=1")
+    assert "navigation" not in second
+    assert [link["station_id"] for link in shown["navigation"]] == ["one"]
+
+
+def test_a_stale_link_alone_still_shows_the_navigation_notice():
+    payload = sample()
+    payload["alternatives"] = []
+    payload["stale_price_estimates"] = {
+        "status": "available",
+        "items": [{"station_id": "501", "brand": "B", "address": "A"}],
+    }
+    payload["stale_navigation_destinations"] = {"501": {"lat": -34.6, "lon": -58.45}}
+    shown = present_recommendation(payload)
+    assert shown["navigation"] == [] and shown["navigation_notice"] == NOTICE

@@ -102,18 +102,19 @@ def recommend(
         if selection.data_run_id is not None
         else None
     )
+    stale_block, stale_locations = _stale_estimates(
+        conn,
+        result.current.data_run_id,
+        fuel_type=fuel_type,
+        schedule_id=schedule_id,
+        reference_at=reference_at,
+        origin=origin,
+        destination=destination,
+        max_age_days=max_age_days,
+        limit=max_candidates,
+    )
     payload = {
-        "stale_price_estimates": _stale_estimates(
-            conn,
-            result.current.data_run_id,
-            fuel_type=fuel_type,
-            schedule_id=schedule_id,
-            reference_at=reference_at,
-            origin=origin,
-            destination=destination,
-            max_age_days=max_age_days,
-            limit=max_candidates,
-        ),
+        "stale_price_estimates": stale_block,
         "status": result.status.value,
         "outcome": (
             "insufficient_coverage"
@@ -183,11 +184,17 @@ def recommend(
     payload["navigation_destinations"] = {
         choice.station_id: asdict(rows[choice.station_id].candidate.location) for choice in choices
     }
+    payload["stale_navigation_destinations"] = stale_locations
     return payload
 
 
-def _stale_estimates(conn: Connection, run_id: int | None, *, max_age_days: int, **options) -> dict:
-    """Estimaciones de ADR-020 sobre la ingesta vigente, aparte de la recomendación."""
+def _stale_estimates(
+    conn: Connection, run_id: int | None, *, max_age_days: int, **options
+) -> tuple[dict, dict]:
+    """Estimaciones de ADR-020 sobre la ingesta vigente, aparte de la recomendación.
+
+    Devuelve el bloque que se persiste y, por separado, las coordenadas públicas de esas
+    estaciones para la navegación, que se agregan recién después de persistir."""
     items = (
         estimate_stale_prices(
             repo.prices_for_run(conn, run_id), max_age_days=max_age_days, **options
@@ -195,7 +202,7 @@ def _stale_estimates(conn: Connection, run_id: int | None, *, max_age_days: int,
         if run_id is not None
         else ()
     )
-    return {
+    block = {
         "status": "available" if run_id is not None else "no_current_data",
         "data_run_id": run_id,
         "method": METHOD,
@@ -206,7 +213,7 @@ def _stale_estimates(conn: Connection, run_id: int | None, *, max_age_days: int,
         "notice": ESTIMATE_NOTICE,
         "items": [
             {
-                **{key: str(value) for key, value in asdict(item).items()},
+                **{key: str(value) for key, value in asdict(item).items() if key != "location"},
                 "official_published_at_local": item.official_published_at_local.isoformat(),
                 "official_age_days": item.official_age_days,
                 "reference_from_local": item.reference_from_local.isoformat(),
@@ -216,3 +223,5 @@ def _stale_estimates(conn: Connection, run_id: int | None, *, max_age_days: int,
             for item in items
         ],
     }
+    locations = {item.station_id: asdict(item.location) for item in items if item.location}
+    return block, locations

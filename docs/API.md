@@ -130,6 +130,10 @@ recientes de la bandera se abstiene: la estación no aparece. A diferencia de la
 evaluación, usa la ingesta vigente, que guarda la última publicación de cada
 estación, en lugar de todas las publicaciones del histórico.
 
+Cada ítem trae además `navigation` (URL de Google Maps y etiqueta), armada en la
+presentación como la de las alternativas: las coordenadas de la estación se agregan
+después de persistir y la recomendación guardada no las incluye.
+
 No requiere `NAFTA2GO_PRICE_*`: es una regla determinística sin artefactos. Las
 estaciones estimadas nunca se enrutan, no entran al ranking, no cuentan para la
 cobertura y no renuevan la vigencia del precio oficial. Sin ingesta vigente, el
