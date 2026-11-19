@@ -38,6 +38,8 @@ def record(**changes):
         "routing_provider": "openrouteservice",
         "request": {"fuel_type": "super", "max_price_age_days": 30},
         "result": {
+            "data_run_id": None,
+            "scenario": deepcopy(SCENARIO),
             "engine_version": "mvp-02-v2",
             "routing_provider": "openrouteservice",
             "price_reference_at": "2026-10-24T21:00:00+00:00",
@@ -92,6 +94,39 @@ def test_traceability_failures_are_named(changes, reason):
     )
 
 
+def test_a_result_with_another_origin_than_its_columns_is_not_traceable():
+    current = record()
+    current["result"]["scenario"] = None
+    assert traceability_failures(current) == ["origen_inconsistente"]
+    current = record(data_run_id=4, data_run_status="succeeded", scenario=None)
+    current["result"] |= {"data_run_id": 5, "scenario": None}
+    assert traceability_failures(current) == ["origen_inconsistente"]
+    current["result"]["data_run_id"] = 4
+    assert traceability_failures(current) == []
+    del current["result"]["data_run_id"]
+    assert traceability_failures(current) == ["origen_inconsistente"]
+
+
+@pytest.mark.parametrize("days", [31, 0, "30", True])
+def test_a_stored_age_threshold_out_of_range_fails_and_does_not_widen_freshness(days):
+    current = record()
+    current["result"]["query"]["max_price_age_days"] = days
+    current["result"]["evaluations"] = [evaluation("2026-09-20T18:00:00")]
+    assert traceability_failures(current) == ["vigencia_fuera_de_rango"]
+    assert stale_evaluations(current) == (1, 1)
+
+
+def test_an_incomplete_row_is_reported_without_stopping_the_audit():
+    incomplete = record(id=7)
+    del incomplete["result"]["price_reference_at"]
+    without_query = record(id=8)
+    del without_query["result"]["query"]
+    report = audit_recommendations(iter([incomplete, record(id=9), without_query]))
+    assert report["recommendations"] == 3
+    assert report["fallas"]["trazabilidad"] == {"7": ["fila_incompleta"], "8": ["fila_incompleta"]}
+    assert report["frescura"]["total"] == 2 and report["privacidad"]["cumplen"] == 3
+
+
 def test_prices_without_source_row_and_unhashed_replays_are_not_traceable():
     current = record()
     current["result"]["evaluations"][0]["source_row"] = None
@@ -115,9 +150,33 @@ def test_locations_and_map_links_anywhere_are_privacy_failures():
     nested = record()
     nested["result"]["query"]["Destino"] = [1, 2]
     assert privacy_failures(nested) == ["result_con_ubicacion"]
+    similar = record()
+    similar["request"] |= {"has_destination": True, "origin_type": "manual"}
+    assert privacy_failures(similar) == []
     report = audit_recommendations([current, record(id=2)])
     assert report["privacidad"] == {"cumplen": 1, "total": 2, "proporcion": 0.5}
     assert list(report["fallas"]["privacidad"]) == ["1"]
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        {"from": {"lat": 1, "lon": 2}},
+        {"from": [-34.6, -58.4]},
+        {"punto": ["-58.4", "-34.6"]},
+        {"nota": "salida en -34.6037, -58.3816"},
+    ],
+)
+def test_coordinates_under_other_keys_are_privacy_failures(value):
+    current = record()
+    current["request"] |= value
+    assert privacy_failures(current) == ["request_con_ubicacion"]
+
+
+def test_number_pairs_outside_caba_are_not_locations():
+    current = record()
+    current["request"] |= {"rango": [10, 20], "nota": "30, 120 días", "par": ["a", "b"]}
+    assert privacy_failures(current) == []
 
 
 def test_an_empty_history_reports_no_proportion():

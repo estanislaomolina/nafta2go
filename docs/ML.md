@@ -9,8 +9,9 @@ Fuente: precios en surtidor de Secretaría de Energía, CC BY 4.0;
 [normalización y alcance](NORMALIZACION.md). Trabajo de #18 y #56; decisión propuesta en
 [ADR-013](../adr/ADR-013-evaluacion-temporal-de-precios.md) y
 [ADR-014](../adr/ADR-014-seleccion-de-modelo-de-precios.md). Entrena y compara modelos
-offline, pero todavía no sirve ninguno. Ninguna referencia ni modelo reemplaza el precio
-oficial, altera el recomendador o habilita estimaciones antiguas de #57.
+offline y sirve sólo la referencia elegida, no un modelo. Ninguna referencia ni modelo
+reemplaza el precio oficial ni altera el recomendador. La estimación de precios antiguos
+de #57 está integrada aparte del ranking (ADR-020).
 
 ## Reproducir sin tocar la base operativa
 
