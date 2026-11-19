@@ -20,6 +20,11 @@ class Coordinates(BaseModel):
         return Point(self.lat, self.lon)
 
 
+class PlaceSearchInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    text: str = Field(strict=True, min_length=3, max_length=120)
+
+
 class RecommendationInput(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     origin: Coordinates
