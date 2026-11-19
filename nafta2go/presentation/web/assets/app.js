@@ -11,7 +11,10 @@ function node(tag, text, className = "") {
   item.textContent = text; item.className = className; return item;
 }
 function number(value, unit = "") {
-  return value == null ? "Sin dato" : new Intl.NumberFormat("es-AR", {maximumFractionDigits: 3}).format(Number(value)) + unit;
+  return value == null ? "Sin dato" : new Intl.NumberFormat("es-AR", {maximumFractionDigits: 2}).format(Number(value)) + unit;
+}
+function minutes(value) {
+  return value == null ? "Sin dato" : "~" + new Intl.NumberFormat("es-AR").format(Math.ceil(Number(value)) || 0) + " min";
 }
 function date(value) {
   return new Intl.DateTimeFormat("es-AR", {dateStyle: "short", timeStyle: "short", hour12: false, timeZone: "America/Argentina/Buenos_Aires"}).format(new Date(value));
@@ -62,6 +65,14 @@ function priceReference(data, row) {
   });
   section.append(button, result); return section;
 }
+function mapsLink(link) {
+  if (!link || typeof link.url !== "string" || typeof link.label !== "string") return null;
+  let url; try { url = new URL(link.url); } catch { return null; }
+  if (url.origin !== "https://www.google.com" || url.pathname !== "/maps/dir/") return null;
+  const anchor = node("a", link.label + " ↗", "navigate");
+  anchor.href = url.href; anchor.target = "_blank"; anchor.rel = "noopener noreferrer";
+  anchor.setAttribute("aria-label", link.label + ". Google Maps, nueva pestaña"); return anchor;
+}
 function day(value) {
   return value.replace(/^(\d{4})-(\d{2})-(\d{2})T.*/, "$3/$2/$1");
 }
@@ -83,7 +94,9 @@ function staleEstimates(block) {
       ["Precio estimado", number(item.estimate_ars_per_l, " ARS/L")],
       ["Referencia", "Mediana de " + item.reference_count + " precios de la misma bandera entre el " + day(item.reference_from_local) + " y el " + day(item.reference_to_local)],
     ]) detail.append(node("dt", label), node("dd", value));
-    card.append(detail); section.append(card);
+    card.append(detail);
+    const anchor = mapsLink(item.navigation); if (anchor) card.append(anchor);
+    section.append(card);
   }
   return section;
 }
@@ -102,28 +115,24 @@ function show(data) {
     const row = rows.get(choice.station_id), metrics = row.metrics, card = document.createElement("article");
     card.append(node("p", choice.priorities.map(key => priorities[key] || key).join(" · "), "priorities"));
     card.append(node("h3", row.brand || row.company || "Estación " + row.station_id), node("p", row.address, "address"));
-    const values = [
-      ["Precio publicado", number(row.price_ars_per_l, " ARS/L")], ["Combustible a comprar", number(metrics.purchased_l, " L")],
-      ["Costo de la carga", number(metrics.cost_ars, " ARS")], ["Consumo del recorrido", number(metrics.total_consumption_l, " L")],
-      ["Ganancia neta", number(metrics.net_gain_l, " L")], ["Combustible al finalizar", number(metrics.final_l, " L")],
-      ["Reserva exigida", number(data.query.reserve_l, " L")], ["Autonomía final", number(metrics.final_range_km, " km")],
-      ["Desvío adicional", number(metrics.extra_km, " km") + " / " + number(metrics.extra_min, " min")],
-    ];
-    const detail = document.createElement("dl");
-    for (const [label, value] of values) detail.append(node("dt", label), node("dd", value));
-    card.append(detail, node("p", "Publicado (hora Argentina): " + row.published_at_local.replace(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}).*/, "$3/$2/$1 $4"), "hint"));
+    const summary = document.createElement("dl"); summary.className = "key-figures";
+    for (const [label, value] of [
+      ["Precio", number(row.price_ars_per_l, " ARS/L")], ["Costo de la carga", number(metrics.cost_ars, " ARS")],
+      ["Litros a cargar", number(metrics.purchased_l, " L")], ["Desvío", "+" + number(metrics.extra_km, " km") + " · " + minutes(metrics.extra_min)],
+    ]) { const item = document.createElement("div"); item.append(node("dt", label), node("dd", value)); summary.append(item); }
+    card.append(summary);
+    const more = document.createElement("details"), detail = document.createElement("dl");
+    more.className = "card-detail"; more.append(node("summary", "Ver detalle del cálculo"));
+    for (const [label, value] of [
+      ["Consumo del recorrido", number(metrics.total_consumption_l, " L")], ["Ganancia neta", number(metrics.net_gain_l, " L")],
+      ["Combustible al finalizar", number(metrics.final_l, " L")], ["Reserva exigida", number(data.query.reserve_l, " L")],
+      ["Autonomía final", number(metrics.final_range_km, " km")],
+    ]) detail.append(node("dt", label), node("dd", value));
+    more.append(detail, node("p", "Publicado (hora Argentina): " + row.published_at_local.replace(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}).*/, "$3/$2/$1 $4"), "hint"));
     if (row.alerts.length) card.append(node("p", "Este dato tiene advertencias de calidad. Revisá su fuente y vigencia.", "notice warning"));
-    if (data.status === 'ready' && data.data_run_id != null && {super: 2, premium: 3}[data.query.fuel_type] && [2, 3].includes(data.query.schedule_id)) card.append(priceReference(data, row));
-    const link = links.get(choice.station_id);
-    if (link) {
-      const url = new URL(link.url);
-      if (url.origin === "https://www.google.com" && url.pathname === "/maps/dir/") {
-        const anchor = node("a", link.label + " ↗", "navigate");
-        anchor.href = url.href; anchor.target = "_blank"; anchor.rel = "noopener noreferrer";
-        anchor.setAttribute("aria-label", link.label + ". Google Maps, nueva pestaña"); card.append(anchor);
-      }
-    }
-    output.append(card);
+    if (data.status === 'ready' && data.data_run_id != null && {super: 2, premium: 3}[data.query.fuel_type] && [2, 3].includes(data.query.schedule_id)) more.append(priceReference(data, row));
+    const anchor = mapsLink(links.get(choice.station_id)); if (anchor) card.append(anchor);
+    card.append(more); output.append(card);
   }
   if (data.navigation_notice) output.append(node("p", data.navigation_notice, "hint"));
   const estimates = staleEstimates(data.stale_price_estimates);
@@ -140,8 +149,18 @@ function show(data) {
   status.textContent = data.alternatives.length ? data.alternatives.length === 1 ? "Encontramos una alternativa." : "Encontramos " + data.alternatives.length + " alternativas." : "Consulta terminada sin alternativas.";
   output.focus();
 }
-back.addEventListener("change", () => { destination.hidden = back.checked; destination.disabled = back.checked; });
-form.addEventListener("input", () => { for (const input of form.querySelectorAll("input")) input.setCustomValidity(""); });
+const mirrored = {destination_lat: "origin_lat", destination_lon: "origin_lon"};
+function syncDestination() {
+  for (const [key, source] of Object.entries(mirrored)) {
+    const input = form.elements[key]; input.readOnly = back.checked;
+    if (back.checked) input.value = form.elements[source].value;
+  }
+}
+back.addEventListener("change", () => {
+  if (!back.checked) for (const key of Object.keys(mirrored)) form.elements[key].value = "";
+  syncDestination();
+});
+form.addEventListener("input", () => { for (const input of form.querySelectorAll("input")) input.setCustomValidity(""); syncDestination(); });
 form.addEventListener("submit", async event => {
   event.preventDefault();
   for (const input of form.querySelectorAll("input")) input.setCustomValidity("");
@@ -183,9 +202,12 @@ document.querySelector("#locate").addEventListener("click", event => {
   if (!navigator.geolocation) { notice.textContent = "Este navegador no ofrece ubicación. Cargá las coordenadas manualmente."; return; }
   button.disabled = true; submit.disabled = true; notice.textContent = "Buscando tu ubicación…";
   navigator.geolocation.getCurrentPosition(position => {
-    form.elements.origin_lat.value = position.coords.latitude; form.elements.origin_lon.value = position.coords.longitude;
+    form.elements.origin_lat.value = position.coords.latitude; form.elements.origin_lon.value = position.coords.longitude; syncDestination();
     notice.textContent = "Ubicación completada. Confirmá que esté dentro de CABA."; button.disabled = false; submit.disabled = false;
-  }, () => { notice.textContent = "No pudimos obtener tu ubicación. Cargá las coordenadas manualmente."; button.disabled = false; submit.disabled = false; }, {timeout: 10000, maximumAge: 0});
+  }, failure => {
+    const reason = {1: "El navegador o el sistema no dieron permiso de ubicación.", 2: "El navegador no pudo determinar dónde estás; en computadoras sin GPS suele pasar.", 3: "La ubicación demoró demasiado."}[failure && failure.code];
+    notice.textContent = (reason ? reason + " " : "No pudimos obtener tu ubicación. ") + "Cargá las coordenadas manualmente."; button.disabled = false; submit.disabled = false;
+  }, {timeout: 10000, maximumAge: 0});
 });
 window.addEventListener("pagehide", () => { access.value = ""; clearReferences(); });
 submit.disabled = false;

@@ -18,8 +18,9 @@
       <fieldset><legend>1. Tu recorrido</legend><p class="hint">Coordenadas en grados decimales, dentro de CABA.</p>
         <div class="pair"><label>Latitud de origen<input name="origin_lat" type="number" min="-90" max="90" step="any" placeholder="Ej.: -34.60" required></label><label>Longitud de origen<input name="origin_lon" type="number" min="-180" max="180" step="any" placeholder="Ej.: -58.38" required></label></div>
         <button id="locate" class="secondary" type="button">Usar mi ubicación</button><p id="location-status" class="hint" role="status"></p>
-        <label class="check"><input id="return" type="checkbox" checked> Volver al origen después de cargar</label>
-        <fieldset id="destination" hidden disabled><legend>Destino del viaje</legend><div class="pair"><label>Latitud de destino<input name="destination_lat" type="number" min="-90" max="90" step="any" required></label><label>Longitud de destino<input name="destination_lon" type="number" min="-180" max="180" step="any" required></label></div></fieldset>
+        <fieldset id="destination"><legend>Destino del viaje</legend>
+          <label class="check"><input id="return" type="checkbox" aria-describedby="destination-hint"> Volver a donde estoy (ida y vuelta)</label>
+          <p id="destination-hint" class="hint">Si lo marcás, el destino es tu origen y no se edita.</p><div class="pair"><label>Latitud de destino<input name="destination_lat" type="number" min="-90" max="90" step="any" required></label><label>Longitud de destino<input name="destination_lon" type="number" min="-180" max="180" step="any" required></label></div></fieldset>
       </fieldset>
       <fieldset><legend>2. Tu vehículo</legend><div class="pair">
         <label>Consumo (L/100 km)<input name="consumption_l_per_100km" type="number" min="0" step="any" value="10" required></label>
