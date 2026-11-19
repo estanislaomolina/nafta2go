@@ -5,45 +5,85 @@ const status = document.querySelector('#operation-status'), error = document.que
 const results = document.querySelector('#operation-results');
 let controller, generation = 0;
 function node(tag, text) { const element = document.createElement(tag); element.textContent = text; return element; }
+const integer = new Intl.NumberFormat('es-AR', {maximumFractionDigits: 0}), decimal = new Intl.NumberFormat('es-AR', {maximumFractionDigits: 2});
+function count(value) { return value == null ? 'Sin datos' : integer.format(Number(value)); }
+function moment(value) {
+  if (!value) return 'Sin datos';
+  const parsed = new Date(value); if (Number.isNaN(parsed.getTime())) return 'Sin datos';
+  return new Intl.DateTimeFormat('es-AR', {dateStyle: 'short', timeStyle: 'medium', hour12: false, timeZone: 'America/Argentina/Buenos_Aires'}).format(parsed);
+}
+function seconds(value) {
+  if (value == null) return 'Sin datos';
+  const total = Number(value);
+  return total < 60 ? decimal.format(total) + ' s' : integer.format(Math.floor(total / 60)) + ' min ' + integer.format(Math.round(total % 60)) + ' s';
+}
+function milliseconds(value) {
+  if (value == null) return 'Sin datos';
+  const total = Number(value); return total < 1000 ? integer.format(Math.ceil(total)) + ' ms' : decimal.format(total / 1000) + ' s';
+}
+function bytes(value) {
+  if (value == null) return 'Sin datos';
+  const total = Number(value); return total < 1e6 ? decimal.format(total / 1e3) + ' kB' : decimal.format(total / 1e6) + ' MB';
+}
 function details(values) {
   const list = document.createElement('dl');
   for (const [label, value] of values) list.append(node('dt', label), node('dd', value ?? 'Sin datos'));
   return list;
 }
-function card(title, values) { const element = document.createElement('article'); element.append(node('h3', title), details(values)); return element; }
+function tiles(values) {
+  const list = document.createElement('dl'); list.className = 'key-figures stats';
+  for (const [label, value] of values) { const item = document.createElement('div'); item.append(node('dt', label), node('dd', value ?? 'Sin datos')); list.append(item); }
+  return list;
+}
+function card(title, content) { const element = document.createElement('article'); element.append(node('h3', title), content); return element; }
 function run(title, data) {
   if (!data) { const element = document.createElement('article'); element.append(node('h3', title), node('p', 'No hay una ejecución registrada.')); return element; }
   const states = {succeeded: 'Exitosa', failed: 'Fallida', running: 'En ejecución'};
-  return card(title, [
-    ['Ejecución', data.id], ['Estado', states[data.status] ?? 'Sin datos'],
-    ['Inicio (UTC)', data.started_at], ['Fin (UTC)', data.finished_at],
-    ['Duración (s)', data.duration_seconds], ['Reglas', data.rules_version],
-    ['Filas normalizadas', data.price_rows], ['Estaciones distintas', data.stations],
-    ['Filas rechazadas', data.rejected_rows], ['SHA-256', data.sha256], ['Captura (bytes)', data.size_bytes]
+  const element = card(title, tiles([
+    ['Estado', states[data.status] ?? 'Sin datos'], ['Duración', seconds(data.duration_seconds)],
+    ['Filas normalizadas', count(data.price_rows)], ['Estaciones', count(data.stations)],
+  ]));
+  const more = document.createElement('details'); more.className = 'card-detail';
+  const hash = data.sha256 ? String(data.sha256) : null, digest = node('dd', hash ? hash.slice(0, 12) + '…' : 'Sin datos');
+  if (hash) digest.title = hash;
+  const list = details([
+    ['Ejecución', count(data.id)], ['Inicio (hora Argentina)', moment(data.started_at)], ['Fin (hora Argentina)', moment(data.finished_at)],
+    ['Filas rechazadas', count(data.rejected_rows)], ['Reglas', data.rules_version == null ? null : String(data.rules_version)], ['Captura', bytes(data.size_bytes)],
   ]);
+  list.append(node('dt', 'SHA-256'), digest);
+  more.append(node('summary', 'Ver detalle de la ejecución'), list); element.append(more);
+  return element;
 }
 function render(metrics, ingestion) {
   const queries = metrics.queries, routes = metrics.routes;
-  results.append(node('p', 'Lectura de ingesta: ' + ingestion.observed_at + ' (UTC).'));
-  results.append(card('Consultas HTTP · proceso actual', [
-    ['Consultas terminadas', queries.completed], ['Duración acumulada (ms)', queries.duration_ms_total],
-    ['Con recomendación', queries.outcome.recommended ?? 0], ['Sin alternativas', queries.outcome.no_feasible_stations ?? 0],
-    ['Sin cobertura', queries.outcome.insufficient_coverage ?? 0], ['Con error HTTP', queries.outcome.http_error ?? 0]
-  ]));
-  results.append(card('Rutas · caché del proceso', [
-    ['Reutilizaciones', routes.hits], ['Faltantes en caché', routes.misses], ['Solicitudes al proveedor', routes.requests],
-    ['Errores del proveedor', routes.errors], ['Bloqueos por cupo', routes.limited], ['Proveedor ocupado', routes.busy], ['Entradas', routes.entries]
-  ]));
+  const alerting = ingestion.status === 'alerting', banner = document.createElement('div');
+  banner.className = 'notice ' + (alerting ? 'warning' : 'ok');
+  const heading = node('h3', alerting ? 'Condiciones de alerta' : 'Sin condiciones de alerta'); banner.append(heading);
+  if (ingestion.conditions.length) {
+    const conditions = document.createElement('ul');
+    const kinds = {missing: 'Falta el intento diario esperado', failed: 'La última ejecución terminada falló', stalled: 'Una ejecución lleva al menos dos horas'};
+    for (const condition of ingestion.conditions) conditions.append(node('li', (kinds[condition.kind] ?? 'Condición no reconocida') + (condition.run_id == null ? '' : ' · ejecución ' + condition.run_id)));
+    banner.append(conditions);
+  }
+  if (ingestion.conditions_truncated) banner.append(node('p', 'Se muestran ' + ingestion.conditions.length + ' de ' + ingestion.condition_count + ' condiciones.'));
+  const read = node('p', 'Lectura del ' + moment(ingestion.observed_at) + ' (hora Argentina).'); read.className = 'hint';
+  results.append(banner, read);
+  const runs = document.createElement('div'); runs.className = 'run-grid';
+  runs.append(run('Último intento', ingestion.latest_attempt), run('Última ingesta exitosa', ingestion.latest_successful));
+  results.append(runs);
+  const average = queries.completed ? Number(queries.duration_ms_total) / queries.completed : null;
+  results.append(card('Consultas HTTP · proceso actual', tiles([
+    ['Terminadas', count(queries.completed)], ['Duración promedio', average == null ? 'Sin datos' : milliseconds(average)],
+    ['Con recomendación', count(queries.outcome.recommended ?? 0)], ['Sin alternativas', count(queries.outcome.no_feasible_stations ?? 0)],
+    ['Sin cobertura', count(queries.outcome.insufficient_coverage ?? 0)], ['Con error HTTP', count(queries.outcome.http_error ?? 0)]
+  ])));
+  results.append(card('Rutas · caché del proceso', tiles([
+    ['Reutilizaciones', count(routes.hits)], ['Faltantes en caché', count(routes.misses)], ['Solicitudes al proveedor', count(routes.requests)],
+    ['Errores del proveedor', count(routes.errors)], ['Bloqueos por cupo', count(routes.limited)], ['Proveedor ocupado', count(routes.busy)], ['Entradas', count(routes.entries)]
+  ])));
   const notice = node('p', 'Los contadores no incluyen la CLI y las rutas grabadas no usan esta caché.'); notice.className = 'hint'; results.append(notice);
-  results.append(node('h3', ingestion.status === 'alerting' ? 'Condiciones de alerta' : 'Sin condiciones de alerta'));
-  const conditions = document.createElement('ul');
-  const kinds = {missing: 'Falta el intento diario esperado', failed: 'La última ejecución terminada falló', stalled: 'Una ejecución lleva al menos dos horas'};
-  for (const condition of ingestion.conditions) conditions.append(node('li', (kinds[condition.kind] ?? 'Condición no reconocida') + (condition.run_id == null ? '' : ' · ejecución ' + condition.run_id)));
-  results.append(conditions);
-  if (ingestion.conditions_truncated) results.append(node('p', 'Se muestran ' + ingestion.conditions.length + ' de ' + ingestion.condition_count + ' condiciones.'));
-  results.append(run('Último intento', ingestion.latest_attempt), run('Última ingesta exitosa', ingestion.latest_successful));
   const limit = node('p', 'Esta lectura recalcula condiciones; no crea ni resuelve alertas del monitor. Sin alertas no significa que los precios sean actuales. Histórico usa las mismas reglas, aunque no tenga una tarea diaria programada.');
-  limit.className = 'notice warning'; results.append(limit);
+  limit.className = 'hint'; results.append(limit);
 }
 function clear() {
   generation++; controller?.abort(); access.value = ''; results.replaceChildren(); error.hidden = true;

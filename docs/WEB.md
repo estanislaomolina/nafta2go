@@ -8,7 +8,9 @@ código en «Acceso a la demo». La API y la web comparten origen; decisión pro
 en [ADR-012](../adr/ADR-012-web-local-con-assets-propios.md).
 
 El formulario recibe coordenadas manuales o ubicación solicitada mediante un
-botón, destino opcional (volver al origen), vehículo, nafta, horario y presupuesto.
+botón, destino del viaje, vehículo, nafta, horario y presupuesto. La casilla
+«Volver a donde estoy» copia el origen en el destino, lo deja sin editar y envía
+la consulta como ida y vuelta (UC02, `destination: null`).
 La geolocalización depende de permisos y del contexto seguro del navegador;
 si no está disponible, permite ingresar coordenadas. No se consulta al cargar.
 Los importes/litros viajan como cadenas decimales; solo la presentación redondea.

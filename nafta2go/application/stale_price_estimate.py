@@ -7,7 +7,7 @@ reingresos (`docs/evidencia/estimacion-antiguos-2026-11`); sin esa referencia se
 
 from collections import defaultdict
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from statistics import median
@@ -42,6 +42,8 @@ class StaleEstimate:
     reference_count: int
     method: str = METHOD
     version: str = ESTIMATE_VERSION
+    # Coordenadas públicas de la estación, sólo para el enlace de navegación: no se persisten.
+    location: Point | None = field(default=None, compare=False)
 
 
 def _local(moment: datetime) -> datetime:
@@ -131,6 +133,7 @@ def estimate_stale_prices(
                 reference_from_local=now_local - timedelta(days=RECENT_DAYS),
                 reference_to_local=now_local,
                 reference_count=count,
+                location=Point(row["lat"], row["lon"]),
             )
         )
         if len(estimates) == limit:

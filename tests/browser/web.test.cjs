@@ -33,9 +33,8 @@ async function pageFor(options = {}) {
 async function ready(page, destination = false, code = 'codigo-web-de-prueba') {
   await page.locator('[name=origin_lat]').fill('-34.6037'); await page.locator('[name=origin_lon]').fill('-58.3816');
   if (destination) {
-    await page.locator('#return').uncheck();
     await page.locator('[name=destination_lat]').fill('-34.5627'); await page.locator('[name=destination_lon]').fill('-58.4565');
-  }
+  } else await page.locator('#return').check();
   await page.locator('#access').fill(code);
 }
 async function send(page) { await page.locator('#submit').click(); await page.waitForFunction(() => !document.querySelector('#submit').disabled); }
@@ -87,7 +86,13 @@ test('formulario, respuesta del backend con fixtures y accesibilidad en escritor
     assert.match(await page.locator('#results').innerText(), /Vigencia máxima aplicada: 29 días/);
     assert.ok(await page.locator('article').count() > 0);
     assert.equal(await page.locator('a.navigate').count(), await page.locator('article').count());
-    assert.match(await page.locator('article').first().innerText(), /Autonomía final/);
+    const first = page.locator('article').first();
+    assert.match(await first.innerText(), /Costo de la carga/); assert.doesNotMatch(await first.innerText(), /Autonomía final/);
+    await first.locator('.card-detail summary').click();
+    assert.match(await first.innerText(), /Autonomía final/);
+    const shown = await first.locator('dd').allInnerTexts();
+    assert.ok(shown.every(text => !/,\d{3}\b/.test(text)), shown.join(' | '));
+    assert.match(await first.locator('.key-figures').innerText(), /~\d+ min/);
     const link = page.locator('a.navigate').first();
     assert.equal(await link.getAttribute('rel'), 'noopener noreferrer'); assert.equal(await link.getAttribute('target'), '_blank');
     const url = new URL(await link.getAttribute('href'));
@@ -104,13 +109,30 @@ for (const destination of [false, true]) test('recorrido completo por teclado ' 
     await page.keyboard.press('Enter');
     await enter(page, '[name=origin_lat]', '-34.6037'); await enter(page, '[name=origin_lon]', '-58.3816');
     if (destination) {
-      await reach(page, '#return'); await page.keyboard.press('Space');
       await enter(page, '[name=destination_lat]', '-34.5627'); await enter(page, '[name=destination_lon]', '-58.4565');
-    }
+    } else { await reach(page, '#return'); await page.keyboard.press('Space'); }
     await enter(page, '#access', 'codigo-web-de-prueba'); await reach(page, '#submit'); await page.keyboard.press('Enter');
     await page.waitForFunction(() => document.querySelector('#status').textContent.startsWith('Encontramos'));
     assert.equal(await page.evaluate(() => document.activeElement.id), 'results');
     await reach(page, 'a.navigate'); assert.equal(await page.locator('a.navigate').first().evaluate(el => getComputedStyle(el).outlineWidth), '3px');
+  } finally { await page.context().close(); }
+});
+test('volver a donde estoy copia el origen en el destino y lo bloquea', async () => {
+  const page = await pageFor();
+  try {
+    const lat = page.locator('[name=destination_lat]'), lon = page.locator('[name=destination_lon]');
+    assert.equal(await lat.isVisible(), true); assert.equal(await page.locator('#return').isChecked(), false);
+    await page.locator('[name=origin_lat]').fill('-34.6037'); await page.locator('[name=origin_lon]').fill('-58.3816');
+    await page.locator('#return').check();
+    assert.deepEqual([await lat.inputValue(), await lon.inputValue()], ['-34.6037', '-58.3816']);
+    assert.equal(await lat.evaluate(el => el.readOnly), true);
+    await page.locator('[name=origin_lat]').fill('-34.6100'); assert.equal(await lat.inputValue(), '-34.6100');
+    await page.locator('#access').fill('codigo-web-de-prueba');
+    const request = page.waitForRequest(r => r.url().endsWith('/api/v1/recommendations'));
+    await send(page); assert.equal((await request).postDataJSON().destination, null);
+    await page.locator('#return').uncheck();
+    assert.deepEqual([await lat.inputValue(), await lat.evaluate(el => el.readOnly)], ['', false]);
+    await accessible(page);
   } finally { await page.context().close(); }
 });
 test('UC06 por teclado: descartes sin ganadoras inventadas', async () => {
@@ -141,6 +163,7 @@ test('móvil emulado, geolocalización simulada y búsqueda sin destino', async 
   const page = await pageFor({viewport: {width: 390, height: 844}, isMobile: true, hasTouch: true, permissions: ['geolocation'], geolocation: {latitude: -34.6037, longitude: -58.3816}});
   try {
     await page.locator('#locate').click(); await page.waitForFunction(() => document.querySelector('[name=origin_lat]').value !== '');
+    await page.locator('#return').check(); assert.equal(await page.locator('[name=destination_lat]').inputValue(), '-34.6037');
     await page.locator('#access').fill('codigo-web-de-prueba'); const request = page.waitForRequest(r => r.url().endsWith('/api/v1/recommendations'));
     await send(page); assert.equal((await request).postDataJSON().destination, null);
     assert.match(await page.locator('#status').innerText(), /Encontramos/);
@@ -191,7 +214,7 @@ test('ubicación denegada conserva el ingreso manual y el diseño a 320 px', asy
   try {
     await page.evaluate(() => { navigator.geolocation.getCurrentPosition = (_ok, reject) => reject({code: 1}); });
     await page.locator('#locate').click();
-    assert.match(await page.locator('#location-status').innerText(), /manualmente/);
+    assert.match(await page.locator('#location-status').innerText(), /no dieron permiso.*manualmente/);
     assert.equal(await page.locator('#submit').isDisabled(), false);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     await ready(page); await send(page); assert.match(await page.locator('#status').innerText(), /Encontramos/);
@@ -366,9 +389,12 @@ async function referenceScenario(page) {
     published_at: new Date(row.published_at_local + '-03:00').toISOString(),
     reference_ars_per_l: '1000.000', difference_ars_per_l: '25.000',
     alert_level: 'not_calibrated', method: 'bandera_reciente', version: 'e'.repeat(64)};
-  return {data, row, answer, card: page.locator('article').first()};
+  const card = page.locator('article').first(); await card.locator('.card-detail > summary').click();
+  return {data, row, answer, card};
 }
 async function readReference(page, card) {
+  const detail = card.locator('.card-detail');
+  if (!await detail.evaluate(el => el.open)) await detail.locator(':scope > summary').click();
   await card.locator('.price-reference-button').click();
   await page.waitForFunction(() => !document.querySelector('.price-reference-button').disabled);
   return card.locator('.price-reference-result').innerText();
@@ -477,13 +503,19 @@ test('las estimaciones de precios desactualizados se muestran aparte y rotuladas
       await ready(page);
       await page.route('**/api/v1/recommendations', async route => {
         const response = await route.fetch(), payload = await response.json();
-        payload.stale_price_estimates = staleBlock([staleItem, {...staleItem, station_id: '502', estimate_ars_per_l: null}, {...staleItem, station_id: '503', official_published_at_local: 'ayer'}]);
+        const navigation = {url: 'https://www.google.com/maps/dir/?api=1&destination=-34.6%2C-58.45&travelmode=driving&dir_action=navigate', label: 'Cómo llegar a la estación — CALLE 1'};
+        payload.stale_price_estimates = staleBlock([{...staleItem, navigation}, {...staleItem, station_id: '502', estimate_ars_per_l: null}, {...staleItem, station_id: '503', official_published_at_local: 'ayer'},
+          {...staleItem, station_id: '504', navigation: {url: 'javascript:window.pwned=1', label: 'x'}}]);
         await route.fulfill({json: payload});
       });
       await send(page);
       const section = page.getByRole('region', {name: 'Estaciones con precio desactualizado'});
       assert.equal(await section.isVisible(), true);
-      assert.equal(await section.locator('article').count(), 1);
+      assert.equal(await section.locator('article').count(), 2);
+      const link = section.locator('a.navigate');
+      assert.equal(await link.count(), 1);
+      assert.equal(await link.getAttribute('rel'), 'noopener noreferrer'); assert.equal(await link.getAttribute('target'), '_blank');
+      assert.equal(new URL(await link.getAttribute('href')).origin, 'https://www.google.com');
       const text = await section.textContent();
       assert.match(text, /ESTIMADO/);
       assert.match(text, /no es un precio oficial/);

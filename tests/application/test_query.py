@@ -317,6 +317,9 @@ def test_stale_estimates_are_reported_apart_from_the_ranking_and_recorded(engine
     with engine.connect() as conn:
         record = repo.get_recommendation(conn, result["recommendation_id"])
     assert record["result"]["stale_price_estimates"]["items"][0]["station_id"] == "501"
+    assert "location" not in item and "navigation" not in item
+    assert "lat" not in json.dumps(record["result"]["stale_price_estimates"])
+    assert set(result["stale_navigation_destinations"]) == {"501"}
 
 
 def test_without_current_ingestion_estimates_are_not_available(engine):

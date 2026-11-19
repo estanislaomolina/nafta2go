@@ -18,9 +18,8 @@
         <label>Código administrativo<input id="operation-access" type="password" autocomplete="off" required></label>
         <p class="hint">Usá el código del operador, distinto del código de conductor. Solo queda en esta pestaña.</p>
         <label>Fuente de ingesta<select id="operation-source"><option value="vigente">Precios vigentes</option><option value="historico">Histórico</option></select></label>
-        <button id="operation-submit" type="submit" disabled>Actualizar estado</button>
+        <div class="actions"><button id="operation-submit" type="submit" disabled>Actualizar estado</button><button id="operation-clear" class="secondary" type="button">Limpiar</button></div>
       </form>
-      <p><button id="operation-clear" class="secondary" type="button">Limpiar acceso y datos</button></p>
       <p class="hint">Actualización manual. Esta pantalla no ejecuta ingestas ni cambia alertas.</p>
     </section>
     <section class="results" aria-labelledby="operation-title">
