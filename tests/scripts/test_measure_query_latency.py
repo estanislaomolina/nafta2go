@@ -5,7 +5,7 @@ import os
 
 import pytest
 
-from scripts.measure_query_latency import bodies, main, measure, percentile
+from scripts.measure_query_latency import bodies, main, measure, percentile, response_outcome
 
 
 def test_percentile_uses_the_nearest_observed_rank():
@@ -13,6 +13,25 @@ def test_percentile_uses_the_nearest_observed_rank():
     assert percentile(values, 0.95) == 95
     assert percentile(values, 0.5) == 50
     assert percentile([3.0], 0.95) == 3
+
+
+class FakeResponse:
+    def __init__(self, body, content_type="application/json"):
+        self.headers = {"content-type": content_type}
+        self.body = body
+
+    def json(self):
+        if isinstance(self.body, Exception):
+            raise self.body
+        return self.body
+
+
+def test_a_response_that_is_not_json_counts_as_an_error():
+    assert response_outcome(FakeResponse("Internal Server Error", "text/plain")) == "error"
+    assert response_outcome(FakeResponse(ValueError("cuerpo truncado"))) == "error"
+    assert response_outcome(FakeResponse(["recommended"])) == "error"
+    assert response_outcome(FakeResponse({"detail": "x"})) == "error"
+    assert response_outcome(FakeResponse({"outcome": "recommended"})) == "recommended"
 
 
 def test_bodies_are_valid_uc01_queries_that_vary_the_vehicle():

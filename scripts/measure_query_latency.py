@@ -64,6 +64,17 @@ def percentile(values: list[float], share: float) -> float:
     return ordered[max(0, math.ceil(len(ordered) * share) - 1)]
 
 
+def response_outcome(response) -> str:
+    """Resultado informado por la API; una respuesta que no es JSON cuenta como error."""
+    if not response.headers.get("content-type", "").startswith("application/json"):
+        return "error"
+    try:
+        body = response.json()
+    except ValueError:
+        return "error"
+    return body.get("outcome", "error") if isinstance(body, dict) else "error"
+
+
 def measure(count: int, warmup: int = 3) -> dict:
     previous = os.environ.get("NAFTA2GO_API_TOKEN")
     os.environ["NAFTA2GO_API_TOKEN"] = TOKEN
@@ -93,7 +104,7 @@ def _measure(count: int, warmup: int) -> dict:
                     response = client.post("/api/v1/recommendations", json=body, headers=headers)
                     latencies.append(time.perf_counter() - started)
                     statuses[response.status_code] = statuses.get(response.status_code, 0) + 1
-                    outcome = response.json().get("outcome", "error")
+                    outcome = response_outcome(response)
                     outcomes[outcome] = outcomes.get(outcome, 0) + 1
             with engine.connect() as conn:
                 audit = audit_recommendations(repo.recommendations_with_run_status(conn))
