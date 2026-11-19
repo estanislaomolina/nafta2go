@@ -9,13 +9,21 @@ import re
 from collections.abc import Iterable, Mapping
 from datetime import datetime, timedelta
 
+from nafta2go.application.coverage_rules import MAX_PRICE_AGE_DAYS
 from nafta2go.application.stored_query import LOCAL_ZONE
+from nafta2go.normalization.rules import CABA_BBOX
 
-AUDIT_VERSION = "recommendation-audit-v1"
+AUDIT_VERSION = "recommendation-audit-v2"
 SHA256 = re.compile(r"[0-9a-f]{64}")
 SCENARIO_KEYS = ("scenario_id", "reference_at", "extract_sha256", "source_sha256")
-# Una clave con estos nombres indicaría ubicaciones del conductor (RNF03).
-LOCATION_KEY = re.compile(r"origin|destination|origen|destino", re.IGNORECASE)
+# Claves que indicarían ubicaciones (RNF03). Se comparan exactas para que nombres como
+# `has_destination` no cuenten; lo guardado no incluye coordenadas, ni de estaciones.
+LOCATION_KEYS = frozenset(
+    {"origin", "destination", "origen", "destino", "lat", "lon", "lng", "latitude"}
+    | {"longitude", "latitud", "longitud", "coordinates", "coordenadas"}
+)
+NUMBER_PAIR = re.compile(r"(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)")
+MISSING = object()
 MAPS_LINK = re.compile(r"google\.[a-z.]+/maps|maps\.app\.goo\.gl|maps\.google\.", re.IGNORECASE)
 
 
@@ -30,6 +38,10 @@ def traceability_failures(record: Mapping) -> list[str]:
         failures.append("ingesta_no_exitosa")
     elif scenario is not None and not _valid_scenario(scenario):
         failures.append("escenario_incompleto")
+    if result.get("data_run_id", MISSING) != run_id or result.get("scenario", MISSING) != scenario:
+        failures.append("origen_inconsistente")
+    if not _valid_max_age(result["query"]["max_price_age_days"]):
+        failures.append("vigencia_fuera_de_rango")
     for key in ("engine_version", "routing_provider"):
         if not record[key] or result.get(key) != record[key]:
             failures.append(f"{key}_inconsistente")
@@ -42,10 +54,15 @@ def traceability_failures(record: Mapping) -> list[str]:
 
 
 def stale_evaluations(record: Mapping) -> tuple[int, int]:
-    """(evaluadas, fuera de vigencia): precios usados contra el umbral de la consulta (RF09)."""
+    """(evaluadas, fuera de vigencia): precios usados contra el umbral de la consulta (RF09).
+
+    Un umbral guardado fuera de 1 a `MAX_PRICE_AGE_DAYS` no amplía la vigencia: se mide
+    contra el máximo y la fila falla además en trazabilidad.
+    """
     result = record["result"]
     evaluations = result.get("evaluations", [])
-    max_age = timedelta(days=result["query"]["max_price_age_days"])
+    stored = result["query"]["max_price_age_days"]
+    max_age = timedelta(days=stored if _valid_max_age(stored) else MAX_PRICE_AGE_DAYS)
     reference = datetime.fromisoformat(result["price_reference_at"])
     stale = 0
     for row in evaluations:
@@ -59,8 +76,8 @@ def privacy_failures(record: Mapping) -> list[str]:
     """Ubicaciones o enlaces de navegación persistidos en la consulta o el resultado (RNF03)."""
     failures = set()
     for part in ("request", "result", "scenario"):
-        for key, value in _walk(record[part]):
-            if key is not None and LOCATION_KEY.search(key):
+        for key, value in _walk(record.get(part)):
+            if (key is not None and key.lower() in LOCATION_KEYS) or _coordinates(value):
                 failures.add(f"{part}_con_ubicacion")
             if isinstance(value, str) and MAPS_LINK.search(value):
                 failures.add(f"{part}_con_enlace_de_mapas")
@@ -68,26 +85,30 @@ def privacy_failures(record: Mapping) -> list[str]:
 
 
 def audit_recommendations(records: Iterable[Mapping]) -> dict:
-    records = list(records)
+    """Recorre el historial una vez. Una fila sin los campos esperados (por ejemplo, de una
+    versión anterior) falla en trazabilidad con su id y no corta la auditoría del resto."""
     failing = {"trazabilidad": {}, "frescura": {}, "privacidad": {}}
-    evaluated = stale = 0
+    total = evaluated = stale = current = historical = 0
     for record in records:
-        if reasons := traceability_failures(record):
+        total += 1
+        current += record.get("data_run_id") is not None
+        historical += record.get("scenario") is not None
+        try:
+            reasons = traceability_failures(record)
+            count, outdated = stale_evaluations(record)
+        except (KeyError, TypeError, ValueError, AttributeError):
+            reasons, count, outdated = ["fila_incompleta"], 0, 0
+        if reasons:
             failing["trazabilidad"][record["id"]] = reasons
-        count, outdated = stale_evaluations(record)
         evaluated, stale = evaluated + count, stale + outdated
         if outdated:
             failing["frescura"][record["id"]] = outdated
         if reasons := privacy_failures(record):
             failing["privacidad"][record["id"]] = reasons
-    total = len(records)
     return {
         "audit_version": AUDIT_VERSION,
         "recommendations": total,
-        "origins": {
-            "ingesta_vigente": sum(record["data_run_id"] is not None for record in records),
-            "escenario_historico": sum(record["scenario"] is not None for record in records),
-        },
+        "origins": {"ingesta_vigente": current, "escenario_historico": historical},
         "trazabilidad": _share(total - len(failing["trazabilidad"]), total),
         "frescura": {**_share(evaluated - stale, evaluated), "unidad": "precios evaluados"},
         "privacidad": _share(total - len(failing["privacidad"]), total),
@@ -97,6 +118,32 @@ def audit_recommendations(records: Iterable[Mapping]) -> dict:
 
 def _share(passing: int, total: int) -> dict:
     return {"cumplen": passing, "total": total, "proporcion": passing / total if total else None}
+
+
+def _valid_max_age(days) -> bool:
+    return type(days) is int and 1 <= days <= MAX_PRICE_AGE_DAYS
+
+
+def _coordinates(value) -> bool:
+    """Un par de números dentro del rectángulo de CABA, en lista o en texto."""
+    if isinstance(value, list | tuple) and len(value) == 2:
+        pairs = [value]
+    elif isinstance(value, str):
+        pairs = NUMBER_PAIR.findall(value)
+    else:
+        return False
+    return any(_inside_caba(*pair) or _inside_caba(*reversed(pair)) for pair in pairs)
+
+
+def _inside_caba(lat, lon) -> bool:
+    try:
+        lat, lon = float(lat), float(lon)
+    except (TypeError, ValueError):
+        return False
+    return (
+        CABA_BBOX["lat_min"] <= lat <= CABA_BBOX["lat_max"]
+        and CABA_BBOX["lon_min"] <= lon <= CABA_BBOX["lon_max"]
+    )
 
 
 def _valid_scenario(scenario: Mapping) -> bool:

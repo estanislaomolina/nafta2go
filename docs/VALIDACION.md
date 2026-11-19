@@ -39,12 +39,16 @@ La medición real con ORS necesita la clave y consume cuota; queda pendiente.
 quedó guardado en `recommendations`, no lo que el código intentó guardar:
 
 - *Trazabilidad:* un único origen (ingesta exitosa o escenario con ID, fecha y
-  hashes), motor y proveedor coherentes, fila de origen en cada precio y hash de la
-  matriz reproducida.
+  hashes), el mismo origen en las columnas y en el resultado, motor y proveedor
+  coherentes, vigencia guardada entre 1 y 30 días, fila de origen en cada precio y
+  hash de la matriz reproducida. Una fila sin los campos esperados falla con su id
+  sin cortar la auditoría.
 - *Frescura:* cada precio evaluado está dentro de la vigencia de su consulta respecto
-  de la fecha de referencia de precios.
-- *Privacidad:* ninguna clave de origen o destino ni enlaces de mapas en la consulta,
-  el resultado o el escenario.
+  de la fecha de referencia de precios. Una vigencia guardada mayor a 30 días no la
+  amplía.
+- *Privacidad:* ninguna clave de ubicación (origen, destino, `lat`, `lon` y similares),
+  ningún par de números dentro de CABA, en lista o en texto, ni enlaces de mapas en la
+  consulta, el resultado o el escenario.
 
 Sobre las 123 recomendaciones guardadas en cada medición (120 más 3 de
 calentamiento, todas del escenario histórico): trazabilidad 123/123, frescura
@@ -52,7 +56,9 @@ calentamiento, todas del escenario histórico): trazabilidad 123/123, frescura
 (`tests/integration/test_local_mvp.py`) audita además tres recomendaciones de
 ingestas vigentes hechas por HTTP, con 100 % en los tres criterios. Todas son
 recomendaciones generadas para la validación: la auditoría todavía no corrió sobre la
-base de un despliegue real (#22).
+base de un despliegue real (#22). Los resultados se midieron con
+`recommendation-audit-v1`; con la versión 2 (#126), que suma los controles de arriba,
+una corrida nueva de 120 consultas dio los mismos 123/123, 1.230/1.230 y 123/123.
 
 ## Requisitos funcionales
 
