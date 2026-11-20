@@ -7,13 +7,24 @@ o `docker compose --profile mvp up --build api`, después de configurar el códi
 código en «Acceso a la demo». La API y la web comparten origen; decisión propuesta
 en [ADR-012](../adr/ADR-012-web-local-con-assets-propios.md).
 
-El formulario recibe coordenadas manuales o ubicación solicitada mediante un
-botón, destino del viaje, vehículo, nafta, horario y presupuesto. La casilla
-«Volver a donde estoy» copia el origen en el destino, lo deja sin editar y envía
-la consulta como ida y vuelta (UC02, `destination: null`).
-La geolocalización depende de permisos y del contexto seguro del navegador;
-si no está disponible, permite ingresar coordenadas. No se consulta al cargar.
-Los importes/litros viajan como cadenas decimales; solo la presentación redondea.
+El formulario permite buscar una dirección o lugar de CABA para origen y destino.
+Primero se ingresa el código de demo y se pulsa Buscar; no consulta al escribir.
+Muestra hasta tres opciones y exige seleccionar una. USIG/GCBA recibe el texto de
+esa búsqueda, sin el código de acceso. Las coordenadas quedan en un desplegable
+como alternativa; la recomendación sigue enviando sólo coordenadas.
+
+Editar el texto invalida la ubicación anterior. Buscar o salir cancela lecturas y
+una respuesta tardía no repone resultados. El retorno copia el origen y bloquea
+la búsqueda de destino. Sin resultados, acceso, cupo, red o dependencia, se ofrecen
+mensajes y reintento. No se agrega almacenamiento del navegador.
+
+La ubicación automática es optativa: acepta una posición reciente de hasta un
+minuto y reintenta una vez con mayor precisión si agota doce segundos (segundo
+intento: veinte segundos). Puede cancelarse. Una posición tardía no pisa una
+dirección editada. Se informa la precisión disponible y se pide confirmar el punto;
+no garantiza GPS en una computadora ni ubicaciones dentro de CABA.
+
+Los importes/litros viajan como cadenas decimales; sólo la presentación redondea.
 La validación de negocio y el ranking permanecen en el servidor.
 
 Muestra carga, errores, falta de cobertura, descartes y alternativas con precio,

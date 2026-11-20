@@ -31,6 +31,7 @@ async function pageFor(options = {}) {
   const page = await context.newPage(); await page.goto(base); return page;
 }
 async function ready(page, destination = false, code = 'codigo-web-de-prueba') {
+  for (const key of ['origin','destination']) await page.locator('#' + key + '-coordinates').evaluate(el => el.open = true);
   await page.locator('[name=origin_lat]').fill('-34.6037'); await page.locator('[name=origin_lon]').fill('-58.3816');
   if (destination) {
     await page.locator('[name=destination_lat]').fill('-34.5627'); await page.locator('[name=destination_lon]').fill('-58.4565');
@@ -62,7 +63,7 @@ test('los descartes explican la falta de dirección sin mostrar null', async () 
   } finally { await page.context().close(); }
 });
 async function reach(page, selector) {
-  for (let i = 0; i < 45; i++) {
+  for (let i = 0; i < 90; i++) {
     if (await page.locator(selector).first().evaluate(el => el === document.activeElement)) return;
     await page.keyboard.press('Tab');
   }
@@ -107,6 +108,8 @@ for (const destination of [false, true]) test('recorrido completo por teclado ' 
   try {
     await page.keyboard.press('Tab'); assert.equal(await page.locator('.skip').evaluate(el => el === document.activeElement), true);
     await page.keyboard.press('Enter');
+    await reach(page, '#origin-coordinates summary'); await page.keyboard.press('Enter');
+    await reach(page, '#destination-coordinates summary'); await page.keyboard.press('Enter');
     await enter(page, '[name=origin_lat]', '-34.6037'); await enter(page, '[name=origin_lon]', '-58.3816');
     if (destination) {
       await enter(page, '[name=destination_lat]', '-34.5627'); await enter(page, '[name=destination_lon]', '-58.4565');
@@ -120,6 +123,7 @@ for (const destination of [false, true]) test('recorrido completo por teclado ' 
 test('volver a donde estoy copia el origen en el destino y lo bloquea', async () => {
   const page = await pageFor();
   try {
+    for (const key of ['origin','destination']) await page.locator('#' + key + '-coordinates').evaluate(el => el.open = true);
     const lat = page.locator('[name=destination_lat]'), lon = page.locator('[name=destination_lon]');
     assert.equal(await lat.isVisible(), true); assert.equal(await page.locator('#return').isChecked(), false);
     await page.locator('[name=origin_lat]').fill('-34.6037'); await page.locator('[name=origin_lon]').fill('-58.3816');
@@ -142,9 +146,9 @@ test('UC06 por teclado: descartes sin ganadoras inventadas', async () => {
     await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type('0');
     await reach(page, '#submit'); await page.keyboard.press('Enter');
     await page.waitForFunction(() => document.querySelector('#status').textContent.includes('sin alternativas'));
-    assert.equal(await page.locator('article').count(), 0); await reach(page, 'summary'); await page.keyboard.press('Enter');
-    assert.equal(await page.locator('details').evaluate(el => el.open), true);
-    assert.match(await page.locator('details').innerText(), /combustible para llegar/); await accessible(page);
+    assert.equal(await page.locator('article').count(), 0); await reach(page, '#results > details > summary'); await page.keyboard.press('Enter');
+    assert.equal(await page.locator('#results > details').evaluate(el => el.open), true);
+    assert.match(await page.locator('#results > details').innerText(), /combustible para llegar/); await accessible(page);
   } finally { await page.context().close(); }
 });
 test('validación física, corrección y código inválido sin guardar credenciales', async () => {
@@ -573,6 +577,122 @@ test('panel: diagnóstico observado, degradación y versión segura en móvil', 
     assert.equal(await page.evaluate(() => window.metricAttack), undefined);
     await page.setViewportSize({width: 320, height: 740});
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    await accessible(page);
+  } finally { await page.context().close(); }
+});
+
+test('buscar origen y destino por nombre, confirmar y consultar sin guardar texto', async () => {
+  const page = await pageFor();
+  const seen = [];
+  try {
+    await page.locator('#access').fill('codigo-web-de-prueba');
+    await page.route('**/api/v1/places', async route => {
+      const request = route.request(); seen.push(request.postDataJSON());
+      assert.equal(new URL(request.url()).search, '');
+      assert.match(request.headers().authorization, /^Bearer codigo-web-de-prueba$/);
+      await route.fulfill({json: {items: [{label: '<img src=x onerror="window.placeAttack=1"> Hospital de prueba', lat: -34.5627, lon: -58.4565}]}});
+    });
+    await page.locator('#origin-place').fill('Corrientes 1234');
+    assert.equal(seen.length, 0);
+    await page.locator('#origin-search').click();
+    await page.locator('#origin-place-results button').click();
+    await page.locator('#destination-place').fill('Hospital de prueba');
+    await page.locator('#destination-place').press('Enter');
+    await reach(page, '#destination-place-results button'); await page.keyboard.press('Enter');
+    assert.equal(await page.locator('#origin-coordinates').evaluate(el => el.open), false);
+    assert.equal(await page.evaluate(() => window.placeAttack), undefined);
+    assert.equal(await page.locator('img').count(), 0);
+    assert.equal(seen.length, 2);
+    const request = page.waitForRequest(r => r.url().endsWith('/api/v1/recommendations'));
+    await send(page); const body = (await request).postDataJSON();
+    assert.deepEqual(body.destination, {lat: -34.5627, lon: -58.4565});
+    assert.ok(!JSON.stringify(body).includes('Hospital'));
+    assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
+    await page.setViewportSize({width: 390, height: 844}); await accessible(page);
+    await page.screenshot({path: path.join(artifacts, 'busqueda-lugares-movil.png'), fullPage: true});
+    await page.locator('#destination-place').fill('Otro lugar');
+    assert.equal(await page.locator('[name=destination_lat]').inputValue(), '');
+    await page.locator('#submit').click();
+    assert.match(await page.locator('#destination-place-status').innerText(), /Elegí un resultado/);
+  } finally { await page.context().close(); }
+});
+
+test('buscador: errores recuperables, sin resultados y cancelación al editar o salir', async () => {
+  const page = await pageFor();
+  try {
+    await page.locator('#origin-place').fill('Dirección de prueba');
+    await page.locator('#origin-search').click();
+    assert.match(await page.locator('#origin-place-status').innerText(), /código de acceso/);
+    await page.locator('#access').fill('codigo-web-de-prueba');
+    for (const status of [401, 429, 503]) {
+      await page.route('**/api/v1/places', route => route.fulfill({status, json: {detail: {code: 'error'}}}));
+      await page.locator('#origin-search').click();
+      await page.waitForFunction(() => !document.querySelector('#origin-search').disabled);
+      assert.equal(await page.locator('#origin-place-results button').count(), 0);
+      assert.doesNotMatch(await page.locator('#origin-place-status').innerText(), /Buscando/);
+      await page.unroute('**/api/v1/places');
+    }
+    await page.route('**/api/v1/places', route => route.fulfill({json: {items: []}}));
+    await page.locator('#origin-search').click();
+    await page.waitForFunction(() => !document.querySelector('#origin-search').disabled);
+    assert.match(await page.locator('#origin-place-status').innerText(), /No encontramos/);
+    await page.unroute('**/api/v1/places');
+    let release; const pending = new Promise(resolve => release = resolve);
+    await page.route('**/api/v1/places', async route => { await pending; await route.fulfill({json: {items: [{label: 'Respuesta vieja', lat: -34.6, lon: -58.4}]}}).catch(() => {}); });
+    const request = page.waitForRequest('**/api/v1/places');
+    await page.locator('#origin-search').click(); await request;
+    await page.locator('#origin-place').fill('Nueva dirección'); release();
+    await page.waitForTimeout(100);
+    assert.equal(await page.locator('#origin-place-results button').count(), 0);
+    assert.equal(await page.locator('[name=origin_lat]').inputValue(), '');
+    await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+    assert.equal(await page.locator('#origin-place').inputValue(), '');
+  } finally { await page.context().close(); }
+});
+
+test('ubicación: reintento acotado ante timeout y precisión visible', async () => {
+  const page = await pageFor();
+  try {
+    await page.evaluate(() => {
+      window.geoOptions = [];
+      navigator.geolocation.getCurrentPosition = (ok, fail, options) => {
+        window.geoOptions.push(options);
+        if (window.geoOptions.length === 1) fail({code: 3});
+        else ok({coords: {latitude: -34.6037, longitude: -58.3816, accuracy: 75}});
+      };
+    });
+    await page.locator('#locate').click();
+    assert.match(await page.locator('#location-status').innerText(), /±75 m/);
+    assert.equal(await page.locator('[name=origin_lat]').inputValue(), '-34.6037');
+    const options = await page.evaluate(() => window.geoOptions);
+    assert.equal(options.length, 2); assert.equal(options[0].maximumAge, 60000);
+    assert.equal(options[1].enableHighAccuracy, true);
+    await page.locator('#return').check();
+    assert.equal(await page.locator('#destination-place').inputValue(), 'Mi ubicación');
+    assert.equal(await page.locator('#destination-search').isDisabled(), true);
+    await page.evaluate(() => { window.timeoutCalls = 0; navigator.geolocation.getCurrentPosition = (_ok, fail) => { window.timeoutCalls++; fail({code: 3}); }; });
+    await page.locator('#locate').click();
+    assert.equal(await page.evaluate(() => window.timeoutCalls), 2);
+    assert.match(await page.locator('#location-status').innerText(), /no respondió.*Buscá tu dirección/);
+    assert.equal(await page.locator('[name=origin_lat]').inputValue(), '');
+    assert.equal(await page.locator('#locate').innerText(), 'Usar mi ubicación');
+  } finally { await page.context().close(); }
+});
+
+test('ubicación: cancelar impide que una respuesta tardía reemplace el origen', async () => {
+  const page = await pageFor();
+  try {
+    await page.evaluate(() => { navigator.geolocation.getCurrentPosition = ok => window.latePosition = ok; });
+    await page.locator('#locate').click();
+    assert.equal(await page.locator('#locate').innerText(), 'Cancelar ubicación');
+    await page.locator('#locate').click();
+    await page.evaluate(() => window.latePosition({coords: {latitude: -34.6037, longitude: -58.3816}}));
+    assert.equal(await page.locator('[name=origin_lat]').inputValue(), '');
+    assert.match(await page.locator('#location-status').innerText(), /cancelada.*dirección/);
+    await page.locator('#locate').click();
+    await page.locator('#origin-place').fill('Dirección elegida');
+    await page.evaluate(() => window.latePosition({coords: {latitude: -34.6037, longitude: -58.3816}}));
+    assert.equal(await page.locator('[name=origin_lat]').inputValue(), '');
     await accessible(page);
   } finally { await page.context().close(); }
 });

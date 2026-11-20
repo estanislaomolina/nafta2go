@@ -39,3 +39,6 @@ a.navigate { display: block; color: #07523f; padding: 12px 0; font-weight: 700; 
 li { margin: 8px 0; } footer { font-size: 12px; padding-top: 40px; padding-bottom: 32px; } [hidden] { display: none !important; }
 @media (max-width: 760px) { header, main, footer { padding-left: 18px; padding-right: 18px; } .workspace { grid-template-columns: minmax(0, 1fr); gap: 24px; } .panel, article { padding: 20px; } .scope { max-width: 145px; text-align: center; } .intro { margin-top: 8px; } }
 @media (max-width: 360px) { .pair { grid-template-columns: minmax(0, 1fr); } dl { gap: 8px; font-size: 13px; } }
+
+.place-results { list-style: none; padding: 0; margin: 8px 0; } .place-results button { width: 100%; text-align: left; overflow-wrap: anywhere; }
+input[type=search] { appearance: none; }

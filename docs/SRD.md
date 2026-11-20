@@ -542,3 +542,14 @@ flowchart LR
   diagnóstico, junto con método/versión de la última referencia observada. No
   registra ubicaciones, estaciones o precios. No hay monitoreo automático de
   deriva ni error predictivo en línea; la reevaluación sigue siendo manual.
+
+
+### Resolución de origen y destino en la web
+
+La interfaz permite buscar una dirección o lugar y elegir explícitamente un punto,
+con coordenadas manuales como alternativa. Usa el servicio autenticado separado de
+la [PR #132](https://github.com/estanislaomolina/nafta2go/pull/132). Cambiar el texto
+invalida el punto anterior; las búsquedas no se agregan a la recomendación persistida.
+Geolocalización es optativa, con reintento acotado, cancelación y precisión visible;
+no garantiza disponibilidad de GPS. La UI conserva los contratos UC01/UC02 y no
+modifica el motor determinístico.
