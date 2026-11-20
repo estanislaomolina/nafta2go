@@ -65,14 +65,8 @@ function priceReference(data, row) {
   });
   section.append(button, result); return section;
 }
-function mapsLink(link) {
-  if (!link || typeof link.url !== "string" || typeof link.label !== "string") return null;
-  let url; try { url = new URL(link.url); } catch { return null; }
-  if (url.origin !== "https://www.google.com" || url.pathname !== "/maps/dir/") return null;
-  const anchor = node("a", link.label + " ↗", "navigate");
-  anchor.href = url.href; anchor.target = "_blank"; anchor.rel = "noopener noreferrer";
-  anchor.setAttribute("aria-label", link.label + ". Google Maps, nueva pestaña"); return anchor;
-}
+function mapsLink(link, trip) { return navigationOptions(link, trip); }
+
 function day(value) {
   return value.replace(/^(\d{4})-(\d{2})-(\d{2})T.*/, "$3/$2/$1");
 }
@@ -100,7 +94,7 @@ function staleEstimates(block) {
   }
   return section;
 }
-function show(data) {
+function show(data, trip) {
   output.replaceChildren();
   output.append(node("p", "Vigencia máxima aplicada: " + data.query.max_price_age_days + " días respecto de la referencia de precios.", "hint"));
   if (data.status === "historical_scenario") output.append(node("p", "ESCENARIO HISTÓRICO · Precios del " + date(data.scenario.reference_at) + ". No son precios actuales.", "notice warning"));
@@ -131,7 +125,7 @@ function show(data) {
     more.append(detail, node("p", "Publicado (hora Argentina): " + row.published_at_local.replace(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}).*/, "$3/$2/$1 $4"), "hint"));
     if (row.alerts.length) card.append(node("p", "Este dato tiene advertencias de calidad. Revisá su fuente y vigencia.", "notice warning"));
     if (data.status === 'ready' && data.data_run_id != null && {super: 2, premium: 3}[data.query.fuel_type] && [2, 3].includes(data.query.schedule_id)) more.append(priceReference(data, row));
-    const anchor = mapsLink(links.get(choice.station_id)); if (anchor) card.append(anchor);
+    const anchor = mapsLink(links.get(choice.station_id), trip); if (anchor) card.append(anchor);
     card.append(more); output.append(card);
   }
   if (data.navigation_notice) output.append(node("p", data.navigation_notice, "hint"));
@@ -176,7 +170,7 @@ form.addEventListener("submit", async event => {
       const messages = {unauthorized: "El código de acceso no es válido. Revisalo e intentá de nuevo.", invalid_request: "Revisá los datos del vehículo y las coordenadas: el recorrido debe estar dentro de CABA.", routes_quota_exceeded: "Se alcanzó el límite del servicio de rutas. Volvé a intentar más tarde.", routes_timeout: "El servicio de rutas demoró demasiado. Volvé a intentar más tarde."};
       throw new QueryError(messages[result.detail?.code] || "No pudimos completar la consulta. El servicio no está disponible; intentá más tarde.");
     }
-    show(result);
+    show(result, body);
   } catch (failure) {
     output.replaceChildren(); error.hidden = false;
     error.textContent = failure.name === "AbortError" ? "La consulta demoró demasiado. Volvé a intentar más tarde." : failure instanceof QueryError ? failure.message : "No pudimos obtener una respuesta válida. Revisá tu conexión e intentá más tarde.";

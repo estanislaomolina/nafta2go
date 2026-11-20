@@ -76,3 +76,9 @@ El panel de diagnóstico añade un caso de navegador (31 en total): estado sin
 observaciones, fallo operativo con una referencia previa, texto remoto seguro y
 móvil 320 px con axe. Los datos del estado degradado se interceptan explícitamente;
 no son mediciones reales ni prueba de precisión del método.
+
+Tres casos adicionales de mapas (34 pruebas en total) verifican
+UC01/UC02 con estación intermedia, destino congelado de la consulta original,
+parámetros de Waze, privacidad, limpieza al salir, teclado, móvil y rechazo de
+coordenadas inválidas. No se abren servicios externos ni se afirma soporte real
+en aplicaciones móviles.

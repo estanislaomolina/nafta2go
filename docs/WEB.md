@@ -77,6 +77,14 @@ de fallo posterior al éxito y su hash son sintéticos; no son evidencia de una
 ingesta real. Falta validación con operador, teléfono físico y lector de pantalla.
 
 
+El panel separa las alertas de ingesta del estado operativo del diagnóstico de
+precios. Presenta conteos, tiempos y última referencia; sin lecturas informa que no
+hay observaciones. Ante un fallo de dependencia/interno muestra degradación aunque
+la consulta habitual pueda seguir disponible. No confunde falta de contexto con un
+precio erróneo. La versión informada corresponde a la última referencia observada,
+no a una confirmación de que la configuración actual siga siendo la misma.
+
+
 ## Atribución de rutas
 
 El pie de la consulta identifica a openrouteservice by HeiGIT y a OpenStreetMap
@@ -124,9 +132,11 @@ verifica rótulo, separación del ranking, XSS, ítems inválidos y ausencia de
 desborde horizontal, con axe a 1440 y 320 px de ancho; los datos son sintéticos.
 
 
-El panel separa las alertas de ingesta del estado operativo del diagnóstico de
-precios. Presenta conteos, tiempos y última referencia; sin lecturas informa que no
-hay observaciones. Ante un fallo de dependencia/interno muestra degradación aunque
-la consulta habitual pueda seguir disponible. No confunde falta de contexto con un
-precio erróneo. La versión informada corresponde a la última referencia observada,
-no a una confirmación de que la configuración actual siga siendo la misma.
+## Abrir el viaje en un mapa
+
+Las alternativas ofrecen «Mapa del viaje y Waze»: Google Maps muestra origen,
+estación intermedia y destino (o retorno al origen), mientras que Waze navega
+hasta la estación. Se explica qué puntos se comparten al abrirlo. Los enlaces usan
+la consulta original, viven en la presentación y no modifican el cálculo ni se
+persisten. No se cargan mapas ni terceros automáticamente. Contrato y límites en
+[MAPS](MAPS.md#mapa-del-viaje-y-waze).
