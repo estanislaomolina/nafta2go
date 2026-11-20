@@ -62,3 +62,12 @@ por búsqueda o salida y timeout/ausencia en escenarios históricos. Se intercep
 la respuesta de diagnóstico y se rotula como sintética: no valida precisión ni
 supone que la base temporal contenga el histórico/modelo real. La corrida del
 17/11/2026 aprobó 23 pruebas; el nuevo estado de referencia se analiza con axe.
+
+
+El incremento de búsqueda de lugares agrega cuatro casos (30 pruebas en total):
+selección de origen/destino sin coordenadas manuales, texto remoto seguro,
+privacidad, errores y cancelación, reintento de ubicación con precisión visible y
+cancelación de una posición tardía. Las búsquedas y posiciones de QA son sintéticas
+interceptadas, sin llamadas a USIG. La vista real puede usar el endpoint de #131;
+la UI por sí sola no proporciona geocodificación. No acredita GPS del equipo ni
+cobertura completa de lugares.
