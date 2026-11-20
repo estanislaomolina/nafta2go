@@ -58,7 +58,7 @@ function render(metrics, ingestion) {
   const queries = metrics.queries, routes = metrics.routes;
   const alerting = ingestion.status === 'alerting', banner = document.createElement('div');
   banner.className = 'notice ' + (alerting ? 'warning' : 'ok');
-  const heading = node('h3', alerting ? 'Condiciones de alerta' : 'Sin condiciones de alerta'); banner.append(heading);
+  const heading = node('h3', alerting ? 'Condiciones de alerta de ingesta' : 'Sin condiciones de alerta de ingesta'); banner.append(heading);
   if (ingestion.conditions.length) {
     const conditions = document.createElement('ul');
     const kinds = {missing: 'Falta el intento diario esperado', failed: 'La última ejecución terminada falló', stalled: 'Una ejecución lleva al menos dos horas'};
@@ -72,15 +72,37 @@ function render(metrics, ingestion) {
   runs.append(run('Último intento', ingestion.latest_attempt), run('Última ingesta exitosa', ingestion.latest_successful));
   results.append(runs);
   const average = queries.completed ? Number(queries.duration_ms_total) / queries.completed : null;
-  results.append(card('Consultas HTTP · proceso actual', tiles([
+  const queryPanel = card('Consultas HTTP · proceso actual', tiles([
     ['Terminadas', count(queries.completed)], ['Duración promedio', average == null ? 'Sin datos' : milliseconds(average)],
     ['Con recomendación', count(queries.outcome.recommended ?? 0)], ['Sin alternativas', count(queries.outcome.no_feasible_stations ?? 0)],
     ['Sin cobertura', count(queries.outcome.insufficient_coverage ?? 0)], ['Con error HTTP', count(queries.outcome.http_error ?? 0)]
-  ])));
+  ]));
+  if (queries.status === 'degraded') { const warning = node('p', 'La última consulta tuvo un fallo operativo. Revisá la disponibilidad y los contadores del proveedor de rutas.'); warning.className = 'notice warning'; queryPanel.append(warning); }
+  results.append(queryPanel);
   results.append(card('Rutas · caché del proceso', tiles([
     ['Reutilizaciones', count(routes.hits)], ['Faltantes en caché', count(routes.misses)], ['Solicitudes al proveedor', count(routes.requests)],
     ['Errores del proveedor', count(routes.errors)], ['Bloqueos por cupo', count(routes.limited)], ['Proveedor ocupado', count(routes.busy)], ['Entradas', count(routes.entries)]
   ])));
+  const diagnostics = metrics.price_diagnostics;
+  if (diagnostics) {
+    const outcomes = diagnostics.outcome, average = diagnostics.completed ? Number(diagnostics.duration_ms_total) / diagnostics.completed : null;
+    const labels = {not_observed: 'Sin consultas observadas', observed: 'Última lectura sin fallo operativo', degraded: 'Última lectura con fallo operativo'};
+    const panel = card('Diagnóstico de precios · proceso actual', tiles([
+      ['Estado', labels[diagnostics.status] ?? 'Estado desconocido'], ['Consultas', count(diagnostics.completed)],
+      ['Con referencia', count(outcomes.reference_only ?? 0)], ['Sin contexto', count(outcomes.unavailable ?? 0)],
+      ['Sin publicación', count(outcomes.not_found ?? 0)], ['Fallo de dependencia', count(outcomes.dependency_unavailable ?? 0)],
+      ['Fallos internos', count(outcomes.internal_error ?? 0)], ['Duración promedio', average == null ? 'Sin datos' : milliseconds(average)],
+      ['Última consulta', moment(diagnostics.last_completed_at_utc)]
+    ]));
+    if (diagnostics.status === 'degraded') { const warning = node('p', 'El último diagnóstico falló; revisá su configuración y datos. La recomendación habitual puede seguir disponible.'); warning.className = 'notice warning'; panel.append(warning); }
+    const reference = diagnostics.last_reference;
+    if (reference) {
+      const methods = {bandera_reciente: 'Mediana reciente de la bandera', ultimo_precio: 'Último precio propio', mediana_previa: 'Mediana comparable previa'};
+      panel.append(details([['Última referencia observada', methods[reference.method] ?? 'Método desconocido'], ['Versión', reference.version], ['Observada', moment(reference.observed_at_utc)]]));
+    }
+    panel.append(node('p', 'Son solicitudes observadas en este proceso; no miden precisión, deriva ni validez de alertas estadísticas. La última referencia puede ser anterior al último fallo.'));
+    results.append(panel);
+  }
   const notice = node('p', 'Los contadores no incluyen la CLI y las rutas grabadas no usan esta caché.'); notice.className = 'hint'; results.append(notice);
   const limit = node('p', 'Esta lectura recalcula condiciones; no crea ni resuelve alertas del monitor. Sin alertas no significa que los precios sean actuales. Histórico usa las mismas reglas, aunque no tenga una tarea diaria programada.');
   limit.className = 'hint'; results.append(limit);

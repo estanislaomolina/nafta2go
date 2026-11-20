@@ -71,3 +71,8 @@ cancelación de una posición tardía. Las búsquedas y posiciones de QA son sin
 interceptadas, sin llamadas a USIG. La vista real puede usar el endpoint de #131;
 la UI por sí sola no proporciona geocodificación. No acredita GPS del equipo ni
 cobertura completa de lugares.
+
+El panel de diagnóstico añade un caso de navegador (31 en total): estado sin
+observaciones, fallo operativo con una referencia previa, texto remoto seguro y
+móvil 320 px con axe. Los datos del estado degradado se interceptan explícitamente;
+no son mediciones reales ni prueba de precisión del método.

@@ -550,6 +550,37 @@ test('sin estimaciones disponibles no aparece la sección', async () => {
   } finally { await page.context().close(); }
 });
 
+test('panel: diagnóstico observado, degradación y versión segura en móvil', async () => {
+  const page = await pageFor();
+  try {
+    await operation(page); await readOperation(page);
+    const panel = page.getByRole('heading', {name: 'Diagnóstico de precios · proceso actual'});
+    assert.equal(await panel.isVisible(), true);
+    assert.match(await panel.locator('..').innerText(), /Sin consultas observadas/);
+    await page.route('**/api/v1/operations', async route => {
+      const response = await route.fetch(), value = await response.json();
+      value.queries.status = 'degraded';
+      value.price_diagnostics = {scope: 'process', status: 'degraded', completed: 4,
+        duration_ms_total: 120, outcome: {reference_only: 1, unavailable: 1, dependency_unavailable: 2},
+        last_completed_at_utc: '2026-11-20T02:00:00+00:00',
+        last_reference: {method: 'bandera_reciente', version: '<img src=x onerror="window.metricAttack=true">', observed_at_utc: '2026-11-19T18:00:00+00:00'}};
+      await route.fulfill({json: value});
+    });
+    await page.locator('#operation-submit').click();
+    await page.waitForFunction(() => !document.querySelector('#operation-submit').disabled);
+    const text = await panel.locator('..').innerText();
+    assert.match(text, /Última lectura con fallo operativo/);
+    assert.match(text, /último diagnóstico falló/);
+    assert.match(text, /no miden precisión/);
+    assert.match(await page.locator('#operation-results').innerText(), /última consulta tuvo un fallo operativo/);
+    assert.equal(await page.locator('img').count(), 0);
+    assert.equal(await page.evaluate(() => window.metricAttack), undefined);
+    await page.setViewportSize({width: 320, height: 740});
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    await accessible(page);
+  } finally { await page.context().close(); }
+});
+
 test('buscar origen y destino por nombre, confirmar y consultar sin guardar texto', async () => {
   const page = await pageFor();
   const seen = [];
