@@ -545,3 +545,58 @@ test('sin estimaciones disponibles no aparece la sección', async () => {
     assert.doesNotMatch(await page.locator('#results').textContent(), /ESTIMADO/);
   } finally { await page.context().close(); }
 });
+
+for (const withDestination of [false, true]) test('mapa del viaje con parada y Waze: ' + (withDestination ? 'UC01' : 'UC02'), async () => {
+  const page = await pageFor();
+  const external = [];
+  page.on('request', request => { if (!request.url().startsWith(base + '/')) external.push(request.url()); });
+  try {
+    await ready(page, withDestination);
+    const request = page.waitForRequest(r => r.url().endsWith('/api/v1/recommendations'));
+    await send(page); const query = (await request).postDataJSON();
+    const card = page.locator('article').first();
+    await reach(page, '.navigation-choices > summary'); await page.keyboard.press('Enter');
+    const station = new URL(await card.locator('a.navigate').getAttribute('href')).searchParams.get('destination');
+    const routeLink = card.locator('a.trip-map'), url = new URL(await routeLink.getAttribute('href'));
+    assert.equal(url.origin, 'https://www.google.com'); assert.equal(url.pathname, '/maps/dir/');
+    assert.equal(url.searchParams.get('api'), '1'); assert.equal(url.searchParams.get('travelmode'), 'driving');
+    assert.equal(url.searchParams.get('origin'), query.origin.lat + ',' + query.origin.lon);
+    const end = query.destination || query.origin;
+    assert.equal(url.searchParams.get('destination'), end.lat + ',' + end.lon);
+    assert.equal(url.searchParams.get('waypoints'), station);
+    assert.deepEqual([...url.searchParams.keys()].sort(), ['api','destination','origin','travelmode','waypoints']);
+    assert.equal(await routeLink.getAttribute('rel'), 'noopener noreferrer');
+    assert.equal(await routeLink.getAttribute('target'), '_blank');
+    const waze = new URL(await card.locator('a.waze-map').getAttribute('href'));
+    assert.equal(waze.origin, 'https://waze.com'); assert.equal(waze.pathname, '/ul');
+    assert.equal(waze.searchParams.get('ll'), station); assert.equal(waze.searchParams.get('navigate'), 'yes');
+    assert.equal(waze.searchParams.has('origin'), false);
+    assert.match(await card.innerText(), /Google Maps recibe el origen/);
+    assert.match(await card.innerText(), /destino final.*aparte/);
+    const original = url.href;
+    await page.locator('[name=origin_lat]').fill('-34.61');
+    assert.equal(await routeLink.getAttribute('href'), original);
+    assert.deepEqual(external, []);
+    assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
+    await reach(page, 'a.trip-map'); assert.equal(await routeLink.evaluate(el => el === document.activeElement), true);
+    await page.setViewportSize({width: 390, height: 844}); await accessible(page);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    await page.screenshot({path: path.join(artifacts, 'mapas-' + (withDestination ? 'uc01' : 'uc02') + '.png'), fullPage: true});
+    await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+    assert.equal(await page.locator('a.trip-map').count(), 0);
+  } finally { await page.context().close(); }
+});
+
+test('navegación inválida no crea enlaces externos ni expone el origen', async () => {
+  const page = await pageFor();
+  try {
+    await ready(page);
+    await page.route('**/api/v1/recommendations', async route => {
+      const response = await route.fetch(), value = await response.json();
+      for (const item of value.navigation) item.url = 'https://www.google.com/maps/dir/?destination=NaN%2C-58.4';
+      await route.fulfill({json: value});
+    });
+    await send(page);
+    assert.equal(await page.locator('.navigation-options').count(), 0);
+  } finally { await page.context().close(); }
+});

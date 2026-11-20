@@ -111,3 +111,13 @@ todo texto remoto con `textContent` y no genera enlaces ni consultas adicionales
 Sin ingesta vigente o sin ítems válidos no aparece. La regresión de navegador
 verifica rótulo, separación del ranking, XSS, ítems inválidos y ausencia de
 desborde horizontal, con axe a 1440 y 320 px de ancho; los datos son sintéticos.
+
+
+## Abrir el viaje en un mapa
+
+Las alternativas ofrecen «Mapa del viaje y Waze»: Google Maps muestra origen,
+estación intermedia y destino (o retorno al origen), mientras que Waze navega
+hasta la estación. Se explica qué puntos se comparten al abrirlo. Los enlaces usan
+la consulta original, viven en la presentación y no modifican el cálculo ni se
+persisten. No se cargan mapas ni terceros automáticamente. Contrato y límites en
+[MAPS](MAPS.md#mapa-del-viaje-y-waze).

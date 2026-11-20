@@ -62,3 +62,10 @@ por búsqueda o salida y timeout/ausencia en escenarios históricos. Se intercep
 la respuesta de diagnóstico y se rotula como sintética: no valida precisión ni
 supone que la base temporal contenga el histórico/modelo real. La corrida del
 17/11/2026 aprobó 23 pruebas; el nuevo estado de referencia se analiza con axe.
+
+
+Tres casos adicionales de mapas (29 pruebas sobre este incremento) verifican
+UC01/UC02 con estación intermedia, destino congelado de la consulta original,
+parámetros de Waze, privacidad, limpieza al salir, teclado, móvil y rechazo de
+coordenadas inválidas. No se abren servicios externos ni se afirma soporte real
+en aplicaciones móviles. La integración con el buscador de #133 se prueba aparte.
