@@ -44,3 +44,14 @@ def test_unknown_results_are_bounded_and_interrupted_responses_hide_errors(
     assert snapshot["duration_ms_total"] == 125
     assert snapshot["outcome"] == {"http_error" if interrupted else "other": 1}
     assert "secreto" not in caplog.text + str(snapshot)
+
+
+def test_query_degradation_is_not_cleared_by_an_authentication_rejection():
+    telemetry = QueryTelemetry()
+    assert telemetry.snapshot()["status"] == "not_observed"
+    telemetry.record(503, "http_error", 10)
+    assert telemetry.snapshot()["status"] == "degraded"
+    telemetry.record(401, "http_error", 2)
+    assert telemetry.snapshot()["status"] == "degraded"
+    telemetry.record(200, "recommended", 12)
+    assert telemetry.snapshot()["status"] == "observed"

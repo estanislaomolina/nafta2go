@@ -337,3 +337,81 @@ def test_last_station_price_older_than_window_is_preserved(engine, prepared):
     assert response.status_code == 200
     assert response.json()["reference_ars_per_l"] == "125.000"
     assert response.json()["official_price_ars_per_l"] == "150.000"
+
+
+def test_diagnostic_metrics_cover_results_failures_and_preserve_privacy(
+    engine, prepared, monkeypatch, caplog
+):
+    monkeypatch.setenv("NAFTA2GO_ADMIN_TOKEN", "administracion-test")
+    admin = {"Authorization": "Bearer administracion-test"}
+    caplog.set_level("INFO", logger="nafta2go.presentation.diagnostic_telemetry")
+    with client(engine) as http:
+
+        def metrics():
+            return http.get("/api/v1/operations", headers=admin).json()["price_diagnostics"]
+
+        assert metrics()["status"] == "not_observed"
+        assert http.get("/api/v1/operations", headers=AUTH).status_code == 401
+        result = http.get(URL, headers=AUTH)
+        assert result.status_code == 200 and len(result.headers["x-request-id"]) == 32
+        valid = result.json()
+        assert metrics()["last_reference"]["version"] == valid["version"]
+        assert http.get(URL).status_code == 401
+        assert http.get(URL + "?extra=secreto", headers=AUTH).status_code == 422
+        assert http.get(URL + "999", headers=AUTH).status_code == 404
+        with monkeypatch.context() as patch:
+            patch.setenv("NAFTA2GO_PRICE_MODEL_DIR", "/ruta/secreta-inexistente")
+            assert http.get(URL, headers=AUTH).status_code == 503
+            assert metrics()["status"] == "degraded"
+            assert http.get(URL).status_code == 401
+            assert metrics()["status"] == "degraded"  # Un rechazo no confirma recuperación.
+            assert metrics()["last_reference"]["version"] == valid["version"]
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                "nafta2go.presentation.http.price_diagnostic",
+                lambda *_: {
+                    **valid,
+                    "status": "unavailable",
+                    "reason": "context_unavailable",
+                    "reference_ars_per_l": None,
+                    "difference_ars_per_l": None,
+                },
+            )
+            assert http.get(URL, headers=AUTH).status_code == 200
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                "nafta2go.presentation.http.price_diagnostic",
+                Mock(side_effect=RuntimeError("token-secreto")),
+            )
+            assert http.get(URL, headers=AUTH).json() == {"detail": {"code": "internal_error"}}
+        assert metrics()["status"] == "degraded"
+        assert http.get(URL, headers=AUTH).status_code == 200
+        final = metrics()
+    assert final["completed"] == 9 and final["status"] == "observed"
+    assert final["outcome"] == {
+        "reference_only": 2,
+        "unauthorized": 2,
+        "invalid_request": 1,
+        "not_found": 1,
+        "dependency_unavailable": 1,
+        "unavailable": 1,
+        "internal_error": 1,
+    }
+    assert final["duration_ms_total"] > 0
+    assert final["last_reference"]["method"] == "bandera_reciente"
+    events = [
+        json.loads(r.message)
+        for r in caplog.records
+        if r.name == "nafta2go.presentation.diagnostic_telemetry"
+    ]
+    assert len(events) == 9 and len({e["request_id"] for e in events}) == 9
+    exported = json.dumps([final, events])
+    assert not any(
+        word in exported
+        for word in ["secreto", "station_id", "http://", "https://", "lat", "lon", "joblib"]
+    )
+    with client(engine) as other:
+        assert (
+            other.get("/api/v1/operations", headers=admin).json()["price_diagnostics"]["completed"]
+            == 0
+        )

@@ -165,7 +165,7 @@ access log de Uvicorn: una URL arbitraria puede contener datos privados. Los
 eventos no incluyen URL, headers, cuerpo, mensajes de excepción ni ubicaciones.
 Otros servidores/proxies deben aplicar la misma política antes de exponerlos.
 Los contadores se reinician al reiniciar la aplicación/caché, no se agregan entre
-réplicas ni constituyen p95 o disponibilidad sostenida. No incluye aún métricas integradas de ingesta/modelo ni alertas de consultas (#21).
+réplicas ni constituyen p95 o disponibilidad sostenida. La ingesta se consulta en el endpoint siguiente. El diagnóstico agrega sus propias métricas operativas; no se mide precisión ni deriva en línea.
 
 El token administrativo ausente o igual al del conductor produce
 503/`admin_not_configured`; el código del conductor no autoriza operación.
@@ -227,3 +227,31 @@ Caché volátil y cupo por proceso, límites y alternativas en
 [ADR-022](../adr/ADR-022-busqueda-de-direcciones-y-lugares.md).
 `NAFTA2GO_PLACE_SEARCH_ENABLED=0` deshabilita el proveedor sin cambiar el motor.
 La interfaz se incorpora separadamente en #130.
+
+
+## Métricas del diagnóstico de precios
+
+La lectura administrativa `/api/v1/operations` agrega `price_diagnostics`, aislado
+por aplicación/proceso: conteos HTTP y por resultado, duración acumulada, fecha de
+última solicitud y última referencia válida observada (método, versión y fecha).
+`not_observed` significa que todavía no se observó una lectura válida; `degraded`
+indica fallo operativo en la última lectura, y `observed` una lectura sin fallo.
+Rechazos de autenticación/validación se cuentan sin confirmar recuperación. Una
+referencia antigua puede seguir informada después de un fallo nuevo, con su fecha.
+
+Cada GET de diagnóstico genera `X-Request-ID` y un evento JSON
+`price_diagnostic_completed`. No registra estación, URL, parámetros, coordenadas,
+precios, credenciales ni mensajes originales de excepciones. Un error inesperado
+produce 500 seguro; una respuesta interrumpida se registra sin propagar su causa.
+
+El [panel](WEB.md#panel-local-de-operación) presenta estas lecturas, sin polling ni
+escrituras. El método elegido hoy es una referencia simple: estos contadores no
+calibran alertas, miden error predictivo o detectan deriva. Se reinician con el
+proceso; no se agregan entre réplicas ni constituyen disponibilidad sostenida.
+
+
+La telemetría de consultas generales incluye también `status` por proceso:
+`not_observed`, `observed` o `degraded` tras la última consulta completada con fallo
+operativo. Un 401/422 no confirma recuperación. El panel avisa la degradación de
+consultas y diagnóstico por separado de las alertas persistidas de ingesta; no
+implica una notificación externa ni un control de disponibilidad sostenida.

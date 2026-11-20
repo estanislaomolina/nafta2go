@@ -61,8 +61,8 @@ Presenta contadores de consultas HTTP y caché de rutas, condiciones del monitor
 y último intento separado de la última versión exitosa, con fechas, duración,
 conteos, reglas y captura. No genera ingestas ni escribe/resuelve alertas.
 Explica que contadores son por proceso, que la CLI queda fuera y que ausencia
-de condiciones no garantiza frescura, cobertura ni disponibilidad. ML queda
-rotulado como pendiente; no se inventan métricas.
+de condiciones no garantiza frescura, cobertura ni disponibilidad. El diagnóstico presenta sólo solicitudes observadas y su última referencia, sin
+afirmar precisión ni deriva.
 
 Las lecturas usan `no-store` y mismo origen. La pantalla retira datos anteriores
 al actualizar y sólo presenta el conjunto si ambas lecturas funcionan; ante
@@ -75,6 +75,14 @@ QA cubre teclado, errores, cancelación, timeout, regreso a la página, XSS y
 390/320 px emulados. Las capturas de operación son datos de prueba: el caso
 de fallo posterior al éxito y su hash son sintéticos; no son evidencia de una
 ingesta real. Falta validación con operador, teléfono físico y lector de pantalla.
+
+
+El panel separa las alertas de ingesta del estado operativo del diagnóstico de
+precios. Presenta conteos, tiempos y última referencia; sin lecturas informa que no
+hay observaciones. Ante un fallo de dependencia/interno muestra degradación aunque
+la consulta habitual pueda seguir disponible. No confunde falta de contexto con un
+precio erróneo. La versión informada corresponde a la última referencia observada,
+no a una confirmación de que la configuración actual siga siendo la misma.
 
 
 ## Atribución de rutas

@@ -20,16 +20,20 @@ class QueryTelemetry:
         self._statuses = Counter()
         self._outcomes = Counter()
         self._duration_ms = 0.0
+        self._state = "not_observed"
 
     def record(self, status, outcome, duration_ms):
         with self._lock:
             self._statuses[str(status)] += 1
             self._outcomes[outcome] += 1
             self._duration_ms += duration_ms
+            if status == 200 or status >= 500:
+                self._state = "degraded" if status >= 500 else "observed"
 
     def snapshot(self):
         with self._lock:
             return {
+                "status": self._state,
                 "completed": sum(self._statuses.values()),
                 "http_status": dict(self._statuses),
                 "outcome": dict(self._outcomes),

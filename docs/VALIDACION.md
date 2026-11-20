@@ -77,7 +77,7 @@ una corrida nueva de 120 consultas dio los mismos 123/123, 1.230/1.230 y 123/123
 | RF11 Ranking conservador | Pendiente | Auditoría de umbrales en [ML](ML.md#auditoría-real-del-17112026) | Depende de la política de alertas (#20) |
 | RF12 Autenticación administrativa | Cumple | `tests/presentation/test_ingestion_status.py`, `tests/presentation/test_http.py`, [ADR-016](../adr/ADR-016-acceso-administrativo-separado.md) | — |
 | RF13 Configuración sin código | Parcial | Vigencia por variable de entorno (#96), parámetros de caché y cupo en Compose | No hay auditoría de cambios de configuración |
-| RF14 Estado operativo | Parcial | Panel `/operacion` y API de estado (`tests/browser/web.test.cjs`, `tests/presentation/test_ingestion_status.py`) | Métricas del modelo en el panel |
+| RF14 Estado operativo | Cumple | Panel `/operacion`, métricas de ingesta/consultas/rutas/diagnóstico, `tests/presentation/test_price_diagnostic.py` y prueba móvil del panel | — |
 | RF15 Escenarios históricos | Cumple | `tests/application/test_scenario.py`, rótulo `historical_scenario` en las respuestas | — |
 
 ## Requisitos no funcionales
