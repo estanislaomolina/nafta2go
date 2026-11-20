@@ -128,7 +128,7 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración; la Ent
 | Diagnóstico estadístico servido | MVP-05 (#19) | Parcial: la API sirve la referencia elegida, sin nivel de alerta hasta aprobar una política; ver docs/API.md |
 | Ranking conservador | MVP-06 (#20) | Pendiente: regla propuesta en discusión |
 | Estimación de precios de 31 a 120 días | #117 | Implementada en API y web, rotulada y fuera del ranking (ADR-020) |
-| Operación y acceso administrativo | MVP-07 | Panel `/operacion` y API de estado con token administrativo separado (ADR-016); supervisión continua pendiente |
+| Operación y acceso administrativo | MVP-07 | Panel `/operacion`, estado de ingestas y métricas de consultas/rutas/diagnóstico, con token administrativo separado (ADR-016); supervisión continua pendiente |
 | Despliegue en AWS | MVP-08 (#22) | Red creada en el sandbox; servidor de demo propuesto, sin provisionar; ver docs/AWS.md |
 | Recomendador completo | MVP-02 | CLI, caso de uso y API admiten hasta veinte candidatas (diez por defecto); ver docs/MOTOR.md |
 

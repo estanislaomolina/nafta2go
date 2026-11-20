@@ -50,7 +50,7 @@ resuelto en POC-02 de esta forma:
 | RF11 Ranking conservador | — | Pendiente: la regla se discute en #20 |
 | RF12 Autenticación administrativa | `presentation/http`, `NAFTA2GO_ADMIN_TOKEN` | Implementado: token administrativo separado del de conductor (ADR-016) |
 | RF13 Configurar sin modificar código | Variables de entorno, `compose.yaml` | Parcial: vigencia, caché y cupo de rutas se configuran por entorno; no hay auditoría de cambios |
-| RF14 Estado operativo | `/operacion`, `GET /api/v1/operations` | Parcial: ingestas, alertas y contadores; faltan métricas del modelo |
+| RF14 Estado operativo | `/operacion`, `GET /api/v1/operations` | Implementado: ingestas, alertas, consultas/rutas y métricas operativas del diagnóstico |
 | RF15 Escenarios históricos | `application/scenario`, `docs/evidencia/escenario-vigente-2026-10-24/` | Implementado como respaldo automático y rotulado |
 | RNF03 Privacidad | `persistence/repository.record_recommendation` | Implementado: rechaza origen, destino y coordenadas en la consulta guardada |
 | RNF05 Trazabilidad | `ingestion_runs`, `raw_captures`, `recommendations.data_run_id`, rótulo `scenario` | Implementado: ingesta, recomendación persistida y escenario identificado por fecha y hashes |
@@ -538,5 +538,7 @@ flowchart LR
 - **Reevaluación:** se repite offline con las mismas herramientas y un protocolo
   fijado antes de mirar los resultados (`ml.evaluate_alerts`, `ml.evaluate_stale`).
   Cambiar la selección requiere un período de evaluación nuevo.
-- **Pendiente:** no hay monitoreo automático de deriva ni métricas del modelo en el
-  panel de operación (RF14); la reevaluación es manual.
+- **Operación:** el panel muestra solicitudes, tiempos, abstenciones y fallos del
+  diagnóstico, junto con método/versión de la última referencia observada. No
+  registra ubicaciones, estaciones o precios. No hay monitoreo automático de
+  deriva ni error predictivo en línea; la reevaluación sigue siendo manual.

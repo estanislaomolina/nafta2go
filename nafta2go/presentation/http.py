@@ -31,6 +31,10 @@ from nafta2go.application.price_diagnostic import DiagnosticUnavailable, price_d
 from nafta2go.application.query import recommend_from_database
 from nafta2go.application.scenario import ScenarioIntegrityError
 from nafta2go.persistence.database import create_db_engine, database_is_ready
+from nafta2go.presentation.diagnostic_telemetry import (
+    DiagnosticTelemetry,
+    DiagnosticTelemetryMiddleware,
+)
 from nafta2go.presentation.models import (
     ErrorOutput,
     PriceDiagnosticOutput,
@@ -122,7 +126,9 @@ def create_app(
 
     application = FastAPI(title="Nafta2Go", version="0.1.0", lifespan=lifespan)
     telemetry = QueryTelemetry()
+    diagnostic_telemetry = DiagnosticTelemetry()
     application.add_middleware(QueryTelemetryMiddleware, telemetry=telemetry)
+    application.add_middleware(DiagnosticTelemetryMiddleware, telemetry=diagnostic_telemetry)
 
     install_web(application)
     application.add_exception_handler(RequestValidationError, validation_error)
@@ -162,6 +168,9 @@ def create_app(
         if result is None:
             raise HTTPException(404, detail={"code": "published_price_not_found"})
         response.headers["Cache-Control"] = "no-store"
+        request.scope["nafta2go.diagnostic"] = {
+            key: result[key] for key in ("status", "method", "version")
+        }
         return result
 
     @application.get("/ready")
@@ -217,6 +226,7 @@ def create_app(
                 "scope": "process",
                 "queries": telemetry.snapshot(),
                 "routes": shared_cache().snapshot(),
+                "price_diagnostics": diagnostic_telemetry.snapshot(),
             },
             headers={"Cache-Control": "no-store"},
         )
