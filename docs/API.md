@@ -210,3 +210,20 @@ La vigencia se configura con `NAFTA2GO_MAX_PRICE_AGE_DAYS` (1–30, predetermina
 30); ver [COBERTURA](COBERTURA.md#vigencia-configurable-en-mvp). El cliente no
 puede enviarla en el cuerpo. La respuesta registra `query.max_price_age_days`;
 configuración inválida produce 503/`coverage_not_configured` y readiness 503.
+
+
+## Buscar una dirección o lugar
+
+`POST /api/v1/places`, con el mismo Bearer de conductor y cuerpo
+`{"text":"Corrientes 1234"}`, devuelve hasta tres `items` con `label`, `lat`, `lon`
+y `source=USIG · GCBA`. No recibe texto en query params. El cliente elige un
+resultado antes de recomendar. Código 429 pide reintentar, 503 indica dependencia
+no disponible y 422 rechaza texto inválido. Las respuestas exitosas son no-store.
+No persiste búsquedas ni crea recomendaciones. El texto se envía al proveedor sólo
+por acción del usuario; no reenviar credenciales. Los logs de proxies deben omitir
+cuerpos, como los de la aplicación.
+
+Caché volátil y cupo por proceso, límites y alternativas en
+[ADR-022](../adr/ADR-022-busqueda-de-direcciones-y-lugares.md).
+`NAFTA2GO_PLACE_SEARCH_ENABLED=0` deshabilita el proveedor sin cambiar el motor.
+La interfaz se incorpora separadamente en #130.
