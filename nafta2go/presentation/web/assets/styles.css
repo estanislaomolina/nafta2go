@@ -42,3 +42,5 @@ li { margin: 8px 0; } footer { font-size: 12px; padding-top: 40px; padding-botto
 
 .navigation-choices a { display: block; padding: 10px 0; color: #07523f; font-weight: 700; }
 .navigation-choices summary { color: #07523f; }
+.place-results { list-style: none; padding: 0; margin: 8px 0; } .place-results button { width: 100%; text-align: left; overflow-wrap: anywhere; }
+input[type=search] { appearance: none; }

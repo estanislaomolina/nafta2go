@@ -4,6 +4,7 @@ import logging
 import os
 from collections.abc import Callable
 from contextlib import asynccontextmanager
+from dataclasses import asdict
 from datetime import UTC, datetime
 from secrets import compare_digest
 from typing import Annotated, Literal
@@ -22,17 +23,21 @@ from nafta2go.adapters.routing import (
     QuotaExceeded,
     RoutingError,
 )
+from nafta2go.adapters.usig_places import USIGPlaces
 from nafta2go.application.coverage_rules import (
     CoverageConfigurationError,
     configured_max_price_age_days,
 )
 from nafta2go.application.ingestion_status import ingestion_status
+from nafta2go.application.place_search import PlaceSearch
 from nafta2go.application.price_diagnostic import DiagnosticUnavailable, price_diagnostic
 from nafta2go.application.query import recommend_from_database
 from nafta2go.application.scenario import ScenarioIntegrityError
+from nafta2go.domain.places import PlaceBusy, PlaceUnavailable
 from nafta2go.persistence.database import create_db_engine, database_is_ready
 from nafta2go.presentation.models import (
     ErrorOutput,
+    PlaceSearchInput,
     PriceDiagnosticOutput,
     RecommendationInput,
     RecommendationOutput,
@@ -110,6 +115,7 @@ def create_app(
     provider_factory: Callable = CapturedRoutes,
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     routing_provider: str = "openrouteservice",
+    place_provider: Callable | None = None,
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(application):
@@ -121,6 +127,7 @@ def create_app(
                 application.state.engine.dispose()
 
     application = FastAPI(title="Nafta2Go", version="0.1.0", lifespan=lifespan)
+    places = PlaceSearch(place_provider if place_provider is not None else USIGPlaces())
     telemetry = QueryTelemetry()
     application.add_middleware(QueryTelemetryMiddleware, telemetry=telemetry)
 
@@ -138,6 +145,25 @@ def create_app(
     @application.get("/health")
     def health():
         return {"status": "ok"}
+
+    @application.post("/api/v1/places", dependencies=[Depends(authorize)])
+    def search_places(body: PlaceSearchInput, request: Request):
+        if request.query_params:
+            raise HTTPException(422, detail={"code": "invalid_request"})
+        try:
+            results = places.search(body.text)
+        except PlaceBusy as exc:
+            raise HTTPException(
+                429, detail={"code": "places_busy"}, headers={"Retry-After": "1"}
+            ) from exc
+        except PlaceUnavailable as exc:
+            raise HTTPException(503, detail={"code": "places_unavailable"}) from exc
+        except ValueError as exc:
+            raise HTTPException(422, detail={"code": "invalid_request"}) from exc
+        return JSONResponse(
+            content={"items": [asdict(place) for place in results], "source": "USIG · GCBA"},
+            headers={"Cache-Control": "no-store"},
+        )
 
     @application.get(
         "/api/v1/price-diagnostics/{station_id}",

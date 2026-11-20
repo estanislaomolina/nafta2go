@@ -64,8 +64,16 @@ supone que la base temporal contenga el histórico/modelo real. La corrida del
 17/11/2026 aprobó 23 pruebas; el nuevo estado de referencia se analiza con axe.
 
 
-Tres casos adicionales de mapas (29 pruebas sobre este incremento) verifican
+El incremento de búsqueda de lugares agrega cuatro casos (30 pruebas en total):
+selección de origen/destino sin coordenadas manuales, texto remoto seguro,
+privacidad, errores y cancelación, reintento de ubicación con precisión visible y
+cancelación de una posición tardía. Las búsquedas y posiciones de QA son sintéticas
+interceptadas, sin llamadas a USIG. La vista real puede usar el endpoint de #131;
+la UI por sí sola no proporciona geocodificación. No acredita GPS del equipo ni
+cobertura completa de lugares.
+
+Tres casos adicionales de mapas (33 pruebas en total) verifican
 UC01/UC02 con estación intermedia, destino congelado de la consulta original,
 parámetros de Waze, privacidad, limpieza al salir, teclado, móvil y rechazo de
 coordenadas inválidas. No se abren servicios externos ni se afirma soporte real
-en aplicaciones móviles. La integración con el buscador de #133 se prueba aparte.
+en aplicaciones móviles.

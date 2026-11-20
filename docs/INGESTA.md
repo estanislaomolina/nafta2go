@@ -205,8 +205,8 @@ vigentes. Esto no garantiza una descarga exitosa ni disponibilidad del equipo.
 
 Las pruebas simulan recuperación de DNS y corte de stream, agotamiento, errores
 permanentes, cierre de sesiones y limpieza de parciales, sin red ni esperas reales.
-La rama operativa original todavía conserva el comportamiento anterior; el nuevo
-comando se usará tras integrar y actualizar su checkout de forma controlada.
+La operación se actualizó a una copia fija de una versión revisada de `dev`;
+la evidencia y las condiciones de conservación/rollback están al final de este documento.
 
 La clasificación usa las [excepciones de Requests](https://requests.readthedocs.io/en/latest/user/quickstart/#errors-and-exceptions).
 
@@ -218,3 +218,50 @@ Recalcula las condiciones del monitor sin escribir ni cambiar alertas; una
 lectura no constituye una ejecución del monitor ni demuestra que el timer haya
 corrido. No expone errores originales, URLs, archivos ni filas. Contrato y
 límites en [API](API.md#estado-de-ingestas-para-operación).
+
+
+## Actualización controlada de la operación — 19/11 local, 20/11 UTC
+
+El servicio usaba `4325d79`, anterior a los reintentos de #76. Los intentos 13 y 14
+fallaron por DNS. Se preparó una copia fija de `1622622` mediante `git archive` en
+`.runtime/releases/<sha>`, con venv propio y dependencias registradas, sin cambiar
+la rama ni los archivos versionados del checkout de trabajo.
+
+Se respaldaron SQLite con su API de backup (integrity_check correcto) y el archivo
+privado `ingestion.env`. El candidato se probó primero con una copia de la base y
+un CSV existente: terminó correctamente sin alterar la base operativa. Se verificó
+que los 249 archivos de la copia coinciden con el commit revisado.
+
+Con servicios inactivos se pausaron los dos timers durante el cambio. Sólo se
+actualizaron `NAFTA2GO_DIR` y `PYTHONDONTWRITEBYTECODE` en el EnvironmentFile; la URL
+absoluta de base y las unidades se conservaron. La carpeta `data` de la release
+es un enlace a los originales/base existentes. Los timers se reanudaron. Un timer
+transitorio de diez segundos invocó **el servicio de ingesta real**: ejecución 15,
+exit 0, éxito en 1,26 s y un intento de adquisición. El monitor posterior terminó
+con exit 0 y cero alertas activas. No se provocó DNS fallido para esta medición.
+
+La [evidencia](evidencia/ingesta-release-2026-11-20.json) conserva commit, hashes,
+entorno, resultados y comprobación de que las ingestas/precios anteriores y todas
+las recomendaciones permanecen iguales. Respaldos, configuración y datos quedan
+fuera de Git, con permisos privados.
+
+### Conservación y reversión
+
+- Conservar la release y su enlace `data`: la captura de la ejecución 15 está en
+  los originales compartidos, pero su ruta absoluta pasa por ese alias. No borrar
+  releases usadas por capturas sin revisar sus referencias.
+- No cambiar de rama dentro de una release ni mezclarla con código pendiente de
+  review. Una actualización nueva empieza por otro commit revisado y otra copia.
+- Antes de actualizar: comprobar servicios sin PID activo, pausar timers, respaldar
+  SQLite/configuración y probar una copia. Si el candidato falla, conservar la
+  configuración previa y reanudar los timers.
+- Para revertir el código: pausar timers, comprobar que no hay trabajos activos y
+  restaurar `ingestion.env` desde su respaldo privado con permisos 0600; después
+  reanudar ambos timers y comprobar ingesta/monitor. No restaura la base por defecto:
+  el esquema sigue en 0003 y la actualización no borró datos. Restaurar SQLite sólo
+  ante un problema de datos, conservando antes la base actual y los originales.
+
+**#15 permanece abierto.** La ejecución del timer de prueba no es la diaria de las
+06:00 ni acredita continuidad sostenida. Falta observar el próximo disparo diario
+y su monitor; una computadora apagada no ejecuta tareas. No se agregó cómputo AWS
+ni se enviaron notificaciones a un receptor externo.

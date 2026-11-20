@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Nafta2Go · Elegí dónde cargar</title>
-  <link rel="stylesheet" href="/assets/styles.css"><script src="/assets/navigation-options.js" defer></script><script src="/assets/app.js" defer></script>
+  <link rel="stylesheet" href="/assets/styles.css"><script src="/assets/locations.js" defer></script><script src="/assets/navigation-options.js" defer></script><script src="/assets/app.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#query">Ir al formulario</a>
@@ -15,13 +15,18 @@
     <h2 id="form-title">Armá tu consulta</h2><p class="muted">Revisá los valores según tu vehículo.</p>
     <noscript>Necesitás habilitar JavaScript para consultar estaciones.</noscript>
     <form id="query" method="post" action="/" autocomplete="off" tabindex="-1">
-      <fieldset><legend>1. Tu recorrido</legend><p class="hint">Coordenadas en grados decimales, dentro de CABA.</p>
-        <div class="pair"><label>Latitud de origen<input name="origin_lat" type="number" min="-90" max="90" step="any" placeholder="Ej.: -34.60" required></label><label>Longitud de origen<input name="origin_lon" type="number" min="-180" max="180" step="any" placeholder="Ej.: -58.38" required></label></div>
+      <fieldset><legend>Acceso a la demo</legend><label>Código de acceso<input id="access" type="password" autocomplete="off" required></label><p class="hint">Se usa solo en esta pestaña. No lo guardamos en el navegador.</p></fieldset>
+      <fieldset><legend>1. Tu recorrido</legend><p class="hint">Buscá una dirección o lugar dentro de CABA y elegí un resultado.</p>
+        <label>Desde dónde salís<input id="origin-place" type="search" maxlength="120" placeholder="Ej.: Corrientes 1234" autocomplete="off"></label><button id="origin-search" class="secondary" type="button">Buscar origen</button><p id="origin-place-status" class="hint" role="status"></p><ul id="origin-place-results" class="place-results" aria-label="Opciones de origen"></ul>
+        <details id="origin-coordinates"><summary>Ingresar coordenadas del origen</summary>
+        <div class="pair"><label>Latitud de origen<input name="origin_lat" type="number" min="-90" max="90" step="any" placeholder="Ej.: -34.60"></label><label>Longitud de origen<input name="origin_lon" type="number" min="-180" max="180" step="any" placeholder="Ej.: -58.38"></label></div>
+        </details>
         <button id="locate" class="secondary" type="button">Usar mi ubicación</button><p id="location-status" class="hint" role="status"></p>
         <fieldset id="destination"><legend>Destino del viaje</legend>
           <label class="check"><input id="return" type="checkbox" aria-describedby="destination-hint"> Volver a donde estoy (ida y vuelta)</label>
-          <p id="destination-hint" class="hint">Si lo marcás, el destino es tu origen y no se edita.</p><div class="pair"><label>Latitud de destino<input name="destination_lat" type="number" min="-90" max="90" step="any" required></label><label>Longitud de destino<input name="destination_lon" type="number" min="-180" max="180" step="any" required></label></div></fieldset>
-      </fieldset>
+          <p id="destination-hint" class="hint">Si lo marcás, el destino es tu origen y no se edita.</p><label>A dónde vas<input id="destination-place" type="search" maxlength="120" placeholder="Ej.: Hospital Pirovano" autocomplete="off"></label><button id="destination-search" class="secondary" type="button">Buscar destino</button><p id="destination-place-status" class="hint" role="status"></p><ul id="destination-place-results" class="place-results" aria-label="Opciones de destino"></ul>
+          <details id="destination-coordinates"><summary>Ingresar coordenadas del destino</summary><div class="pair"><label>Latitud de destino<input name="destination_lat" type="number" min="-90" max="90" step="any"></label><label>Longitud de destino<input name="destination_lon" type="number" min="-180" max="180" step="any"></label></div></details></fieldset>
+      <p class="hint">Las búsquedas se envían a USIG · Gobierno de la Ciudad sólo al pulsar Buscar. No las guardamos en la base.</p></fieldset>
       <fieldset><legend>2. Tu vehículo</legend><div class="pair">
         <label>Consumo (L/100 km)<input name="consumption_l_per_100km" type="number" min="0" step="any" value="10" required></label>
         <label>Capacidad del tanque (L)<input name="tank_capacity_l" type="number" min="0" step="any" value="50" required></label>
@@ -32,7 +37,7 @@
         <label>Nafta<select name="fuel_type"><option value="super">Súper</option><option value="premium">Premium</option></select></label>
         <label>Horario de carga<select name="schedule_id"><option value="2">Diurno</option><option value="3">Nocturno</option></select></label>
       </div><label>Presupuesto (ARS)<input name="budget_ars" type="number" min="0" step="any" value="12000" required></label></fieldset>
-      <fieldset><legend>4. Acceso a la demo</legend><label>Código de acceso<input id="access" type="password" autocomplete="off" required></label><p class="hint">Se usa solo en esta pestaña. No lo guardamos en el navegador.</p></fieldset>
+
       <button id="submit" type="submit" disabled>Comparar estaciones</button>
     </form>
   </section>

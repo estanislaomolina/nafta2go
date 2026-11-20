@@ -143,18 +143,7 @@ function show(data, trip) {
   status.textContent = data.alternatives.length ? data.alternatives.length === 1 ? "Encontramos una alternativa." : "Encontramos " + data.alternatives.length + " alternativas." : "Consulta terminada sin alternativas.";
   output.focus();
 }
-const mirrored = {destination_lat: "origin_lat", destination_lon: "origin_lon"};
-function syncDestination() {
-  for (const [key, source] of Object.entries(mirrored)) {
-    const input = form.elements[key]; input.readOnly = back.checked;
-    if (back.checked) input.value = form.elements[source].value;
-  }
-}
-back.addEventListener("change", () => {
-  if (!back.checked) for (const key of Object.keys(mirrored)) form.elements[key].value = "";
-  syncDestination();
-});
-form.addEventListener("input", () => { for (const input of form.querySelectorAll("input")) input.setCustomValidity(""); syncDestination(); });
+form.addEventListener("input", () => { for (const input of form.querySelectorAll("input")) input.setCustomValidity(""); });
 form.addEventListener("submit", async event => {
   event.preventDefault();
   for (const input of form.querySelectorAll("input")) input.setCustomValidity("");
@@ -190,18 +179,6 @@ form.addEventListener("submit", async event => {
     clearTimeout(timer); fields.forEach((field, index) => field.disabled = disabled[index]);
     output.removeAttribute("aria-busy"); submit.disabled = false; submit.textContent = "Comparar estaciones";
   }
-});
-document.querySelector("#locate").addEventListener("click", event => {
-  const button = event.currentTarget, notice = document.querySelector("#location-status");
-  if (!navigator.geolocation) { notice.textContent = "Este navegador no ofrece ubicación. Cargá las coordenadas manualmente."; return; }
-  button.disabled = true; submit.disabled = true; notice.textContent = "Buscando tu ubicación…";
-  navigator.geolocation.getCurrentPosition(position => {
-    form.elements.origin_lat.value = position.coords.latitude; form.elements.origin_lon.value = position.coords.longitude; syncDestination();
-    notice.textContent = "Ubicación completada. Confirmá que esté dentro de CABA."; button.disabled = false; submit.disabled = false;
-  }, failure => {
-    const reason = {1: "El navegador o el sistema no dieron permiso de ubicación.", 2: "El navegador no pudo determinar dónde estás; en computadoras sin GPS suele pasar.", 3: "La ubicación demoró demasiado."}[failure && failure.code];
-    notice.textContent = (reason ? reason + " " : "No pudimos obtener tu ubicación. ") + "Cargá las coordenadas manualmente."; button.disabled = false; submit.disabled = false;
-  }, {timeout: 10000, maximumAge: 0});
 });
 window.addEventListener("pagehide", () => { access.value = ""; clearReferences(); });
 submit.disabled = false;
