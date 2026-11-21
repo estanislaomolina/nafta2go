@@ -21,8 +21,9 @@ y publicaciones estrictamente anteriores al objetivo. El supuesto de disponibili
 histórica se declara en la respuesta; no equivale a disponibilidad verificada.
 
 `scope=published_price_retrospective` diagnostica la publicación, no el precio
-actual. `reference_only` conserva `alert_level=not_calibrated`: no afirma normalidad,
-anomalía ni error. Sin contexto devuelve 200/`unavailable`, referencia/diferencia
+actual. `reference_only` conserva el alcance retrospectivo y nunca afirma error. La selección
+auditada habilita niveles provisionales de ADR-021; otra selección conserva
+`alert_level=not_calibrated`. Sin contexto devuelve 200/`unavailable`, referencia/diferencia
 nulas; sin publicación, 404; sin datos/configuración compatibles, 503 seguro.
 La referencia no modifica motor, precio oficial, ranking ni vigencia.
 
@@ -34,8 +35,8 @@ medianas y sigue siendo necesario para el fallback. Esto reduce lecturas ajenas
 al diagnóstico; no acredita p95 ni un límite de memoria para un grupo grande.
 
 Es optativo: sin estas variables, la consulta habitual sigue funcionando y
-readiness no exige diagnóstico. Faltan calibración de alertas, serving aprendido
-y ranking conservador antes de cerrar #19. La [web](WEB.md#referencia-histórica-de-una-publicación) permite consultar esta referencia bajo pedido. Alternativas en
+readiness no exige diagnóstico. La regla provisional se describe al final de este documento; no acredita
+calibración para detectar errores ni exige servir un modelo aprendido no seleccionado. La [web](WEB.md#referencia-histórica-de-una-publicación) permite consultar esta referencia bajo pedido. Alternativas en
 [ADR-015](../adr/ADR-015-referencia-servida-y-abstencion-de-alertas.md).
 
 La presentación HTTP usa FastAPI ([ADR-009](../adr/ADR-009-api-http-con-fastapi.md))
@@ -255,3 +256,21 @@ La telemetría de consultas generales incluye también `status` por proceso:
 operativo. Un 401/422 no confirma recuperación. El panel avisa la degradación de
 consultas y diagnóstico por separado de las alertas persistidas de ingesta; no
 implica una notificación externa ni un control de disponibilidad sostenida.
+
+
+## Política provisional de desvío — ADR-021
+
+Con la selección auditada identificada en [ADR-021](../adr/ADR-021-ranking-conservador-por-desvio.md),
+el diagnóstico conserva `status=reference_only` (referencia retrospectiva), pero
+`alert_level` distingue `provisional_deviation` y `provisional_within_threshold`.
+Devuelve `alert_policy_version=conservative-v1`, `relative_deviation`,
+`alert_threshold` y un aviso explícito de limitaciones. La comparación es estricta:
+`abs(publicado-referencia) > umbral * referencia`. Los umbrales por producto son
+0,05424409844299347 y 0,054570259208731244 para súper y premium respectivamente.
+No se interpreta la ausencia de excedencia como certificación del precio.
+
+Otra selección/modelo conserva `not_calibrated` y política nula; sin contexto
+se mantiene `unavailable`. No cambia el precio oficial ni la preparación temporal.
+El resultado de la auditoría histórica sigue teniendo `runtime_enabled=false`:
+es una fotografía del experimento, no la configuración actual del servicio.
+La regla no tiene precisión ni sensibilidad medidas para detectar errores reales.

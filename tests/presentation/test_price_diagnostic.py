@@ -152,7 +152,7 @@ def test_reference_matches_training_and_does_not_write(engine, prepared, method,
     assert body["scope"] == "published_price_retrospective" and body["method"] == method
     assert body["version"] == hashlib.sha256(manifest.read_bytes()).hexdigest()
     assert body["data_run_id"] == runs["vigente"]
-    assert not any(secret in response.text for secret in ("secreto", "lat", "lon", "joblib"))
+    assert not any(secret in response.text for secret in ("secreto", '"lat"', '"lon"', "joblib"))
     with engine.connect() as conn:
         assert conn.scalar(select(func.count()).select_from(recommendations)) == 0
         assert conn.scalar(select(func.count()).select_from(station_prices)) == 6
@@ -415,3 +415,21 @@ def test_diagnostic_metrics_cover_results_failures_and_preserve_privacy(
             other.get("/api/v1/operations", headers=admin).json()["price_diagnostics"]["completed"]
             == 0
         )
+
+
+def test_compatible_selection_emits_provisional_alert_without_changing_official(
+    engine, prepared, monkeypatch
+):
+    _, _, _, manifest = prepared
+    monkeypatch.setattr(
+        "nafta2go.domain.price_alert.AUDITED_MODEL_VERSION",
+        hashlib.sha256(manifest.read_bytes()).hexdigest(),
+    )
+    with client(engine) as http:
+        body = http.get(URL, headers=AUTH).json()
+    assert body["alert_level"] == "provisional_deviation"
+    assert body["alert_policy_version"] == "conservative-v1"
+    assert body["official_price_ars_per_l"] == "150.000"
+    assert body["reason"] == "provisional_policy"
+    assert body["reference_ars_per_l"] == "120.000"
+    assert float(body["relative_deviation"]) == pytest.approx(0.25)
