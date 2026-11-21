@@ -169,7 +169,7 @@ Las marcas de la base son UTC sin zona y el journal explicita su zona. La fecha
 La ruta del original se normalizó como relativa y se omitieron errores completos
 y URLs. Los datos y el journal pueden cambiar o rotar después de esta captura.
 
-**MVP-01 sigue abierto:** no hubo actualización automática exitosa los días del
+**Estado al 12/11 (histórico):** no hubo actualización automática exitosa los días del
 fallo. Restan supervisión sostenida, instalar y observar los reintentos descritos
 abajo y resolver la disponibilidad del equipo/catálogo; no hay notificaciones a un receptor externo.
 No cambiar de rama ni mover el checkout operativo sin revisar sus servicios.
@@ -261,7 +261,32 @@ fuera de Git, con permisos privados.
   el esquema sigue en 0003 y la actualización no borró datos. Restaurar SQLite sólo
   ante un problema de datos, conservando antes la base actual y los originales.
 
-**#15 permanece abierto.** La ejecución del timer de prueba no es la diaria de las
+**Estado al 20/11 UTC (histórico):** la ejecución del timer de prueba no es la diaria de las
 06:00 ni acredita continuidad sostenida. Falta observar el próximo disparo diario
 y su monitor; una computadora apagada no ejecuta tareas. No se agregó cómputo AWS
 ni se enviaron notificaciones a un receptor externo.
+
+
+## Verificación diaria y cierre funcional de MVP-01 — 21/11
+
+La [evidencia diaria](evidencia/ingesta-diaria-2026-11-21.json) registra dos
+adquisiciones reales posteriores a la actualización de la operación:
+
+- Ejecución 16: 20/11 a las **09:05:31 de Argentina**, exitosa tras dos intentos
+  (61,29 s). Ese día no se acredita puntualidad a las 06:00.
+- Ejecución 17: 21/11 a las **06:00:51 de Argentina**, exitosa en un intento
+  (1,83 s), coincidente con el disparo diario del timer a las 06:00:50.
+
+Ambas validaron 732 filas de 184 estaciones, sin rechazos. Se contrastaron tamaño
+(9.260.901 bytes) y SHA-256 de cada original contra sus metadatos persistidos.
+La ejecución 17 detectó el mismo CSV de la 16 y evitó duplicar precios.
+Una descarga nueva no convierte los precios antiguos del catálogo en actuales.
+Ingesta y monitor terminaron con estado exitoso; no había alertas activas y el
+próximo disparo estaba programado para el 22/11 a las 06:00 de Argentina.
+
+Esta evidencia completa la comprobación funcional de frecuencia local de
+[#15](https://github.com/estanislaomolina/nafta2go/issues/15), junto con las
+validaciones y trazabilidad ya verificadas. La ejecución 15 fue un timer de
+prueba y se conserva separada en la evidencia anterior. Dos ejecuciones exitosas
+no acreditan un SLA ni disponibilidad continua: la computadora apagada no ejecuta
+tareas. El despliegue y la validación integral siguen en #22, #23 y #59.
