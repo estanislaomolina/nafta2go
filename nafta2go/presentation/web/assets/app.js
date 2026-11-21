@@ -46,12 +46,12 @@ function priceReference(data, row) {
       if (value.scope !== 'published_price_retrospective' || value.data_run_id !== data.data_run_id || String(value.station_id) !== String(row.station_id) || value.product_id !== product || value.schedule_id !== schedule || Number(value.official_price_ars_per_l) !== Number(row.price_ars_per_l) || Date.parse(value.published_at) !== publication)
         throw new QueryError('La publicación cambió o no coincide con esta recomendación. Volvé a buscar estaciones.');
       if (value.status === 'unavailable') throw new QueryError('No hay suficiente historia comparable para esta publicación. No se emite una alerta.');
-      if (value.status !== 'reference_only' || value.alert_level !== 'not_calibrated' || value.reference_ars_per_l == null || !Number.isFinite(Number(value.reference_ars_per_l)) || Number(value.reference_ars_per_l) <= 0 || value.difference_ars_per_l == null || !Number.isFinite(Number(value.difference_ars_per_l)))
+      if (value.status !== 'reference_only' || !['not_calibrated', 'provisional_deviation', 'provisional_within_threshold'].includes(value.alert_level) || value.reference_ars_per_l == null || !Number.isFinite(Number(value.reference_ars_per_l)) || Number(value.reference_ars_per_l) <= 0 || value.difference_ars_per_l == null || !Number.isFinite(Number(value.difference_ars_per_l)))
         throw new QueryError('No pudimos obtener una referencia válida para esta publicación.');
       result.replaceChildren(node('h4', 'Referencia histórica de esta publicación'));
       const details = document.createElement('dl');
       for (const [label, text] of [['Referencia', number(value.reference_ars_per_l, ' ARS/L')], ['Diferencia: publicado menos referencia', number(value.difference_ars_per_l, ' ARS/L')]]) details.append(node('dt', label), node('dd', text));
-      result.append(details, node('p', 'Corresponde a la publicación del ' + date(value.published_at) + '. No estima el precio actual ni demuestra que el precio publicado sea incorrecto.', 'hint'), node('p', 'Todavía no hay una alerta validada para esta comparación.', 'notice warning'));
+      result.append(details, node('p', 'Corresponde a la publicación del ' + date(value.published_at) + '. No estima el precio actual ni demuestra que el precio publicado sea incorrecto.', 'hint'), node('p', value.alert_level === 'not_calibrated' ? 'Todavía no hay una alerta validada para esta comparación.' : (value.alert_level === 'provisional_deviation' ? 'Desvío por encima del umbral provisional. ' : 'Sin excedencia del umbral provisional; no certifica el precio. ') + 'No demuestra un precio incorrecto ni mide detección de errores reales. Regla: ' + value.alert_policy_version, 'notice warning'));
       const trace = document.createElement('details'); trace.append(node('summary', 'Detalles de la referencia'));
       const methods = {mediana_previa: 'Mediana comparable previa', ultimo_precio: 'Último precio publicado de la estación', bandera_reciente: 'Mediana reciente de la bandera'};
       trace.append(node('p', (methods[value.method] || 'Referencia histórica') + ' · Versión: ' + value.version, 'source')); result.append(trace);
@@ -94,6 +94,27 @@ function staleEstimates(block) {
   }
   return section;
 }
+function conservativeRanking(block, rows) {
+  if (!block) return null;
+  const section = document.createElement('section');
+  section.append(node('h3', 'Ranking conservador · Provisional'));
+  if (block.status !== 'available') {
+    section.append(node('p', 'No disponible: requiere precios vigentes y una referencia compatible con la regla auditada.', 'hint'));
+    return section;
+  }
+  section.append(node('p', 'Compara las mismas estaciones y rutas del ranking general. Excluye desvíos por encima del umbral histórico; no demuestra precios incorrectos ni certifica los restantes.', 'notice warning'));
+  const describe = id => { const row = rows.get(id); return row ? (row.brand || 'Estación ' + id) + ' · ' + (row.address || 'Dirección no informada') : 'Estación ' + id; };
+  for (const choice of block.alternatives) {
+    const row = rows.get(choice.station_id); if (!row || !row.feasible || !row.metrics) continue;
+    section.append(node('h4', describe(choice.station_id)), node('p', choice.priorities.map(key => priorities[key] || key).join(' · ')),
+      node('p', 'Precio oficial: ' + number(row.price_ars_per_l, ' ARS/L') + ' · Ganancia neta: ' + number(row.metrics.net_gain_l, ' L') + ' · Desvío: ' + number(row.metrics.extra_km, ' km')));
+  }
+  if (!block.alternatives.length) section.append(node('p', 'Todas las opciones viables quedaron excluidas por la regla provisional. El ranking general sigue disponible.'));
+  section.append(node('p', 'Excluidas por desvío: ' + (block.excluded_station_ids.map(describe).join('; ') || 'Ninguna.')),
+    node('p', 'Sin referencia, conservadas: ' + (block.without_reference_station_ids.map(describe).join('; ') || 'Ninguna.')),
+    node('p', 'Regla: ' + block.policy_version + '. La comparación se limita a las candidatas evaluadas.', 'source'));
+  return section;
+}
 function show(data, trip) {
   output.replaceChildren();
   output.append(node("p", "Vigencia máxima aplicada: " + data.query.max_price_age_days + " días respecto de la referencia de precios.", "hint"));
@@ -128,6 +149,7 @@ function show(data, trip) {
     const anchor = mapsLink(links.get(choice.station_id), trip); if (anchor) card.append(anchor);
     card.append(more); output.append(card);
   }
+  const conservative = conservativeRanking(data.conservative_ranking, rows); if (conservative) output.append(conservative);
   if (data.navigation_notice) output.append(node("p", data.navigation_notice, "hint"));
   const estimates = staleEstimates(data.stale_price_estimates);
   if (estimates) output.append(estimates);

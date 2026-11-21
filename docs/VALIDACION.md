@@ -33,7 +33,8 @@ La matriz de ORS se midió aparte: p95 1,24 s en 5 llamadas de 22 ubicaciones
 consulta completa quedaría cerca de **1,28 s**, debajo del objetivo de 5 s. Es una
 **estimación compuesta**, no una medición de punta a punta: la muestra de ORS es
 chica, no incluye la red del cliente y UC02 (sin destino) no tiene matriz guardada.
-La medición real con ORS necesita la clave y consume cuota; queda pendiente.
+El lote real UC01/UC02 del 21/11 se registra al final; la composición anterior
+se conserva como medición histórica separada.
 
 **Trazabilidad, frescura y privacidad.** `python -m nafta2go.audit` revisa lo que
 quedó guardado en `recommendations`, no lo que el código intentó guardar:
@@ -73,8 +74,8 @@ una corrida nueva de 120 consultas dio los mismos 123/123, 1.230/1.230 y 123/123
 | RF07 Explicar cada resultado | Cumple | `tests/application/test_query.py`, `tests/browser/web.test.cjs`, [WEB](WEB.md) | Prueba de comprensión con usuarios (ver criterios) |
 | RF08 Ingesta diaria | Cumple | `tests/services/test_ingestion.py`, `tests/normalization/`, [INGESTA](INGESTA.md), [ADR-008](../adr/ADR-008-programacion-de-ingesta.md) | Operación continua: ver criterio de ingesta |
 | RF09 Vigencia configurable | Cumple | `tests/application/test_coverage_rules.py`, frescura 100 % en la auditoría de las recomendaciones generadas en la medición y la prueba integral | — |
-| RF10 Diagnóstico del precio | Parcial | `tests/presentation/test_price_diagnostic.py`, [ADR-015](../adr/ADR-015-referencia-servida-y-abstencion-de-alertas.md) | Sirve la referencia y su versión, pero `alert_level` sigue en `not_calibrated`: falta una política de alertas aprobada (#19) |
-| RF11 Ranking conservador | Pendiente | Auditoría de umbrales en [ML](ML.md#auditoría-real-del-17112026) | Depende de la política de alertas (#20) |
+| RF10 Diagnóstico del precio | Parcial | `tests/presentation/test_price_diagnostic.py`, [ADR-015](../adr/ADR-015-referencia-servida-y-abstencion-de-alertas.md) | Sirve la referencia y su versión, pero Regla provisional de [ADR-021](../adr/ADR-021-ranking-conservador-por-desvio.md); tests de fronteras y selección versionada (#140), pendiente de integrar |
+| RF11 Ranking conservador | Parcial | API/web y tests integrados de la comparación en #141 | Integrar #140/#141 con revisión; regla provisional sin precisión/sensibilidad medidas |
 | RF12 Autenticación administrativa | Cumple | `tests/presentation/test_ingestion_status.py`, `tests/presentation/test_http.py`, [ADR-016](../adr/ADR-016-acceso-administrativo-separado.md) | — |
 | RF13 Configuración sin código | Parcial | Vigencia por variable de entorno (#96), parámetros de caché y cupo en Compose | No hay auditoría de cambios de configuración |
 | RF14 Estado operativo | Cumple | Panel `/operacion`, métricas de ingesta/consultas/rutas/diagnóstico, `tests/presentation/test_price_diagnostic.py` y prueba móvil del panel | — |
@@ -84,7 +85,7 @@ una corrida nueva de 120 consultas dio los mismos 123/123, 1.230/1.230 y 123/123
 
 | ID | Estado | Evidencia | Falta |
 |---|---|---|---|
-| RNF01 Rendimiento | Parcial | Medición en proceso y composición con ORS (arriba) | Lote real de punta a punta con ORS, UC01 y UC02 |
+| RNF01 Rendimiento | Parcial | Medición en proceso y composición con ORS (arriba) | Ampliar muestra y medir red del cliente/despliegue; ver lote real del 21/11 |
 | RNF02 Disponibilidad | Cumple | `tests/adapters/test_openrouteservice.py` (401/403/429/5xx, timeout, matriz inválida) | — |
 | RNF03 Privacidad | Cumple | Auditoría 100 % sobre las recomendaciones generadas en la medición y la prueba integral, `tests/integration/test_local_mvp.py`, `tests/presentation/test_telemetry.py` | Auditar la base del despliegue (#22) |
 | RNF04 Seguridad | Cumple | Check Secretos del CI, pruebas de acceso administrativo, [CALIDAD](CALIDAD.md) | — |
@@ -99,8 +100,8 @@ una corrida nueva de 120 consultas dio los mismos 123/123, 1.230/1.230 y 123/123
 
 | Dimensión | Objetivo | Resultado | Estado |
 |---|---|---|---|
-| Utilidad | ≥ 80 % elige y explica una opción, con ≥ 10 conductores | No se realizó la prueba con usuarios | Pendiente |
-| Comprensión | ≥ 80 % interpreta precio, desvío y combustible neto | No se realizó la prueba con usuarios | Pendiente |
+| Utilidad | ≥ 80 % elige y explica una opción, con ≥ 10 conductores | Sin participantes; diez casos técnicos por decisión de alcance (ADR-023) | No acreditado: recorte |
+| Comprensión | ≥ 80 % interpreta precio, desvío y combustible neto | Sin participantes; diez casos técnicos por decisión de alcance (ADR-023) | No acreditado: recorte |
 | Factibilidad | 100 % de recomendaciones respeta las restricciones | Suite del motor y del ranking, sin fallas | Cumple |
 | Explicabilidad | 100 % de resultados y descartes con motivo trazable | Pruebas de contrato del motor y de la API | Cumple |
 | Rendimiento | p95 ≤ 5 s | ≈ 1,28 s estimado por composición | Parcial |
@@ -111,12 +112,56 @@ una corrida nueva de 120 consultas dio los mismos 123/123, 1.230/1.230 y 123/123
 
 ## Recortes e incumplimientos
 
-- **Pruebas con usuarios (utilidad y comprensión):** no se hicieron. Requieren al
-  menos diez conductores y un guion moderado; sin ellas, esos criterios no pueden
-  darse por cumplidos.
-- **Ranking conservador (RF11):** no está implementado porque no hay una política de
-  alertas validada. La auditoría de umbrales no mide sensibilidad (#20).
-- **Rendimiento de punta a punta:** la medición separa la aplicación de ORS. Falta un
-  lote real con la clave, que consume cuota del plan gratuito (500 matrices por día).
+- **Utilidad y comprensión:** se reemplazó el estudio por simulación técnica por
+  decisión del 21/11 ([ADR-023](../adr/ADR-023-validacion-tecnica-sin-participantes.md)).
+  No hay participantes ni métricas humanas; esos objetivos no están acreditados.
+- **Ranking conservador (RF11):** implementación API/web en #141, dependiente de
+  #140 y pendiente de integrar. La regla provisional no mide sensibilidad ni precisión.
+- **Rendimiento:** el lote del 21/11 incluye ORS real, pero sólo cinco solicitudes
+  por caso de uso y HTTP en proceso. Falta medir la red del cliente y el despliegue.
 - **Accesibilidad y operación:** faltan la verificación en un teléfono físico y la
   supervisión continua de la ingesta fuera de la máquina local.
+
+
+## Diez escenarios técnicos — 21/11/2026
+
+La actividad de utilidad/comprensión se recorta según ADR-023. No se simulan
+participantes: `real_participants=0`. El ejecutable comprueba cinco casos UC01 y
+cinco UC02, con diferentes productos, horarios, consumos, presupuestos y límites
+de candidatas; incluye presupuesto nulo. Audita las recomendaciones guardadas en
+una base temporal. El histórico mantiene su fecha y rótulo; no altera la ingesta.
+
+```bash
+python scripts/validate_simulated_scenarios.py --output simulacion.json
+# Opcional: requiere ORS_API_KEY y consume hasta diez matrices reales.
+python scripts/validate_simulated_scenarios.py --live-routes --output rutas-reales.json
+```
+
+La primera modalidad usa distancias sintéticas constantes; la segunda mide la
+API en proceso con ORS real. Ninguna mide comprensión, utilidad, red del cliente,
+tráfico o un teléfono físico. El ranking conservador se abstiene en este histórico;
+la integración con publicaciones vigentes se comprueba en los tests de #141.
+
+
+Resultados con código limpio `ca4e55c` (procedencia completa en los JSON):
+
+- [Simulación técnica](evidencia/validacion-2026-11-21/simulacion-tecnica.json):
+  10/10 casos cumplen las comprobaciones técnicas; p95 UC01 0,044 s y UC02 0,028 s.
+- [API con ORS real](evidencia/validacion-2026-11-21/api-ors-real.json):
+  10/10 casos cumplen; p95 UC01 **1,503 s** y UC02 **1,036 s** (cinco consultas
+  por caso de uso). Son latencias observadas de la API en proceso incluyendo ORS,
+  por debajo de 5 s en este lote, no una garantía de percentiles poblacionales.
+- En cada corrida: trazabilidad 10/10 recomendaciones, privacidad 10/10 y
+  frescura 106/106 precios respecto de la referencia histórica; cero fallos de
+  auditoría. Ninguna corrida acredita precios actuales, usuarios reales o AWS.
+- [Comprobación del diagnóstico operativo](evidencia/validacion-2026-11-21/diagnostico-operativo.json):
+  cinco estaciones recibieron 503 seguro porque la base local todavía no contiene
+  una ingesta histórica exitosa. No se presenta su latencia como inferencia exitosa.
+  El serving necesita ingesta `historico` y manifiestos compatibles, además de
+  `vigente`; no alcanza con haber recibido el dataset de entrenamiento.
+  La preparación de la base del despliegue se mantiene en #22/#59.
+
+Los JSON se guardan compactos sin alterar valores; se pueden inspeccionar con
+`python -m json.tool archivo.json`. La simulación y el lote ORS se reproducen con
+los comandos anteriores. Usar el commit indicado para comparar la procedencia;
+las latencias cambian entre ejecuciones. No se publican claves ni la base local.

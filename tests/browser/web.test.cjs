@@ -751,3 +751,50 @@ test('ubicación: cancelar impide que una respuesta tardía reemplace el origen'
     await accessible(page);
   } finally { await page.context().close(); }
 });
+
+
+test('referencia: alerta provisional explica excedencia y ausencia de certificación', async () => {
+  const page = await pageFor();
+  try {
+    const {answer, card} = await referenceScenario(page);
+    answer.alert_policy_version = 'conservative-v1';
+    await page.route('**/api/v1/price-diagnostics/**', route => route.fulfill({json: answer}));
+    for (const level of ['provisional_deviation', 'provisional_within_threshold']) {
+      answer.alert_level = level;
+      const text = await readReference(page, card);
+      assert.match(text, /conservative-v1/);
+      assert.match(text, /No demuestra un precio incorrecto/);
+      assert.match(text, level === 'provisional_deviation' ? /encima del umbral provisional/ : /no certifica el precio/);
+    }
+    await accessible(page);
+  } finally { await page.context().close(); }
+});
+
+test('ranking conservador: provisional, descartes y estaciones sin referencia a 320 px', async () => {
+  const page = await pageFor({viewport: {width: 320, height: 800}});
+  try {
+    await ready(page, true);
+    let mode = 'available';
+    await page.route('**/api/v1/recommendations', async route => {
+      const response = await route.fetch(), data = await response.json();
+      data.conservative_ranking = {status: mode, policy_version: 'conservative-v1',
+        alternatives: mode === 'empty' ? [] : data.alternatives,
+        excluded_station_ids: mode === 'empty' ? data.alternatives.map(c => c.station_id) : [],
+        without_reference_station_ids: mode === 'available' ? [data.alternatives[0].station_id] : []};
+      if (mode === 'empty') data.conservative_ranking.status = 'available';
+      await route.fulfill({response, json: data});
+    });
+    await send(page);
+    const section = page.locator('#results > section').filter({has: page.getByRole('heading', {name: 'Ranking conservador · Provisional', exact: true})});
+    assert.match(await section.innerText(), /Sin referencia, conservadas:/);
+    assert.match(await section.innerText(), /no demuestra precios incorrectos/);
+    assert.match(await section.innerText(), /conservative-v1/);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await accessible(page);
+    mode = 'empty'; await send(page);
+    assert.match(await section.innerText(), /Todas las opciones viables quedaron excluidas/);
+    assert.ok(await page.locator('article').count() > 0);
+    mode = 'unavailable'; await send(page);
+    assert.match(await section.innerText(), /No disponible/);
+  } finally { await page.context().close(); }
+});

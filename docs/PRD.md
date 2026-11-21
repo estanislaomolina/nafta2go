@@ -182,3 +182,12 @@ la [evaluación del 17/11/2026](evidencia/estimacion-antiguos-2026-11/README.md)
 rotulada para precios de 31 a 120 días. RF09 no cambia: la estimación no es un precio
 oficial vigente, no renueva su fecha ni entra al ranking normal. La cátedra aprobó
 el alcance; la API la expone por separado del ranking (#117).
+
+
+### Recorte de validación de la entrega final — 21/11/2026
+
+Por decisión de Estanislao se reemplaza la actividad de estudio con diez conductores
+por diez escenarios técnicos reproducibles de [ADR-023](../adr/ADR-023-validacion-tecnica-sin-participantes.md).
+Los objetivos de utilidad y comprensión anteriores se conservan como **no acreditados**:
+la simulación no mide personas, elecciones ni respuestas humanas. No se presenta
+como un estudio de usuarios ni se presume aceptación del recorte por la cátedra.

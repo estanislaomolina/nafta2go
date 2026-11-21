@@ -80,6 +80,7 @@ class RecommendationOutput(BaseModel):
     recommendation_id: int | None
     navigation: list[NavigationLink]
     navigation_notice: str | None
+    conservative_ranking: dict[str, Any] | None = None
     stale_price_estimates: dict[str, Any] | None = None
 
 
@@ -100,8 +101,12 @@ class PriceDiagnosticOutput(BaseModel):
     published_at: str
     reference_ars_per_l: str | None
     difference_ars_per_l: str | None
-    alert_level: Literal["not_calibrated"]
-    reason: Literal["alert_policy_not_validated", "context_unavailable"]
+    alert_level: Literal["not_calibrated", "provisional_deviation", "provisional_within_threshold"]
+    alert_policy_version: str | None = None
+    relative_deviation: str | None = None
+    alert_threshold: str | None = None
+    alert_notice: str | None = None
+    reason: Literal["alert_policy_not_validated", "context_unavailable", "provisional_policy"]
     method: Literal["mediana_previa", "ultimo_precio", "bandera_reciente"]
     version: str
     features_version: str
