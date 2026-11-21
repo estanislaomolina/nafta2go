@@ -1,4 +1,4 @@
-"""Referencia retrospectiva del precio publicado; no calibra alertas ni altera rankings."""
+"""Referencia retrospectiva y política provisional, sin modificar el precio oficial."""
 
 import hashlib
 import json
@@ -8,6 +8,7 @@ from decimal import Decimal
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from nafta2go.domain.price_alert import provisional_alert
 from nafta2go.ml.temporal import FEATURES_VERSION, build_temporal_dataset
 from nafta2go.normalization.rules import LOCAL_TIMEZONE
 from nafta2go.persistence import repository as repo
@@ -66,31 +67,35 @@ def _selection():
 
 
 def price_diagnostic(engine, station_id, product_id, schedule_id, now):
+    with engine.connect() as conn:
+        return price_diagnostic_on_connection(conn, station_id, product_id, schedule_id, now)
+
+
+def price_diagnostic_on_connection(conn, station_id, product_id, schedule_id, now):
     if now.utcoffset() is None:
         raise ValueError("La referencia requiere zona horaria")
     model, dataset, version = _selection()
     local_now = now.astimezone(ZoneInfo(LOCAL_TIMEZONE)).replace(tzinfo=None)
-    with engine.connect() as conn:
-        current = repo.latest_successful_run(conn, "vigente")
-        historical = repo.latest_successful_run(conn, "historico")
-        if current is None or historical is None:
-            raise DiagnosticUnavailable
-        if any(
-            repo.get_run(conn, run)["rules_version"] != dataset["normalization_rules_version"]
-            for run in (current, historical)
-        ):
-            raise DiagnosticUnavailable
-        capture = repo.raw_capture_for_run(conn, historical)
-        if capture is None or capture["sha256"] != model["source_sha256"]:
-            raise DiagnosticUnavailable
-        target = repo.diagnostic_publication(
-            conn, current, station_id, product_id, schedule_id, local_now
-        )
-        if target is None:
-            return None
-        history = repo.diagnostic_history(
-            conn, historical, product_id, schedule_id, target["valid_from"]
-        )
+    current = repo.latest_successful_run(conn, "vigente")
+    historical = repo.latest_successful_run(conn, "historico")
+    if current is None or historical is None:
+        raise DiagnosticUnavailable
+    if any(
+        repo.get_run(conn, run)["rules_version"] != dataset["normalization_rules_version"]
+        for run in (current, historical)
+    ):
+        raise DiagnosticUnavailable
+    capture = repo.raw_capture_for_run(conn, historical)
+    if capture is None or capture["sha256"] != model["source_sha256"]:
+        raise DiagnosticUnavailable
+    target = repo.diagnostic_publication(
+        conn, current, station_id, product_id, schedule_id, local_now
+    )
+    if target is None:
+        return None
+    history = repo.diagnostic_history(
+        conn, historical, product_id, schedule_id, target["valid_from"]
+    )
     # Misma preparación que el entrenamiento; todo el instante objetivo queda fuera del contexto.
     examples, _ = build_temporal_dataset(
         [*history, target],
@@ -108,7 +113,9 @@ def price_diagnostic(engine, station_id, product_id, schedule_id, now):
         None,
     )
     value = reference_price(example["features"], model["chosen_method"]) if example else None
+    alert = provisional_alert(target["price"], value, product_id, model["chosen_method"], version)
     return {
+        **alert,
         "scope": "published_price_retrospective",
         "status": "reference_only" if value is not None else "unavailable",
         "station_id": station_id,
@@ -118,8 +125,13 @@ def price_diagnostic(engine, station_id, product_id, schedule_id, now):
         "published_at": published.isoformat(),
         "reference_ars_per_l": str(value) if value is not None else None,
         "difference_ars_per_l": str(target["price"] - value) if value is not None else None,
-        "alert_level": "not_calibrated",
-        "reason": "alert_policy_not_validated" if value is not None else "context_unavailable",
+        "reason": (
+            "context_unavailable"
+            if value is None
+            else "provisional_policy"
+            if alert["alert_policy_version"]
+            else "alert_policy_not_validated"
+        ),
         "method": model["chosen_method"],
         "version": version,
         "features_version": FEATURES_VERSION,
