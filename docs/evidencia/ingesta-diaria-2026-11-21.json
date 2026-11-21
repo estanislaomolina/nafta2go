@@ -1,0 +1,81 @@
+{
+  "format_version": 1,
+  "observed_at_utc": "2026-11-21T14:45:36.391931+00:00",
+  "release_commit": "162262233b196c14d1d9c87c77b1675cc9ecd64c",
+  "runs": [
+    {
+      "run_id": 16,
+      "source": "vigente",
+      "status": "succeeded",
+      "started_at_utc": "2026-11-20T12:05:31.611733+00:00",
+      "finished_at_utc": "2026-11-20T12:06:32.901432+00:00",
+      "started_at_argentina": "2026-11-20T09:05:31.611733-03:00",
+      "duration_seconds": 61.289699,
+      "report": {
+        "filas_leidas": 732,
+        "filas_validas": 732,
+        "filas_rechazadas": 0,
+        "duplicados_exactos": 0,
+        "rechazos_por_motivo": {},
+        "alertas_por_tipo": {},
+        "estaciones": 184,
+        "fecha_min": "2023-08-16T15:32:00",
+        "fecha_max": "2026-11-17T00:00:00",
+        "acquisition_attempts": 2
+      },
+      "capture": {
+        "sha256": "500e6e9209887ee8041a11305735972c2440c1f11d651d8a19594dae9be102e3",
+        "size_bytes": 9260901,
+        "sha256_and_size_verified": true
+      }
+    },
+    {
+      "run_id": 17,
+      "source": "vigente",
+      "status": "succeeded",
+      "started_at_utc": "2026-11-21T09:00:51.437603+00:00",
+      "finished_at_utc": "2026-11-21T09:00:53.268709+00:00",
+      "started_at_argentina": "2026-11-21T06:00:51.437603-03:00",
+      "duration_seconds": 1.831106,
+      "report": {
+        "filas_leidas": 732,
+        "filas_validas": 732,
+        "filas_rechazadas": 0,
+        "duplicados_exactos": 0,
+        "rechazos_por_motivo": {},
+        "alertas_por_tipo": {},
+        "estaciones": 184,
+        "fecha_min": "2023-08-16T15:32:00",
+        "fecha_max": "2026-11-17T00:00:00",
+        "acquisition_attempts": 1,
+        "duplicate_of_run_id": 16
+      },
+      "capture": {
+        "sha256": "500e6e9209887ee8041a11305735972c2440c1f11d651d8a19594dae9be102e3",
+        "size_bytes": 9260901,
+        "sha256_and_size_verified": true
+      }
+    }
+  ],
+  "active_ingestion_alerts": 0,
+  "timer_properties": [
+    "NextElapseUSecRealtime=Sun 2026-11-22 06:00:00 -03",
+    "LastTriggerUSec=Sat 2026-11-21 06:00:50 -03",
+    "ActiveState=active"
+  ],
+  "service_properties": [
+    "Result=success",
+    "ExecMainStatus=0",
+    "Id=nafta2go-ingestion.service",
+    "",
+    "Result=success",
+    "ExecMainStatus=0",
+    "Id=nafta2go-monitor.service"
+  ],
+  "limitations": [
+    "El 20/11 se observó el inicio a las 09:05 de Argentina; no se acredita puntualidad a las 06:00 para ese día.",
+    "El disparo diario del 21/11 coincide con la ejecución 17; dos ejecuciones exitosas no prueban un SLA ni disponibilidad continua.",
+    "La computadora apagada no ejecuta tareas; el despliegue y la validación sostenida siguen en #22/#23/#59.",
+    "La ejecución 17 reconoce el mismo CSV que la 16 y evita duplicar los precios; la descarga exitosa no vuelve actuales los precios antiguos."
+  ]
+}
