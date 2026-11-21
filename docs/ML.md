@@ -3,14 +3,16 @@
 El primer serving de referencias seleccionadas se describe en [API](API.md) y
 [ADR-015](../adr/ADR-015-referencia-servida-y-abstencion-de-alertas.md): reutiliza
 la preparación temporal, no carga el modelo no elegido y se abstiene de alertar
-hasta validar umbrales. Es un incremento parcial de #19.
+con otra selección o sin contexto. La selección auditada habilita ahora la regla
+provisional de [ADR-021](../adr/ADR-021-ranking-conservador-por-desvio.md), sin
+atribuirle detección de errores validada.
 
 Fuente: precios en surtidor de Secretaría de Energía, CC BY 4.0;
 [normalización y alcance](NORMALIZACION.md). Trabajo de #18 y #56; decisión propuesta en
 [ADR-013](../adr/ADR-013-evaluacion-temporal-de-precios.md) y
 [ADR-014](../adr/ADR-014-seleccion-de-modelo-de-precios.md). Entrena y compara modelos
 offline y sirve sólo la referencia elegida, no un modelo. Ninguna referencia ni modelo
-reemplaza el precio oficial ni altera el recomendador. La estimación de precios antiguos
+reemplaza el precio oficial ni altera el ranking general determinístico. La estimación de precios antiguos
 de #57 está integrada aparte del ranking (ADR-020).
 
 ## Reproducir sin tocar la base operativa
@@ -197,3 +199,35 @@ La corrección de `market_change` (#119) no cambia la elección ni la adopción;
 rotulada sólo para precios de 31 a 120 días, separada del precio oficial y fuera del
 ranking normal. El proxy no observa estaciones cuyo precio no cambió; todavía no se
 integró en la API ni en la web.
+
+
+## Preparar el serving sin modificar la base operativa
+
+Recibir `examples.jsonl` y los manifiestos no carga publicaciones en SQLite.
+El diagnóstico requiere ingestas exitosas `historico` y `vigente` de la misma
+base, reglas compatibles y el original histórico con el hash del modelo.
+La comprobación del 21/11 encontró sólo `vigente` en la base operativa y recibió
+503 seguros; no se ejecutó allí una carga histórica para obtener una medición.
+
+Para preparar una base aislada con el original histórico ya capturado:
+
+```bash
+export DATABASE_URL=sqlite:///data/serving-ensayo.db
+python -m nafta2go.normalization --source historico --file "$HISTORICAL_CSV" --json
+python -m nafta2go.normalization --source vigente --file "$CURRENT_CSV" --json
+export NAFTA2GO_PRICE_DATASET_DIR="$DATASET_DIR"
+export NAFTA2GO_PRICE_MODEL_DIR="$MODEL_DIR"
+```
+
+Las rutas designan los originales y directorios recibidos; no se incluyen en Git.
+Validar antes los hashes contra los manifiestos: descargar de nuevo una fuente
+mutable puede dar otro histórico y no habilitará la política anterior. No cambiar
+metadatos ni hashes para forzar compatibilidad. Sin el original adecuado, conservar
+la abstención o preparar una nueva selección/auditoría versionada.
+
+Verificar el diagnóstico autenticado sobre esa misma base antes de usarla en el
+despliegue. La disponibilidad general de la API no implica disponibilidad de ML.
+La carga histórica y los directorios deben incorporarse al procedimiento de #22/#59;
+ninguno de estos pasos crea recursos AWS. La prueba de rendimiento sintética de
+[VALIDACION](VALIDACION.md#costo-del-diagnóstico-activo-con-veinte-candidatas)
+no sustituye esta preparación con datos reales.

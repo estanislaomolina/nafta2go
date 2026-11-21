@@ -1,7 +1,7 @@
 ---
 status: Aceptado
 date: 2026-11-21
-decision-makers: Estanislao Molina Abeniacar
+decision-makers: Estanislao Molina Abeniacar, Felipe Sidiropulos
 consulted: PRD, issues 19, 20 y 23
 informed: Equipo Nafta2Go, cátedra
 ---
@@ -11,7 +11,8 @@ informed: Equipo Nafta2Go, cátedra
 ## Context and Problem Statement
 
 El PRD propone medir utilidad y comprensión con al menos diez conductores.
-Estanislao decidió el 21/11 reemplazar esa actividad de la entrega por una
+Estanislao decidió el 21/11, con acuerdo de Felipe en la revisión de #142,
+reemplazar esa actividad de la entrega por una
 simulación técnica. Debe ser reproducible sin inventar personas ni respuestas.
 La simulación no mide comportamiento humano ni acredita esos objetivos del PRD.
 El recorte se comunica en la defensa; no se presume aprobación de la cátedra.

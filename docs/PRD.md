@@ -186,7 +186,7 @@ el alcance; la API la expone por separado del ranking (#117).
 
 ### Recorte de validación de la entrega final — 21/11/2026
 
-Por decisión de Estanislao se reemplaza la actividad de estudio con diez conductores
+Por decisión de Estanislao, con acuerdo de Felipe en #142, se reemplaza la actividad de estudio con diez conductores
 por diez escenarios técnicos reproducibles de [ADR-023](../adr/ADR-023-validacion-tecnica-sin-participantes.md).
 Los objetivos de utilidad y comprensión anteriores se conservan como **no acreditados**:
 la simulación no mide personas, elecciones ni respuestas humanas. No se presenta

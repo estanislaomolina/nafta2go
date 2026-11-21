@@ -165,3 +165,25 @@ Los JSON se guardan compactos sin alterar valores; se pueden inspeccionar con
 `python -m json.tool archivo.json`. La simulación y el lote ORS se reproducen con
 los comandos anteriores. Usar el commit indicado para comparar la procedencia;
 las latencias cambian entre ejecuciones. No se publican claves ni la base local.
+
+
+### Costo del diagnóstico activo con veinte candidatas
+
+La observación de Felipe en #141 es correcta: el lote histórico anterior no
+incluye veinte diagnósticos activos. Se agrega un ensayo independiente:
+
+```bash
+python scripts/measure_active_diagnostics.py --output diagnostico-activo.json
+```
+
+El ensayo construye veinte estaciones y 1.200 publicaciones históricas sintéticas,
+con manifiestos sintéticos compatibles entre sí. Sólo dentro del ensayo sustituye
+la selección admitida por la política por el hash del manifiesto sintético; restaura
+la configuración al terminar. Usa rutas sintéticas y ejecuta el código real de
+lectura, preparación temporal, referencia, política, ranking y persistencia por HTTP.
+No es una carga del histórico real ni una habilitación de esos datos en producción.
+
+La comprobación inicial completó cinco consultas con veinte diagnósticos cada una.
+La evidencia versionada del ensayo se incorpora tras fijar el código. No se suma
+su p95 al del lote ORS para anunciar una latencia completa: siguen siendo muestras
+y condiciones diferentes. La latencia con el histórico real queda sin acreditar.
