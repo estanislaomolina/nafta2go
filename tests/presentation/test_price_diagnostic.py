@@ -445,7 +445,13 @@ def test_http_recommendation_applies_same_diagnostic_and_keeps_general(
         "nafta2go.domain.price_alert.AUDITED_MODEL_VERSION",
         hashlib.sha256(manifest.read_bytes()).hexdigest(),
     )
+    target = {**target, "fuel_type": "super"}
     with engine.begin() as conn:
+        conn.execute(
+            station_prices.update()
+            .where(station_prices.c.run_id == runs["vigente"])
+            .values(fuel_type="super")
+        )
         conn.execute(
             station_prices.insert(),
             [
@@ -484,8 +490,9 @@ def test_http_recommendation_applies_same_diagnostic_and_keeps_general(
         )
     assert response.status_code == 200
     result = response.json()
+    assert result["status"] == "ready", result
     block = result["conservative_ranking"]
-    assert block["status"] == "available"
+    assert block["status"] == "available", block
     assert set(block["excluded_station_ids"]) == {"7", "8"}
     assert {c["station_id"] for c in block["alternatives"]} == {"9"}
     assert "8" in {c["station_id"] for c in result["alternatives"]}
