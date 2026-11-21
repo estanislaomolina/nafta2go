@@ -1,7 +1,9 @@
 # AWS: preparación del sandbox y base de red
 
-La siguiente etapa se prepara en [servidor de demo](AWS-DEMO.md): plantilla
-propuesta, acceso SSM y apagado por arranque. Todavía no se creó cómputo.
+El [servidor de demo](AWS-DEMO.md) se creó y se probó el 21/11/2026 con autorización
+del titular: acceso SSM, contenedor por commit y apagado a las dos horas por arranque.
+La primera captura vigente se importó por archivo ante timeout del catálogo desde
+AWS. El procedimiento y sus pendientes se detallan en ese documento.
 
 ## Estado verificado por el titular
 

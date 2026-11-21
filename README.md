@@ -105,7 +105,7 @@ Requiere Docker con Compose v2. Desde la raíz del repositorio:
 docker compose up --build
 ```
 
-Construye la imagen de la aplicación y corre las migraciones sobre una base SQLite guardada en el volumen `nafta2go-data`. El contenedor `migrate` termina cuando el esquema queda actualizado. Para borrar la base: `docker compose down --volumes`. La consulta completa se ejecuta con `docker compose run --rm query`; ver [POC-05](docs/POC-05.md). Para iniciar la API local, configurar el token y usar `docker compose --profile mvp up --build api`; ver [API](docs/API.md). La pantalla local se abre en `http://127.0.0.1:8000/`; ver [WEB](docs/WEB.md). El despliegue público sigue pendiente.
+Construye la imagen de la aplicación y corre las migraciones sobre una base SQLite guardada en el volumen `nafta2go-data`. El contenedor `migrate` termina cuando el esquema queda actualizado. Para borrar la base: `docker compose down --volumes`. La consulta completa se ejecuta con `docker compose run --rm query`; ver [POC-05](docs/POC-05.md). Para iniciar la API local, configurar el token y usar `docker compose --profile mvp up --build api`; ver [API](docs/API.md). La pantalla local se abre en `http://127.0.0.1:8000/`; ver [WEB](docs/WEB.md). La primera demo AWS se probó por túnel SSM; ver [servidor de demo](docs/AWS-DEMO.md) para acceso, costos, captura importada y pendientes. El despliegue público sigue pendiente.
 
 ## Estado del desarrollo
 

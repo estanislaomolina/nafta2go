@@ -1,7 +1,9 @@
-# Servidor de demo AWS — propuesta, sin provisionar
+# Servidor temporal de demo AWS
 
-La [plantilla](../infra/aws/demo-server.json) prepara un host con Docker sobre la
-[red existente](AWS.md). No se ejecutó en AWS ni instala la aplicación o sus datos.
+La [plantilla](../infra/aws/demo-server.json) define un host con Docker sobre la
+[red existente](AWS.md). Se creó el 21/11/2026 con autorización del titular; la
+entrega de la aplicación se realiza por SSM y un commit revisado, como se describe
+al final. Los apartados de propuesta se conservan como procedimiento reproducible.
 [ADR-018](../adr/ADR-018-servidor-efimero-de-demo.md) compara alternativas.
 
 ## Diseño y permisos
@@ -19,9 +21,13 @@ corresponder a la misma VPC y tener la ruta a internet del stack de red.
 Referencia de [AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/finding-an-ami-parameter-store.html)
 y [túnel SSM](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-sessions-start.html).
 
-## Costo pendiente de aprobar
+## Costo revisado y autorizado para la primera prueba
 
-El presupuesto es USD 17 **total**, no mensual. Consulta del 16/11/2026:
+El presupuesto es USD 17 **total**, no mensual. El titular confirmó saldo de
+USD 17 y autorizó crear el servidor para la primera prueba el 21/11. La consulta
+pública de EC2 de ese día mantiene USD 0,0208/h; la API Pricing del sandbox está
+denegada por SCP. No se presume que todos los permisos estén habilitados.
+Referencia de costos preparada el 16/11/2026:
 
 * Linux On-Demand `t3.small` Ohio: USD 0,0208/h, 2 vCPU y 2 GiB según el
   [catálogo regional oficial](https://b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/ec2/USD/current/ec2-ondemand-without-sec-sel/US%20East%20%28Ohio%29/Linux/index.json).
@@ -113,3 +119,125 @@ Antes de terminar/eliminar, exportar y verificar respaldo fuera del host. Esa
 restauración, la entrega por imagen versionada, secretos, ingesta y prueba real
 de readiness/rollback siguen pendientes en #22/#59. Esta propuesta no cierra esos
 issues ni acredita un despliegue; no usar el host como única copia de los datos.
+
+
+## Entrega versionada por SSM — 21/11/2026
+
+Se verificaron directamente sesión SSO, red `CREATE_COMPLETE`, ausencia de
+instancias/discos anteriores, AMI AL2023 x86_64 disponible y permiso RunInstances
+por dry-run. Se revisaron cuatro altas y se ejecutó el change set autorizado:
+instancia, rol SSM, instance profile y security group. El stack terminó
+`CREATE_COMPLETE`, SSM informó `Online` y Docker terminó de instalarse. El timer de
+apagado quedó activo a las dos horas desde el arranque. No se publican IDs privados.
+
+El titular autorizó también la excepción de salida HTTP del catálogo. Se verificó
+una sola IPv4 para el host del catálogo y sus CSV; el change set modificó sólo el
+grupo de seguridad, sin reemplazo y sin entrada. La IP puede cambiar: verificarla
+antes de cada actualización. El rol de la instancia permite recuperar la
+configuración desde un parámetro Standard `SecureString`; no se envían secretos
+como argumentos de Run Command, UserData ni archivos versionados.
+
+La [guía breve de entrega](ENTREGA-AWS.md) reúne los prerrequisitos.
+El [ejecutable local](../scripts/aws_demo_command.py) envía el
+[procedimiento remoto](../deploy/aws-demo-release.sh) por `AWS-RunShellScript`:
+
+```bash
+python scripts/aws_demo_command.py --profile nafta2go \
+  --instance-id "$INSTANCE_ID" --commit "$REVIEWED_COMMIT" \
+  --parameter /nafta2go/demo/runtime
+```
+
+Usa un SHA completo, valida instancia/parámetro y devuelve el ID del comando.
+Consultar su estado; no reenviarlo mientras siga ejecutándose. La aplicación se
+obtiene de GitHub por ese SHA, se construye y registra una imagen local identificada
+por commit. La base Python y las dependencias con rangos pueden cambiar entre
+construcciones: conservar el ID real de imagen, no afirmar bytes reproducibles.
+
+El parámetro privado contiene `DATABASE_URL=sqlite:////app/data/nafta2go.db`,
+`ORS_API_KEY`, tokens distintos de conductor/administrador y límites de vigencia,
+caché y cuota. Se recupera sólo en el host a un env con permisos 0600, fuera de la
+release. El puerto se liga a `127.0.0.1:8000`; las credenciales no se imprimen.
+
+Antes de activar se aplican migraciones e ingesta vigente sobre almacenamiento
+persistente; si ya hay base, se respalda usando la API SQLite y se comprueba
+integridad. El servicio anterior continúa mientras se construye la imagen y se
+preparan los datos. Después se sustituye el contenedor y se comprueba `/ready`;
+si falla, se intenta recuperar la imagen anterior. El rollback es de código,
+con la configuración actual: no revierte migraciones ni restaura datos. El esquema
+0003 es compatible entre las primeras releases; una migración futura debe revisar
+esa premisa. La base y originales del host no son todavía un backup externo.
+
+Las pruebas aisladas ejecutan el script con dependencias falsas para verificar
+fallo de construcción, recuperación ante readiness fallido, conservación de la
+imagen anterior y ausencia de valores privados en la salida. La validación del
+transporte rechaza inyección y referencias fuera del prefijo permitido. No se
+confunden estas pruebas con un rollback provocado en AWS.
+
+Para la primera prueba se utiliza el túnel SSM con puerto local 8001, evitando
+interferir con una preview local en 8000:
+
+```bash
+aws ssm start-session --profile nafta2go --region us-east-2 \
+  --target "$INSTANCE_ID" --document-name AWS-StartPortForwardingSession \
+  --parameters '{"portNumber":["8000"],"localPortNumber":["8001"]}'
+```
+
+Abrir `http://localhost:8001/` con el código privado de conductor. Es acceso por
+SSO/túnel, no una URL pública compartible. Cerrar el túnel no detiene la instancia.
+El apagado conserva el disco facturable; respaldar fuera del host y eliminar el
+stack cuando termine su uso, como se indica arriba.
+
+La actualización programada, respaldo externo/restauración, histórico compatible
+y validación final se siguen en #22/#23/#59. No se declara disponible el diagnóstico
+sólo por configurar manifiestos: necesita también la ingesta histórica compatible.
+
+
+### Captura transferida cuando el catálogo no responde desde AWS
+
+En la primera prueba, la descarga directa desde Ohio terminó con ConnectTimeout
+tras tres intentos; el DNS resolvía la IPv4 permitida y la regla de salida estaba
+aplicada. Una comprobación HTTP independiente también agotó el timeout. No se
+atribuye el bloqueo a una causa no demostrada ni se amplía el grupo de seguridad.
+
+Se descargó el CSV vigente con el adaptador habitual desde el entorno local y se
+transfirió comprimido por SSM en partes separadas. Antes de descomprimir/importar,
+se contrastaron hash del gzip, cantidad de partes, tamaño y SHA-256 del original.
+El archivo público queda en `data/imports/<sha256>.csv`, con permisos para el UID de
+la aplicación. No se transfieren tokens mediante ese mecanismo.
+
+El despliegue admite opcionalmente `--capture-file /app/data/imports/<sha256>.csv`.
+Sólo acepta esa ruta con nombre de hash completo; ejecuta el mismo normalizador
+con `--file`. Es una importación explícita, no una descarga exitosa desde AWS.
+La captura ya cargada no elimina la necesidad de resolver la adquisición
+programada ni prueba frescura futura. No se instalan timers que oculten ese bloqueo.
+
+
+## Resultado de la primera demo
+
+[Evidencia redactada](evidencia/aws-demo-2026-11-21.json): aplicación `de1d98d`,
+imagen identificada por SHA-256, `/health` y `/ready` 200; sin token 401, conductor
+sin acceso a operaciones (401) y administrador con acceso (200). Una consulta de
+prueba con origen/destino sintéticos obtuvo `ready/recommended`, diez evaluaciones,
+una alternativa y rutas reales de ORS en 0,816 s sobre el túnel. Es una observación,
+no una medición de p95. Había 27 estaciones elegibles con precios recientes.
+
+Chromium mostró la alternativa sin rótulo de escenario histórico. Axe no encontró
+violaciones ni incompletos en ese estado. La interfaz mantuvo el diagnóstico y el
+ranking conservador como no disponibles por falta de configuración/histórico.
+No se atribuyen resultados predictivos ni participantes humanos.
+
+La repetición de la entrega terminó con la misma imagen y readiness 200. Las
+importaciones 2 y 3 identifican la misma captura mediante `duplicate_of_run_id`;
+cada ejecución conserva su versión de precios (732 filas por ejecución). Eso no
+supone deduplicar filas entre ejecuciones.
+
+Se exportó un snapshot SQLite por SSM fuera del host; su copia local pasó
+`integrity_check=ok`. Se verificaron los originales contra sus hashes y tamaños,
+y la auditoría sobre la base restaurada dio trazabilidad/privacidad 2/2 y frescura
+20/20 precios evaluados. Las dos recomendaciones son consultas de prueba. Datos,
+originales y configuración quedan fuera de Git. La exportación inicial se realizó
+por fragmentos; resta automatizar su retención y recuperación operativa.
+
+El primer apagado está programado para el 21/11 a las 23:51 UTC (20:51 de Argentina).
+Después del apagado la URL local requiere volver a iniciar la instancia y el túnel;
+no confundir cerrar CloudShell o el túnel con detener el servidor.
