@@ -183,7 +183,8 @@ la configuración al terminar. Usa rutas sintéticas y ejecuta el código real d
 lectura, preparación temporal, referencia, política, ranking y persistencia por HTTP.
 No es una carga del histórico real ni una habilitación de esos datos en producción.
 
-La comprobación inicial completó cinco consultas con veinte diagnósticos cada una.
-La evidencia versionada del ensayo se incorpora tras fijar el código. No se suma
+La [corrida versionada](evidencia/validacion-2026-11-21/diagnostico-activo-20.json)
+completó cinco consultas con veinte diagnósticos activos cada una, p95 **0,677 s**,
+con código limpio `1275047` y 1.200 filas históricas de QA. No se suma
 su p95 al del lote ORS para anunciar una latencia completa: siguen siendo muestras
 y condiciones diferentes. La latencia con el histórico real queda sin acreditar.
