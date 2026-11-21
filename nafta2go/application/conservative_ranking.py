@@ -11,6 +11,7 @@ from nafta2go.application.price_diagnostic import (
 )
 from nafta2go.domain import price_alert
 from nafta2go.domain.ranking import rank_alternatives
+from nafta2go.normalization.rules import LOCAL_TIMEZONE
 
 
 def conservative_ranking(conn, evaluations, rows, *, status, run_id, product_id, schedule_id, now):
@@ -42,7 +43,7 @@ def conservative_ranking(conn, evaluations, rows, *, status, run_id, product_id,
                     Decimal(item["official_price_ars_per_l"])
                     != rows[station_id].candidate.price_ars_per_l
                     or datetime.fromisoformat(item["published_at"])
-                    .astimezone(ZoneInfo("America/Argentina/Buenos_Aires"))
+                    .astimezone(ZoneInfo(LOCAL_TIMEZONE))
                     .replace(tzinfo=None)
                     != rows[station_id].published_at_local
                 )
