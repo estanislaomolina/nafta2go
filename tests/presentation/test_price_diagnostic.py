@@ -433,3 +433,61 @@ def test_compatible_selection_emits_provisional_alert_without_changing_official(
     assert body["reason"] == "provisional_policy"
     assert body["reference_ars_per_l"] == "120.000"
     assert float(body["relative_deviation"]) == pytest.approx(0.25)
+
+
+def test_http_recommendation_applies_same_diagnostic_and_keeps_general(
+    engine, prepared, monkeypatch
+):
+    from nafta2go.adapters.routing import DistanceMatrix
+
+    runs, _, target, manifest = prepared
+    monkeypatch.setattr(
+        "nafta2go.domain.price_alert.AUDITED_MODEL_VERSION",
+        hashlib.sha256(manifest.read_bytes()).hexdigest(),
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            station_prices.insert(),
+            [
+                {
+                    **target,
+                    "id": None,
+                    "run_id": runs["vigente"],
+                    "station_id": station,
+                    "source_row": 900 + station,
+                    "price": price,
+                }
+                for station, price in [(8, 50), (9, 120)]
+            ],
+        )
+    provider = Mock(evidence=None, cache_hit=False)
+    provider.matrix.side_effect = lambda sources, destinations: DistanceMatrix(
+        [[1000] * len(destinations) for _ in sources],
+        [[100] * len(destinations) for _ in sources],
+        list(sources),
+        list(destinations),
+    )
+    app = create_app(engine, clock=lambda: NOW, provider_factory=lambda: provider)
+    with TestClient(app) as http:
+        response = http.post(
+            "/api/v1/recommendations",
+            headers=AUTH,
+            json={
+                "origin": {"lat": -34.60, "lon": -58.40},
+                "fuel_type": "super",
+                "consumption_l_per_100km": "10",
+                "tank_capacity_l": "50",
+                "remaining_l": "10",
+                "budget_ars": "1000",
+                "reserve_l": "2",
+            },
+        )
+    assert response.status_code == 200
+    result = response.json()
+    block = result["conservative_ranking"]
+    assert block["status"] == "available"
+    assert set(block["excluded_station_ids"]) == {"7", "8"}
+    assert {c["station_id"] for c in block["alternatives"]} == {"9"}
+    assert "8" in {c["station_id"] for c in result["alternatives"]}
+    assert provider.matrix.call_count == 1
+    assert all(d["history_run_id"] == runs["historico"] for d in block["diagnostics"])

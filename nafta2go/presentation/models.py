@@ -80,6 +80,7 @@ class RecommendationOutput(BaseModel):
     recommendation_id: int | None
     navigation: list[NavigationLink]
     navigation_notice: str | None
+    conservative_ranking: dict[str, Any] | None = None
     stale_price_estimates: dict[str, Any] | None = None
 
 
