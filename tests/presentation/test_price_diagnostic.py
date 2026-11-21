@@ -152,7 +152,7 @@ def test_reference_matches_training_and_does_not_write(engine, prepared, method,
     assert body["scope"] == "published_price_retrospective" and body["method"] == method
     assert body["version"] == hashlib.sha256(manifest.read_bytes()).hexdigest()
     assert body["data_run_id"] == runs["vigente"]
-    assert not any(secret in response.text for secret in ("secreto", "lat", "lon", "joblib"))
+    assert not any(secret in response.text for secret in ("secreto", '"lat"', '"lon"', "joblib"))
     with engine.connect() as conn:
         assert conn.scalar(select(func.count()).select_from(recommendations)) == 0
         assert conn.scalar(select(func.count()).select_from(station_prices)) == 6
@@ -415,3 +415,86 @@ def test_diagnostic_metrics_cover_results_failures_and_preserve_privacy(
             other.get("/api/v1/operations", headers=admin).json()["price_diagnostics"]["completed"]
             == 0
         )
+
+
+def test_compatible_selection_emits_provisional_alert_without_changing_official(
+    engine, prepared, monkeypatch
+):
+    _, _, _, manifest = prepared
+    monkeypatch.setattr(
+        "nafta2go.domain.price_alert.AUDITED_MODEL_VERSION",
+        hashlib.sha256(manifest.read_bytes()).hexdigest(),
+    )
+    with client(engine) as http:
+        body = http.get(URL, headers=AUTH).json()
+    assert body["alert_level"] == "provisional_deviation"
+    assert body["alert_policy_version"] == "conservative-v1"
+    assert body["official_price_ars_per_l"] == "150.000"
+    assert body["reason"] == "provisional_policy"
+    assert body["reference_ars_per_l"] == "120.000"
+    assert float(body["relative_deviation"]) == pytest.approx(0.25)
+
+
+def test_http_recommendation_applies_same_diagnostic_and_keeps_general(
+    engine, prepared, monkeypatch
+):
+    from nafta2go.adapters.routing import DistanceMatrix
+
+    runs, _, target, manifest = prepared
+    monkeypatch.setattr(
+        "nafta2go.domain.price_alert.AUDITED_MODEL_VERSION",
+        hashlib.sha256(manifest.read_bytes()).hexdigest(),
+    )
+    target = {**target, "fuel_type": "super"}
+    with engine.begin() as conn:
+        conn.execute(
+            station_prices.update()
+            .where(station_prices.c.run_id == runs["vigente"])
+            .values(fuel_type="super")
+        )
+        conn.execute(
+            station_prices.insert(),
+            [
+                {
+                    **target,
+                    "id": None,
+                    "run_id": runs["vigente"],
+                    "station_id": station,
+                    "source_row": 900 + station,
+                    "price": price,
+                }
+                for station, price in [(8, 50), (9, 120)]
+            ],
+        )
+    provider = Mock(evidence=None, cache_hit=False)
+    provider.matrix.side_effect = lambda sources, destinations: DistanceMatrix(
+        [[1000] * len(destinations) for _ in sources],
+        [[100] * len(destinations) for _ in sources],
+        list(sources),
+        list(destinations),
+    )
+    app = create_app(engine, clock=lambda: NOW, provider_factory=lambda: provider)
+    with TestClient(app) as http:
+        response = http.post(
+            "/api/v1/recommendations",
+            headers=AUTH,
+            json={
+                "origin": {"lat": -34.60, "lon": -58.40},
+                "fuel_type": "super",
+                "consumption_l_per_100km": "10",
+                "tank_capacity_l": "50",
+                "remaining_l": "10",
+                "budget_ars": "1000",
+                "reserve_l": "2",
+            },
+        )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["status"] == "ready", result
+    block = result["conservative_ranking"]
+    assert block["status"] == "available", block
+    assert set(block["excluded_station_ids"]) == {"7", "8"}
+    assert {c["station_id"] for c in block["alternatives"]} == {"9"}
+    assert "8" in {c["station_id"] for c in result["alternatives"]}
+    assert provider.matrix.call_count == 1
+    assert all(d["history_run_id"] == runs["historico"] for d in block["diagnostics"])

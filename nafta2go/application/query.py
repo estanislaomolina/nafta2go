@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from sqlalchemy import Connection, Engine
 
 from nafta2go.adapters.routing import Point, RoutingProvider
+from nafta2go.application.conservative_ranking import conservative_ranking
 from nafta2go.application.coverage_rules import configured_max_price_age_days
 from nafta2go.application.recommendation import DEFAULT_CANDIDATE_LIMIT
 from nafta2go.application.scenario import load_scenario
@@ -114,6 +115,16 @@ def recommend(
         limit=max_candidates,
     )
     payload = {
+        "conservative_ranking": conservative_ranking(
+            conn,
+            evaluations,
+            rows,
+            status=result.status.value,
+            run_id=selection.data_run_id,
+            product_id={"super": 2, "premium": 3}[fuel_type],
+            schedule_id=schedule_id,
+            now=reference_at,
+        ),
         "stale_price_estimates": stale_block,
         "status": result.status.value,
         "outcome": (
