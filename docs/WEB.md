@@ -140,3 +140,15 @@ hasta la estación. Se explica qué puntos se comparten al abrirlo. Los enlaces 
 la consulta original, viven en la presentación y no modifican el cálculo ni se
 persisten. No se cargan mapas ni terceros automáticamente. Contrato y límites en
 [MAPS](MAPS.md#mapa-del-viaje-y-waze).
+
+## Ranking conservador provisional
+
+La consulta muestra, además de las alternativas generales, una comparación
+conservadora de las mismas candidatas viables y sus rutas ya calculadas. Excluye
+las excedencias de la regla `conservative-v1`; las estaciones sin referencia se
+mantienen y se identifican por separado. El precio oficial y el ranking general
+conservan sus valores. Si todas exceden, se explica el resultado vacío.
+
+La regla no prueba precios incorrectos ni certifica los restantes. No se presenta
+una comparación disponible en el escenario histórico o sin diagnóstico compatible.
+Consultar [ADR-021](../adr/ADR-021-ranking-conservador-por-desvio.md).

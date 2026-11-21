@@ -274,3 +274,18 @@ se mantiene `unavailable`. No cambia el precio oficial ni la preparación tempor
 El resultado de la auditoría histórica sigue teniendo `runtime_enabled=false`:
 es una fotografía del experimento, no la configuración actual del servicio.
 La regla no tiene precisión ni sensibilidad medidas para detectar errores reales.
+
+## Comparación conservadora (RF11)
+
+`POST /api/v1/recommendations` agrega `conservative_ranking` sin modificar las
+`alternatives` generales ni sus precios. Con precios vigentes y la selección de
+ADR-021, `status=available` devuelve sus propias `alternatives`,
+`excluded_station_ids`, `without_reference_station_ids` y `diagnostics` trazables
+(ingestas, publicación, versión del modelo y política). Sólo evalúa candidatas
+viables ya enrutadas: no hace llamadas adicionales a ORS. Las estaciones sin
+referencia se conservan y se listan aparte. Puede quedar vacío si todas exceden.
+
+Ante escenario histórico, diagnóstico/configuración incompatible o publicación
+que no coincide con la recomendación, informa `unavailable` con motivo y sin
+copiar el general. El bloque se persiste junto al resultado, sin coordenadas del
+conductor. La web muestra ambas comparaciones y el carácter provisional.

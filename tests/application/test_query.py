@@ -330,3 +330,80 @@ def test_without_current_ingestion_estimates_are_not_available(engine):
         "data_run_id": None,
         "items": [],
     }
+
+
+@pytest.mark.parametrize(
+    "mode", ["some", "all", "unknown", "unavailable", "mismatch", "incompatible"]
+)
+def test_conservative_uses_existing_routes_and_persists_trace(engine, monkeypatch, mode):
+    from nafta2go.application.price_diagnostic import DiagnosticUnavailable
+    from nafta2go.domain.price_alert import AUDITED_MODEL_VERSION
+    from nafta2go.persistence.schema import station_prices
+
+    prices = load_scenario().rows
+    with engine.begin() as conn:
+        run_id = repo.start_run(conn, "vigente", REFERENCE.replace(tzinfo=None))
+        conn.execute(station_prices.insert(), [{**r, "id": None, "run_id": run_id} for r in prices])
+        repo.finish_run(conn, run_id, "succeeded", REFERENCE.replace(tzinfo=None))
+    baseline = query(engine)
+    feasible = [r for r in baseline["evaluations"] if r["feasible"]]
+    assert feasible
+    excluded = feasible[0]["station_id"]
+    calls = []
+
+    def diagnostic(conn, station, product, schedule, now):
+        calls.append(station)
+        if mode == "unavailable":
+            raise DiagnosticUnavailable
+        row = next(r for r in baseline["evaluations"] if int(r["station_id"]) == station)
+        return {
+            "station_id": station,
+            "data_run_id": run_id + (mode == "mismatch"),
+            "official_price_ars_per_l": row["price_ars_per_l"],
+            "published_at": row["published_at_local"] + "-03:00",
+            "method": "bandera_reciente",
+            "version": "otra" if mode == "incompatible" else AUDITED_MODEL_VERSION,
+            "reference_ars_per_l": None if mode == "unknown" else "1000",
+            "alert_level": "provisional_deviation"
+            if mode == "all" or row["station_id"] == excluded
+            else "provisional_within_threshold",
+        }
+
+    monkeypatch.setattr(
+        "nafta2go.application.conservative_ranking.price_diagnostic_on_connection", diagnostic
+    )
+    provider = Routes()
+    result = query(engine, provider)
+    assert provider.calls == 1
+    assert result["alternatives"] == baseline["alternatives"]
+    assert result["evaluations"] == baseline["evaluations"]
+    block = result["conservative_ranking"]
+    if mode in {"unavailable", "mismatch", "incompatible"}:
+        assert block["status"] == "unavailable" and block["alternatives"] == []
+    else:
+        assert block["status"] == "available"
+        assert len(calls) == len(feasible)
+        if mode == "all":
+            assert not block["alternatives"] and block["reason"] == "all_feasible_excluded"
+        if mode == "some":
+            assert excluded in block["excluded_station_ids"]
+            assert excluded not in [c["station_id"] for c in block["alternatives"]]
+        if mode == "unknown":
+            assert block["alternatives"] == result["alternatives"]
+            assert len(block["without_reference_station_ids"]) == len(feasible)
+            assert not block["excluded_station_ids"]
+    with engine.connect() as conn:
+        record = repo.get_recommendation(conn, result["recommendation_id"])
+    assert record["result"]["conservative_ranking"] == json.loads(json.dumps(block))
+
+
+def test_historical_conservative_is_unavailable_without_reading_diagnostics(engine, monkeypatch):
+    def forbidden(*args):
+        raise AssertionError("No diagnosticar un escenario histórico como vigente")
+
+    monkeypatch.setattr(
+        "nafta2go.application.conservative_ranking.price_diagnostic_on_connection", forbidden
+    )
+    result = query(engine)
+    assert result["conservative_ranking"]["status"] == "unavailable"
+    assert not result["conservative_ranking"]["alternatives"]

@@ -94,6 +94,27 @@ function staleEstimates(block) {
   }
   return section;
 }
+function conservativeRanking(block, rows) {
+  if (!block) return null;
+  const section = document.createElement('section');
+  section.append(node('h3', 'Ranking conservador · Provisional'));
+  if (block.status !== 'available') {
+    section.append(node('p', 'No disponible: requiere precios vigentes y una referencia compatible con la regla auditada.', 'hint'));
+    return section;
+  }
+  section.append(node('p', 'Compara las mismas estaciones y rutas del ranking general. Excluye desvíos por encima del umbral histórico; no demuestra precios incorrectos ni certifica los restantes.', 'notice warning'));
+  const describe = id => { const row = rows.get(id); return row ? (row.brand || 'Estación ' + id) + ' · ' + (row.address || 'Dirección no informada') : 'Estación ' + id; };
+  for (const choice of block.alternatives) {
+    const row = rows.get(choice.station_id); if (!row || !row.feasible || !row.metrics) continue;
+    section.append(node('h4', describe(choice.station_id)), node('p', choice.priorities.map(key => priorities[key] || key).join(' · ')),
+      node('p', 'Precio oficial: ' + number(row.price_ars_per_l, ' ARS/L') + ' · Ganancia neta: ' + number(row.metrics.net_gain_l, ' L') + ' · Desvío: ' + number(row.metrics.extra_km, ' km')));
+  }
+  if (!block.alternatives.length) section.append(node('p', 'Todas las opciones viables quedaron excluidas por la regla provisional. El ranking general sigue disponible.'));
+  section.append(node('p', 'Excluidas por desvío: ' + (block.excluded_station_ids.map(describe).join('; ') || 'Ninguna.')),
+    node('p', 'Sin referencia, conservadas: ' + (block.without_reference_station_ids.map(describe).join('; ') || 'Ninguna.')),
+    node('p', 'Regla: ' + block.policy_version + '. La comparación se limita a las candidatas evaluadas.', 'source'));
+  return section;
+}
 function show(data, trip) {
   output.replaceChildren();
   output.append(node("p", "Vigencia máxima aplicada: " + data.query.max_price_age_days + " días respecto de la referencia de precios.", "hint"));
@@ -128,6 +149,7 @@ function show(data, trip) {
     const anchor = mapsLink(links.get(choice.station_id), trip); if (anchor) card.append(anchor);
     card.append(more); output.append(card);
   }
+  const conservative = conservativeRanking(data.conservative_ranking, rows); if (conservative) output.append(conservative);
   if (data.navigation_notice) output.append(node("p", data.navigation_notice, "hint"));
   const estimates = staleEstimates(data.stale_price_estimates);
   if (estimates) output.append(estimates);
