@@ -751,3 +751,21 @@ test('ubicación: cancelar impide que una respuesta tardía reemplace el origen'
     await accessible(page);
   } finally { await page.context().close(); }
 });
+
+
+test('referencia: alerta provisional explica excedencia y ausencia de certificación', async () => {
+  const page = await pageFor();
+  try {
+    const {answer, card} = await referenceScenario(page);
+    answer.alert_policy_version = 'conservative-v1';
+    await page.route('**/api/v1/price-diagnostics/**', route => route.fulfill({json: answer}));
+    for (const level of ['provisional_deviation', 'provisional_within_threshold']) {
+      answer.alert_level = level;
+      const text = await readReference(page, card);
+      assert.match(text, /conservative-v1/);
+      assert.match(text, /No demuestra un precio incorrecto/);
+      assert.match(text, level === 'provisional_deviation' ? /encima del umbral provisional/ : /no certifica el precio/);
+    }
+    await accessible(page);
+  } finally { await page.context().close(); }
+});
