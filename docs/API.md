@@ -302,3 +302,52 @@ anterior; cualquier otro manifiesto se abstiene. El diagnóstico aún comprueba 
 el hash del histórico sea el del modelo: no permite mezclar las dos capturas.
 No se cambia el precio oficial ni se carga el artefacto aprendido descartado.
 La habilitación en AWS requiere revisión e integración de esta actualización.
+
+## Métricas Prometheus
+
+`GET /metrics` exige el token administrativo independiente, igual que operación;
+el código de conductor y el acceso anónimo reciben 401. Responde formato
+Prometheus 0.0.4 y `Cache-Control: no-store`. No publicar el token en parámetros de
+URL ni archivos de provisioning versionados.
+
+Las latencias HTTP son histogramas en segundos (`nafta2go_http_duration_seconds`)
+por endpoint normalizado. `nafta2go_http_responses_total` cuenta códigos HTTP y
+`nafta2go_queries_total{outcome}` resultados HTTP por proceso, incluidos errores y
+consultas sin cobertura. Los contadores y la caché se reinician con el proceso;
+no representan un histórico completo de consultas ni saldo real de ORS.
+`nafta2go_routes_remaining_minute/day` reflejan únicamente la ventana local de
+cuota. Diagnósticos expone completados, duración acumulada y estado degradado del
+endpoint individual; la duración de la consulta con diagnóstico en lote forma
+parte del histograma de recomendaciones, no se atribuye a un tiempo exclusivo
+que no medimos.
+
+`nafta2go_recommendations_*` son **gauges de agregados persistidos**, recalculados
+al hacer scrape sin sumar dos veces una lectura. Incluyen CLI y HTTP con registro;
+pueden disminuir al restaurar/borrar la base. No usar `rate` como si fueran
+contadores por proceso. `stored{outcome}` cuenta resultados guardados;
+`station{station_id}` y `brand{brand}` cuentan estaciones/banderas recomendadas,
+nunca compras confirmadas ni banderas elegidas. Una estación cuenta una vez por
+consulta aunque gane varias prioridades. Se toman las alternativas oficiales del
+resultado; las exclusiones conservadoras tienen su agregado separado.
+
+`estimated_liters` y `estimated_spending_ars` son **litros/gasto estimados en
+recomendaciones**, por estación. Son escenarios alternativos: sumar todos los
+resultados no equivale a consumo real ni ventas. Los agregados `commune_estimated_*`
+usualmente clasifican coordenadas de la última ingesta vigente o del escenario
+histórico; si la estación no está en esas fuentes públicas, se usa `unknown`.
+No reconstruimos la ubicación histórica faltante ni calculamos comuna de origen
+del usuario. [Cartografía, licencia y reproducción](../nafta2go/resources/README.md).
+
+Se exportan también exclusiones conservadoras, estimaciones de precios antiguos
+mostradas, última ingesta exitosa, resultado/duración del último intento,
+condiciones actuales y alertas persistidas sin resolver. La lectura recorre
+resultados guardados de a cien, sin cargar requests ni toda la historia en memoria;
+su costo crece con los resultados persistidos. Medirlo en las pruebas de carga.
+
+Presupuesto: máximo 512 estaciones + `other`, 24 banderas + `other` y 15 comunas +
+`unknown`; las dimensiones se exportan separadas, no como un producto cartesiano.
+`station_overflow` informa alternativas agrupadas fuera del límite. Endpoints se
+normalizan a una lista fija, diagnóstico parametrizado u `other`. No hay etiquetas
+con coordenadas, búsquedas, credenciales, usuarios, request IDs ni versiones de
+modelos. Grafana/Prometheus y CPU/memoria de contenedores corresponden a #154: la
+instrumentación de FastAPI no proporciona esas métricas del contenedor.
