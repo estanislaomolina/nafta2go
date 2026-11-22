@@ -11,6 +11,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 # Los nombres de los jobs son los checks requeridos del ruleset de dev y main:
 # renombrarlos exige actualizar el ruleset (ver docs/CALIDAD.md).
 jobs:
@@ -88,6 +91,8 @@ jobs:
   containers:
     name: Contenedores
     runs-on: ubuntu-latest
+    env:
+      NAFTA2GO_IMAGE: ghcr.io/estanislaomolina/nafta2go:${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
       - name: Verificar configuración externa de caché y cupo
@@ -103,7 +108,11 @@ jobs:
           NAFTA2GO_MAX_PRICE_AGE_DAYS='' docker compose --profile mvp --profile poc config --format json > empty-policy.json
           python -c "import json; services=json.load(open('empty-policy.json'))['services']; assert all(services[s]['environment']['NAFTA2GO_MAX_PRICE_AGE_DAYS'] == '' for s in ('api','query'))"
       - name: Construir la imagen
-        run: docker compose build
+        run: >-
+          docker build
+          --label org.opencontainers.image.revision=${{ github.sha }}
+          --label org.opencontainers.image.source=https://github.com/estanislaomolina/nafta2go
+          --tag "$NAFTA2GO_IMAGE" .
       - name: Migrar la base dentro del contenedor
         run: docker compose run --rm migrate
       - name: Verificar que el esquema quedó en la última versión
@@ -120,12 +129,60 @@ jobs:
       - name: Verificar readiness de la API dentro del contenedor
         env:
           NAFTA2GO_API_TOKEN: token-descartable-del-job-ci
-        run: docker compose --profile mvp up --wait --wait-timeout 30 api
+        run: docker compose --profile mvp up --no-build --wait --wait-timeout 30 api
       - name: Verificar el snapshot Docker aislado sin APIs externas
-        run: python tests/integration/compose_smoke.py
+        run: python tests/integration/compose_smoke.py --image "$NAFTA2GO_IMAGE"
+      - name: Conservar exactamente la imagen verificada
+        run: docker save "$NAFTA2GO_IMAGE" -o /tmp/nafta2go-image.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: imagen-verificada
+          path: /tmp/nafta2go-image.tar
+          retention-days: 1
       - name: Bajar servicios y volúmenes
         if: always()
         run: docker compose --profile mvp down --volumes
+
+  publish:
+    name: Publicar imagen verificada
+    needs: [docs, lint, tests, secrets, containers, web]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      NAFTA2GO_IMAGE: ghcr.io/estanislaomolina/nafta2go:${{ github.sha }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: imagen-verificada
+          path: /tmp
+      - name: Cargar la imagen probada, sin reconstruir
+        run: docker load -i /tmp/nafta2go-image.tar
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publicar y verificar el digest y la revisión
+        env:
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          docker push "$NAFTA2GO_IMAGE"
+          image_id=$(docker image inspect "$NAFTA2GO_IMAGE" --format '{{.Id}}')
+          digest_ref=$(docker image inspect "$NAFTA2GO_IMAGE" --format '{{index .RepoDigests 0}}')
+          [[ "$digest_ref" =~ ^ghcr.io/estanislaomolina/nafta2go@sha256:[0-9a-f]{64}$ ]]
+          docker pull "$digest_ref"
+          test "$image_id" = "$(docker image inspect "$digest_ref" --format '{{.Id}}')"
+          test "$RELEASE_COMMIT" = "$(docker image inspect "$digest_ref" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')"
+          printf '%s\n' "$digest_ref" > /tmp/image-digest.txt
+          printf 'Imagen verificada: `%s`\n' "$digest_ref" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: referencia-imagen
+          path: /tmp/image-digest.txt
+          retention-days: 90
 
   web:
     name: Web y accesibilidad
