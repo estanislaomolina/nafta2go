@@ -289,3 +289,16 @@ Ante escenario histórico, diagnóstico/configuración incompatible o publicaci�
 que no coincide con la recomendación, informa `unavailable` con motivo y sin
 copiar el general. El bloque se persiste junto al resultado, sin coordenadas del
 conductor. La web muestra ambas comparaciones y el carácter provisional.
+
+
+### Histórico actualizado para el despliegue — 22/11/2026
+
+La repetición de [la selección y auditoría](evidencia/actualizacion-precios-2026-11-22/README.md)
+propone admitir además el manifiesto `b65d2d54ff3229486c495a35d89985b42981648dd02d576bf6a02b6f539aaf83`,
+ligado al nuevo original `5a03269876a0facd38290938fcc580d6cf03fdae30264e5549affde22e3a1e70`.
+Los umbrales y el método no cambian: la política sigue `conservative-v1`, con el
+hash del manifiesto como versión de selección separada. Se conserva la selección
+anterior; cualquier otro manifiesto se abstiene. El diagnóstico aún comprueba que
+el hash del histórico sea el del modelo: no permite mezclar las dos capturas.
+No se cambia el precio oficial ni se carga el artefacto aprendido descartado.
+La habilitación en AWS requiere revisión e integración de esta actualización.
