@@ -20,3 +20,18 @@ veinte diagnósticos permite contrastar la igualdad sin publicar la base.
 
 El reporte de la corrida con código fijado se incorpora por separado. La instancia
 AWS sigue con su versión anterior hasta review e integración de las dependencias.
+
+
+Para reproducir, preparar una base aislada con las dos ingestas y configurar los
+manifiestos indicados en #149. La herramienta copia SQLite usando modo de lectura;
+no escribe en la base fuente y las solicitudes se guardan sólo en la copia temporal:
+
+```bash
+python scripts/measure_real_history_diagnostics.py --database "$SQLITE_FILE" \
+  --reference-at 2026-11-22T02:20:21.931183+00:00 --output medicion.json
+```
+
+Usar la fecha exacta del reporte conservado para comparar sus veinte publicaciones.
+Los datos y las latencias pueden cambiar con otros archivos, parámetros o equipo.
+La herramienta informa fallo si no obtiene veinte diagnósticos disponibles; una
+respuesta correcta sin histórico no cuenta como éxito del ensayo.
