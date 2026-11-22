@@ -18,7 +18,9 @@ proceso y rutas sintéticas: no mide ORS, red del cliente, AWS ni p95 poblaciona
 Los originales, base y respuestas completas permanecen locales; el hash de los
 veinte diagnósticos permite contrastar la igualdad sin publicar la base.
 
-El reporte de la corrida con código fijado se incorpora por separado. La instancia
+La [corrida con código fijado](comparacion.json) `017fd40` repitió cinco solicitudes
+con igualdad exacta de los veinte diagnósticos; p95 observado por rango más cercano
+0.300 s. Cinco observaciones no estiman un p95 poblacional. La instancia
 AWS sigue con su versión anterior hasta review e integración de las dependencias.
 
 
