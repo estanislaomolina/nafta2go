@@ -159,10 +159,10 @@ El parámetro privado contiene `DATABASE_URL=sqlite:////app/data/nafta2go.db`,
 caché y cuota. Se recupera sólo en el host a un env con permisos 0600, fuera de la
 release. El puerto se liga a `127.0.0.1:8000`; las credenciales no se imprimen.
 
-Antes de activar se aplican migraciones e ingesta vigente sobre almacenamiento
-persistente; si ya hay base, se respalda usando la API SQLite y se comprueba
+Antes de activar se aplican migraciones sobre almacenamiento
+persistente; la adquisición se ejecuta por separado; si ya hay base, se respalda usando la API SQLite y se comprueba
 integridad. El servicio anterior continúa mientras se descarga la imagen y se
-preparan los datos. Después se sustituye el contenedor y se comprueba `/ready`;
+preparan los datos. Después se sustituye el contenedor y se ejecuta el smoke de [entrega](ENTREGA-AWS.md);
 si falla, se intenta recuperar la imagen anterior. El rollback es de código,
 con la configuración actual: no revierte migraciones ni restaura datos. El esquema
 0003 es compatible entre las primeras releases; una migración futura debe revisar
@@ -206,7 +206,7 @@ se contrastaron hash del gzip, cantidad de partes, tamaño y SHA-256 del origina
 El archivo público queda en `data/imports/<sha256>.csv`, con permisos para el UID de
 la aplicación. No se transfieren tokens mediante ese mecanismo.
 
-El despliegue admite opcionalmente `--capture-file /app/data/imports/<sha256>.csv`.
+El procedimiento original (anterior a #157) admitía `--capture-file /app/data/imports/<sha256>.csv`.
 Sólo acepta esa ruta con nombre de hash completo; ejecuta el mismo normalizador
 con `--file`. Es una importación explícita, no una descarga exitosa desde AWS.
 La captura ya cargada no elimina la necesidad de resolver la adquisición
