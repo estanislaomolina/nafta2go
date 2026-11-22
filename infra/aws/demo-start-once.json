@@ -1,0 +1,134 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Nafta2Go: un encendido de la demo en fecha local; no crea computo ni modifica la red.",
+  "Parameters": {
+    "InstanceId": {
+      "Type": "String",
+      "AllowedPattern": "^i-([0-9a-f]{8}|[0-9a-f]{17})$",
+      "Description": "Instancia existente autorizada para la demo"
+    },
+    "StartAtLocal": {
+      "Type": "String",
+      "AllowedPattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$",
+      "Description": "Fecha local de Argentina, sin sufijo de zona; debe estar en el futuro"
+    }
+  },
+  "Resources": {
+    "StartGroup": {
+      "Type": "AWS::Scheduler::ScheduleGroup",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "Nafta2Go"
+          }
+        ]
+      }
+    },
+    "StartRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "scheduler.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole",
+              "Condition": {
+                "StringEquals": {
+                  "aws:SourceAccount": {
+                    "Ref": "AWS::AccountId"
+                  },
+                  "aws:SourceArn": {
+                    "Fn::GetAtt": [
+                      "StartGroup",
+                      "Arn"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "StartOnlyDemoInstance",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "ec2:StartInstances",
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/${InstanceId}"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "Nafta2Go"
+          }
+        ]
+      }
+    },
+    "StartSchedule": {
+      "Type": "AWS::Scheduler::Schedule",
+      "Properties": {
+        "Description": "Un encendido autorizado de la demo; conserva el apagado del host a las dos horas",
+        "GroupName": {
+          "Ref": "StartGroup"
+        },
+        "ScheduleExpression": {
+          "Fn::Sub": "at(${StartAtLocal})"
+        },
+        "ScheduleExpressionTimezone": "America/Argentina/Buenos_Aires",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "State": "ENABLED",
+        "Target": {
+          "Arn": {
+            "Fn::Sub": "arn:${AWS::Partition}:scheduler:::aws-sdk:ec2:startInstances"
+          },
+          "RoleArn": {
+            "Fn::GetAtt": [
+              "StartRole",
+              "Arn"
+            ]
+          },
+          "Input": {
+            "Fn::Sub": "{\"InstanceIds\":[\"${InstanceId}\"]}"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 300,
+            "MaximumRetryAttempts": 2
+          }
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ScheduleName": {
+      "Value": {
+        "Ref": "StartSchedule"
+      }
+    },
+    "ScheduleGroup": {
+      "Value": {
+        "Ref": "StartGroup"
+      }
+    },
+    "LocalTime": {
+      "Value": {
+        "Ref": "StartAtLocal"
+      }
+    }
+  }
+}
