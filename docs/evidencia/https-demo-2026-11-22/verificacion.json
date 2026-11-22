@@ -1,0 +1,36 @@
+{
+  "observed_at_utc": "2026-11-22T18:54:22.749463+00:00",
+  "scope": "real_ec2_cloudflare_quick_tunnel",
+  "url": "https://legitimate-mark-penny-playstation.trycloudflare.com",
+  "/health": 200,
+  "/ready": 200,
+  "/": 200,
+  "/operacion": 200,
+  "anonymous_query": 401,
+  "driver_operations": 401,
+  "authenticated_query": 200,
+  "evaluations": 3,
+  "outcome": "recommended",
+  "price_status": "ready",
+  "service_mode": "quick",
+  "cloudflared_version": "2026.11.1",
+  "stop_timer_active": true,
+  "inbound_rules": 0,
+  "cloudformation_network_update": "UPDATE_COMPLETE_without_replacement",
+  "human_checks": [
+    {
+      "device": "iPhone 13",
+      "os_version": "not_reported",
+      "browser": "not_reported",
+      "reported_by": "usuario",
+      "result": "acceso y ubicación escrita satisfactorios desde fuera de CABA; no se confirma GPS móvil dentro de CABA"
+    },
+    {
+      "device": "computadora",
+      "os_version": "not_reported",
+      "browser": "not_reported",
+      "reported_by": "usuario",
+      "result": "geolocalización detectada correctamente dentro de CABA"
+    }
+  ]
+}

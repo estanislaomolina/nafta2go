@@ -193,3 +193,7 @@ Las fechas y simplificaciones del caso reproducible se detallan en
 El repositorio se mantiene público por autorización de la cátedra, confirmada
 por el equipo al cerrar esta entrega. La presentación se identifica con el
 commit específico de `main` y la URL del video.
+
+La demo admite una [URL HTTPS temporal mediante Cloudflare](docs/AWS-HTTPS.md),
+conservando el código de acceso y el apagado automático. Obtener una posición GPS
+en un teléfono depende además de permisos y del dispositivo.
