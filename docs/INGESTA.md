@@ -279,7 +279,9 @@ adquisiciones reales posteriores a la actualización de la operación:
 
 Ambas validaron 732 filas de 184 estaciones, sin rechazos. Se contrastaron tamaño
 (9.260.901 bytes) y SHA-256 de cada original contra sus metadatos persistidos.
-La ejecución 17 detectó el mismo CSV de la 16 y evitó duplicar precios.
+La ejecución 17 identificó el mismo CSV de la 16 mediante `duplicate_of_run_id`.
+Se conserva una versión de precios por ejecución; no se deduplican filas entre
+ingestas distintas. La consulta selecciona una única ingesta exitosa.
 Una descarga nueva no convierte los precios antiguos del catálogo en actuales.
 Ingesta y monitor terminaron con estado exitoso; no había alertas activas y el
 próximo disparo estaba programado para el 22/11 a las 06:00 de Argentina.
