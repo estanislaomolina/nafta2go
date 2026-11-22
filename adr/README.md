@@ -43,3 +43,4 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 | [ADR-023](ADR-023-validacion-tecnica-sin-participantes.md) | Validación técnica de diez escenarios sin participantes | Aceptado |
 | [ADR-024](ADR-024-entrega-por-ssm-y-configuracion-cifrada.md) | Entrega por SSM y configuración cifrada | Reemplazado por ADR-025 |
 | [ADR-025](ADR-025-imagen-verificada-por-digest.md) | Imagen verificada en CI y entregada por digest | Propuesto |
+| [ADR-026](ADR-026-despliegue-con-oidc.md) | Despliegue con OIDC y aprobación independiente | Propuesto |

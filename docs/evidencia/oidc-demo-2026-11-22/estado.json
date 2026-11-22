@@ -1,0 +1,69 @@
+{
+  "observed_at_utc": "2026-11-22T18:14:17.679540+00:00",
+  "environment": "demo",
+  "protection_rules": [
+    {
+      "id": 73514986,
+      "node_id": "GA_kwDOUgKzo84EYb_q",
+      "type": "required_reviewers",
+      "prevent_self_review": true,
+      "reviewers": [
+        {
+          "type": "User",
+          "reviewer": {
+            "login": "felisl30",
+            "id": 141249883,
+            "node_id": "U_kgDOCGtNWw",
+            "avatar_url": "https://avatars.githubusercontent.com/u/141249883?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/felisl30",
+            "html_url": "https://github.com/felisl30",
+            "followers_url": "https://api.github.com/users/felisl30/followers",
+            "following_url": "https://api.github.com/users/felisl30/following{/other_user}",
+            "gists_url": "https://api.github.com/users/felisl30/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/felisl30/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/felisl30/subscriptions",
+            "organizations_url": "https://api.github.com/users/felisl30/orgs",
+            "repos_url": "https://api.github.com/users/felisl30/repos",
+            "events_url": "https://api.github.com/users/felisl30/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/felisl30/received_events",
+            "type": "User",
+            "user_view_type": "public",
+            "site_admin": false
+          }
+        }
+      ]
+    },
+    {
+      "id": 73514987,
+      "node_id": "GA_kwDOUgKzo84EYb_r",
+      "type": "branch_policy"
+    }
+  ],
+  "branch_policies": [
+    {
+      "id": 67807062,
+      "node_id": "MDE2OkdhdGVCcmFuY2hQb2xpY3k2NzgwNzA2Mg==",
+      "name": "main",
+      "type": "branch"
+    },
+    {
+      "id": 67807063,
+      "node_id": "MDE2OkdhdGVCcmFuY2hQb2xpY3k2NzgwNzA2Mw==",
+      "name": "entrega-*",
+      "type": "tag"
+    }
+  ],
+  "stack_status": "CREATE_COMPLETE",
+  "outputs": [
+    {
+      "OutputKey": "RoleArn",
+      "OutputValue": "arn:aws:iam::132597215044:role/nafta2go-demo-cd-DeployRole-uygRVWjGiyEH"
+    },
+    {
+      "OutputKey": "Subject",
+      "OutputValue": "repo:estanislaomolina@129418393/nafta2go@1375908771:environment:demo"
+    }
+  ],
+  "actual_oidc_deployment": "pending_independent_approval_and_integration"
+}
