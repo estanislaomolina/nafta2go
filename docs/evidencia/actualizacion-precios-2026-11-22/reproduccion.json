@@ -1,0 +1,28 @@
+{
+  "manifest.json": {
+    "sha256": "b65d2d54ff3229486c495a35d89985b42981648dd02d576bf6a02b6f539aaf83",
+    "repeat_sha256": "b65d2d54ff3229486c495a35d89985b42981648dd02d576bf6a02b6f539aaf83",
+    "equal": true
+  },
+  "model-report.json": {
+    "sha256": "aca012ece131ce76ae179f857f4e967b9ef42e4520776930dd27ddce38f2a178",
+    "repeat_sha256": "aca012ece131ce76ae179f857f4e967b9ef42e4520776930dd27ddce38f2a178",
+    "equal": true
+  },
+  "model.joblib": {
+    "sha256": "30326745d93bc82feeba2b22a0df5b5190ea7ef9ec6374d3684328af57887f35",
+    "repeat_sha256": "30326745d93bc82feeba2b22a0df5b5190ea7ef9ec6374d3684328af57887f35",
+    "equal": true
+  },
+  "validation-predictions.jsonl": {
+    "sha256": "f5389be2a37ca6f184076b28af68f4fc11408e51d0c5d38edf8d160344ed74e1",
+    "repeat_sha256": "f5389be2a37ca6f184076b28af68f4fc11408e51d0c5d38edf8d160344ed74e1",
+    "equal": true
+  },
+  "alert-evaluation.json": {
+    "sha256": "9a6e9f9e2c0a1e983fcbb6ae7c6ff100e08014fd7c0b6d85220d9959814c4c7d",
+    "repeat_sha256": "9a6e9f9e2c0a1e983fcbb6ae7c6ff100e08014fd7c0b6d85220d9959814c4c7d",
+    "equal": true
+  },
+  "dataset_bytes_equal": true
+}

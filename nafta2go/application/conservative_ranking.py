@@ -49,10 +49,7 @@ def conservative_ranking(conn, evaluations, rows, *, status, run_id, product_id,
                 )
             ):
                 return block | {"reason": "publication_mismatch"}
-            if (
-                item["method"] != "bandera_reciente"
-                or item["version"] != price_alert.AUDITED_MODEL_VERSION
-            ):
+            if not price_alert.policy_compatible(item["method"], item["version"]):
                 return block | {"reason": "policy_not_compatible"}
             diagnostics.append(item)
             if item["reference_ars_per_l"] is None:

@@ -417,14 +417,18 @@ def test_diagnostic_metrics_cover_results_failures_and_preserve_privacy(
         )
 
 
+@pytest.mark.parametrize("audited_slot", ["legacy", "updated"])
 def test_compatible_selection_emits_provisional_alert_without_changing_official(
-    engine, prepared, monkeypatch
+    engine, prepared, monkeypatch, audited_slot
 ):
     _, _, _, manifest = prepared
-    monkeypatch.setattr(
-        "nafta2go.domain.price_alert.AUDITED_MODEL_VERSION",
-        hashlib.sha256(manifest.read_bytes()).hexdigest(),
-    )
+    version = hashlib.sha256(manifest.read_bytes()).hexdigest()
+    if audited_slot == "legacy":
+        monkeypatch.setattr("nafta2go.domain.price_alert.AUDITED_MODEL_VERSION", version)
+    else:
+        monkeypatch.setattr(
+            "nafta2go.domain.price_alert.ADDITIONAL_AUDITED_MODEL_VERSIONS", frozenset({version})
+        )
     with client(engine) as http:
         body = http.get(URL, headers=AUTH).json()
     assert body["alert_level"] == "provisional_deviation"

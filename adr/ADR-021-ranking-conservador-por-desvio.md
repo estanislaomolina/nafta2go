@@ -111,3 +111,20 @@ cambia la versión.
 Complementa ADR-015: el diagnóstico pasa de `not_calibrated` a un nivel de alerta
 provisional. ADR-017 sigue vigente para el protocolo de evaluación. ADR-002 sigue
 vigente: el ranking general no cambia.
+
+
+## Actualización de origen — 22/11/2026 (propuesta en #149)
+
+El recurso histórico disponible cambió respecto de la captura del 24/10. Se repitió
+la preparación y selección con parámetros fijados antes del ajuste y de la nueva
+auditoría; [evidencia](../docs/evidencia/actualizacion-precios-2026-11-22/README.md).
+La selección conserva `bandera_reciente` y ambos umbrales coinciden exactamente;
+por eso se conserva `conservative-v1` y se identifica la selección nueva por su
+propio hash de manifiesto. Se propone admitir ese hash además del original,
+conservando la comprobación estricta entre modelo e histórico correspondiente.
+La propuesta no cambia retrospectivamente los manifiestos anteriores.
+
+La muestra actual tiene 622 observaciones de auditoría con seis excedencias
+(tres por franja premium). Son publicaciones sin etiquetas, con franjas
+correlacionadas: no son seis errores verificados ni una medida de precisión.
+La compatibilidad nueva debe ser revisada antes de activarse en AWS.
