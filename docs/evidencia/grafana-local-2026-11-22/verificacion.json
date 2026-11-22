@@ -1,5 +1,5 @@
 {
-  "observed_at_utc": "2026-11-22T18:39:26.007232+00:00",
+  "observed_at_utc": "2026-11-22T18:43:11.469656+00:00",
   "scope": "local_isolated_recorded_routes",
   "http_recommendations": 8,
   "alert_rules": 3,
@@ -31,6 +31,6 @@
     "CPU del contenedor API \u00b7 n\u00facleosA": 1,
     "Memoria del contenedor API \u00b7 bytesA": 1
   },
-  "project": "nafta2go-observability-qa-1512226",
+  "project": "nafta2go-observability-qa-1516558",
   "temporary_containers_volumes_networks_removed": true
 }
