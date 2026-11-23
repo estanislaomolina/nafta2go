@@ -45,3 +45,5 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 | [ADR-025](ADR-025-imagen-verificada-por-digest.md) | Imagen verificada en CI y entregada por digest | Propuesto |
 | [ADR-030](ADR-030-registro-de-modelos-versionado.md) | Registro de modelos versionado con alias de campeón | Propuesto |
 | [ADR-029](ADR-029-pruebas-de-carga-con-locust.md) | Pruebas de carga y estrés con Locust sobre un servidor aislado | Propuesto |
+| [ADR-024](ADR-024-entrega-por-ssm-y-configuracion-cifrada.md) | Entrega por SSM y configuración cifrada | Reemplazado por ADR-025 |
+| [ADR-025](ADR-025-imagen-verificada-por-digest.md) | Imagen verificada en CI y entregada por digest | Propuesto |

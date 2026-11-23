@@ -24,15 +24,44 @@ Se conserva la imagen concreta, los datos fuera del contenedor y un respaldo
 SQLite previo. El rollback recupera código con configuración actual, sin revertir
 migraciones/datos; revisar compatibilidad del esquema antes de otra migración.
 
-Opcionalmente, `--capture-file /app/data/imports/<sha256>.csv` importa una captura
-ya transferida y verificada. El archivo no se transfiere mediante este ejecutable.
-Sin esa opción se intenta descargar del catálogo. Ambas modalidades usan el mismo
-normalizador y registran la ingesta; una importación no acredita adquisición remota.
+El despliegue no descarga ni importa capturas. La ingesta y el monitor se operan
+por separado; un fallo de adquisición no obliga a reconstruir ni reinstalar.
+`/ready` comprueba configuración, esquema y datos utilizables, y publica
+`data_status=current`, `historical_scenario` o `unavailable`. El escenario histórico
+está rotulado como tal y no acredita datos vigentes. Sin datos utilizables responde
+503 y el despliegue no supera el smoke.
 
-La API se liga a loopback. `/ready` sólo valida configuración/esquema: verificar
-además autenticación y una consulta completa por el túnel de AWS-DEMO. El script
-no cambia timers ni el apagado de dos horas. Los respaldos locales del host deben
-exportarse antes de eliminarlo. [Alternativas y límites](../adr/ADR-024-entrega-por-ssm-y-configuracion-cifrada.md).
+La API se liga a loopback. El smoke espera readiness y verifica `/health`, web,
+`/operacion`, rechazo sin código, rechazo del código de conductor en operación y
+una consulta autenticada con evaluaciones persistidas. En AWS usa una sola matriz
+ORS de hasta diez candidatas; necesita cuota/servicio disponibles. En CI/pruebas
+el mismo smoke se ejecuta con rutas grabadas, sin terceros. Sus consultas sintéticas
+se persisten como las demás recomendaciones; no representan compras reales.
+
+Si falla arranque/smoke, se intenta recuperar el digest anterior con configuración
+actual: código de salida 4 si se recupera, 6 si también falla la recuperación.
+La salida informa candidata/restaurada y etapa fallida sin exponer tokens. El
+script usa un lock para impedir despliegues simultáneos y conserva la referencia
+actual si falla la candidata. El smoke se transfiere por SSM y también comprueba
+imágenes anteriores que no lo incluían. Los respaldos deben exportarse antes de
+eliminar la instancia; el script no modifica el apagado de dos horas.
+
+Rollback manual a una release instalada (digest conservado en
+`/opt/nafta2go/releases/<sha>.image`):
+
+```bash
+python scripts/aws_demo_command.py --profile nafta2go \
+  --instance-id "$INSTANCE_ID" --commit "$PREVIOUS_COMMIT" \
+  --parameter /nafta2go/demo/runtime --image "$PREVIOUS_DIGEST" --mode rollback
+```
+
+Se verifica que SHA y digest correspondan a una release instalada. Este modo no
+aplica migraciones ni ingesta. No restaura la base: antes de desplegar una
+migración hay que revisar compatibilidad con la versión anterior y planificar
+recuperación de datos. Un respaldo no sustituye esa revisión.
+
+La prueba de rollback real en AWS sigue pendiente: los tests con dependencias
+falsas no la acreditan. [Alternativas y límites](../adr/ADR-025-imagen-verificada-por-digest.md).
 
 ## Publicación y lectura de la imagen
 

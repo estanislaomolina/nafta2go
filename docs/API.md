@@ -95,7 +95,10 @@ en la base antes de responder; un fallo de dependencia revierte la transacción.
 
 `GET /health` comprueba que el proceso responde. `GET /ready` exige token de
 servidor configurado, conexión y esquema en la revisión esperada; si no, devuelve
-503 sin aplicar migraciones. Ambos controles y OpenAPI son públicos y no exponen
+503 sin aplicar migraciones. Además comprueba datos utilizables y expone
+`data_status`: `current`, `historical_scenario` (fallback histórico rotulado) o
+`unavailable`; este último impide readiness aunque el esquema esté migrado.
+Ambos controles y OpenAPI son públicos y no exponen
 precios, ubicaciones ni credenciales. La consulta requiere `Authorization: Bearer`.
 
 La API acepta `max_candidates` como entero estricto entre 3 y 20. Si se omite,

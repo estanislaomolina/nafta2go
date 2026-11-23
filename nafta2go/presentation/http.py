@@ -32,9 +32,10 @@ from nafta2go.application.ingestion_status import ingestion_status
 from nafta2go.application.place_search import PlaceSearch
 from nafta2go.application.price_diagnostic import DiagnosticUnavailable, price_diagnostic
 from nafta2go.application.query import recommend_from_database
+from nafta2go.application.readiness import data_readiness
 from nafta2go.application.scenario import ScenarioIntegrityError
 from nafta2go.domain.places import PlaceBusy, PlaceUnavailable
-from nafta2go.persistence.database import create_db_engine, database_is_ready
+from nafta2go.persistence.database import create_db_engine
 from nafta2go.presentation.diagnostic_telemetry import (
     DiagnosticTelemetry,
     DiagnosticTelemetryMiddleware,
@@ -206,10 +207,16 @@ def create_app(
             configured_max_price_age_days()
         except CoverageConfigurationError:
             configured = False
-        available = configured and database_is_ready(application.state.engine)
+        data = {"usable": False, "data_status": "unavailable"}
+        try:
+            if configured:
+                data = data_readiness(application.state.engine, clock())
+        except (SQLAlchemyError, OSError, ValueError, KeyError):
+            pass
+        available = configured and data["usable"]
         return JSONResponse(
             status_code=200 if available else 503,
-            content={"status": "ready" if available else "unavailable"},
+            content={"status": "ready" if available else "unavailable", **data},
         )
 
     @application.post(
