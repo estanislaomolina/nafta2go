@@ -1,0 +1,3 @@
+# Pruebas de carga (#158): Locust y sus dependencias, fuera de la imagen y del CI.
+-r requirements.txt
+locust==2.47.0

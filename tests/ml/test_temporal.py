@@ -130,3 +130,35 @@ def test_recent_features_are_empty_without_recent_publications():
     features = examples[0]["features"]
     assert features["recent_median"] is None and features["recent_count"] == 0
     assert features["brand_recent_median"] is None
+
+
+def test_probe_batch_matches_individual_preparation_without_query_price_leakage():
+    original = history() + [row(2, 2, 330), row(1, 3, 500), row(99, 9, 99999)]
+    targets = [
+        row(1, 1, 10000, source_row=9001),
+        row(2, 2, 999999, source_row=9002),
+        row(1, 3, 777, source_row=9003),
+    ]
+    snapshot = deepcopy((original, targets))
+    batch, report = build_temporal_dataset(original, CUTOFF, targets=targets, min_history=3)
+    expected = []
+    for target in targets:
+        past = [r for r in original if r["valid_from"] < target["valid_from"]]
+        examples, _ = build_temporal_dataset([*past, target], CUTOFF, min_history=3)
+        expected.append(next(e for e in examples if e["source_row"] == target["source_row"]))
+    assert batch == expected
+    assert sum(p["observations"] for p in report["partitions"].values()) == 3
+    assert (original, targets) == snapshot
+    targets[0]["price"] = 9999999999
+    changed, _ = build_temporal_dataset(original, CUTOFF, targets=targets, min_history=3)
+    assert [r["features"] for r in changed] == [r["features"] for r in batch]
+
+
+def test_probe_batch_preserves_products_schedules_and_abstention():
+    context = history()[:3] + [row(20 + i, 0, 400 + i, product_id=3) for i in range(3)]
+    targets = [row(7, 1, 150), row(8, 1, 450, product_id=3), row(9, 1, 300, schedule_id=3)]
+    examples, _ = build_temporal_dataset(context, CUTOFF, targets=targets, min_history=3)
+    assert [e["station_id"] for e in examples] == [7, 8]
+    assert [e["features"]["prior_median"] for e in examples] == [110, 401]
+    with pytest.raises(ValueError, match="duplicada"):
+        build_temporal_dataset(context, CUTOFF, targets=[targets[0], targets[0]], min_history=3)

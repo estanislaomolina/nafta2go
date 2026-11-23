@@ -43,3 +43,4 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 | [ADR-023](ADR-023-validacion-tecnica-sin-participantes.md) | Validación técnica de diez escenarios sin participantes | Aceptado |
 | [ADR-024](ADR-024-entrega-por-ssm-y-configuracion-cifrada.md) | Entrega por SSM y configuración cifrada | Propuesto |
 | [ADR-031](ADR-031-transferencia-verificada-de-capturas.md) | Transferencia verificada de capturas para la ingesta cloud | Propuesto |
+| [ADR-029](ADR-029-pruebas-de-carga-con-locust.md) | Pruebas de carga y estrés con Locust sobre un servidor aislado | Propuesto |
