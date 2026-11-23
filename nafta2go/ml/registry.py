@@ -4,12 +4,16 @@ El registro es `nafta2go/ml/registry.json`, revisado en cada PR. Cada corrida se
 identifica por el SHA-256 de su manifiesto de modelo, el mismo valor que el serving
 usa como versión. Los artefactos grandes siguen fuera de Git: se registran sus
 hashes y si se conservan, nunca se reconstruyen.
+
+El serving solo usa la corrida del alias `champion`, y solo emite alertas de una
+política si la corrida tiene una auditoría verificada para ella al registrarla.
 """
 
 import argparse
 import hashlib
 import json
 import sys
+from decimal import Decimal
 from pathlib import Path
 
 REGISTRY = Path(__file__).with_name("registry.json")
@@ -20,12 +24,14 @@ class RegistryError(ValueError):
     """Corrida o promoción incompatible; el registro no se modifica."""
 
 
-def load(path: Path = REGISTRY) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
+def load(path: Path | None = None) -> dict:
+    return json.loads((path or REGISTRY).read_text(encoding="utf-8"))
 
 
-def save(registry: dict, path: Path = REGISTRY) -> None:
-    path.write_text(json.dumps(registry, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+def save(registry: dict, path: Path | None = None) -> None:
+    (path or REGISTRY).write_text(
+        json.dumps(registry, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
 
 def _sha256(path: Path) -> str:
@@ -36,6 +42,25 @@ def _relative(path: Path) -> str:
     root = REGISTRY.parents[2]
     resolved = path.resolve()
     return str(resolved.relative_to(root)) if resolved.is_relative_to(root) else str(path)
+
+
+def verified_audit(registry: dict, version: str, policy: str, audit_path: Path) -> dict:
+    """La auditoría debe ser de esta corrida, con el método y los umbrales de la política."""
+    audit = json.loads(audit_path.read_bytes())
+    expected = registry["policies"][policy]
+    # Los segmentos son "producto:horario"; cada producto tiene un único umbral.
+    segments = [
+        (segment.split(":")[0], Decimal(str(values["relative_deviation_threshold"])))
+        for segment, values in audit["segments"].items()
+    ]
+    if (
+        audit["model_manifest_sha256"] != version
+        or audit["chosen_method"] != expected["method"]
+        or {product for product, _ in segments} != set(expected["thresholds"])
+        or any(value != Decimal(expected["thresholds"][product]) for product, value in segments)
+    ):
+        raise RegistryError("La auditoría no corresponde a esta corrida y política")
+    return {"file": _relative(audit_path), "sha256": _sha256(audit_path)}
 
 
 def run_entry(manifest_path: Path, report_path: Path | None, policy: str | None) -> dict:
@@ -82,16 +107,29 @@ def run_entry(manifest_path: Path, report_path: Path | None, policy: str | None)
             },
         },
         "policy": policy,
+        "audit": None,
     }
 
 
-def register(registry: dict, manifest: Path, report: Path | None, policy: str | None) -> str:
+def register(
+    registry: dict,
+    manifest: Path,
+    report: Path | None,
+    policy: str | None,
+    audit: Path | None = None,
+) -> str:
+    """Una política solo se asocia con su auditoría verificada; la etiqueta sola no alcanza."""
     if policy is not None and policy not in registry["policies"]:
         raise RegistryError(f"Política desconocida: {policy}")
+    if (policy is None) != (audit is None):
+        raise RegistryError("La política y su auditoría se registran juntas")
     version = _sha256(manifest)
     if version in registry["runs"]:
         raise RegistryError("La corrida ya está registrada")
-    registry["runs"][version] = run_entry(manifest, report, policy)
+    entry = run_entry(manifest, report, policy)
+    if policy is not None:
+        entry["audit"] = verified_audit(registry, version, policy, audit)
+    registry["runs"][version] = entry
     return version
 
 
@@ -111,7 +149,7 @@ def promote(registry: dict, version: str) -> None:
     if winner != run["chosen_method"]:
         raise RegistryError("El método elegido no es el de menor error de selección")
     policy = registry["policies"].get(run["policy"])
-    if policy is None or policy["method"] != winner:
+    if policy is None or policy["method"] != winner or run["audit"] is None:
         raise RegistryError("La corrida no es compatible con una política de alertas auditada")
     registry["aliases"] = {
         "champion": {"run": version, "method": winner},
@@ -131,8 +169,14 @@ def audited_versions(policy: str, method: str, registry: dict | None = None) -> 
     return frozenset(
         version
         for version, run in registry["runs"].items()
-        if run["policy"] == policy and run["chosen_method"] == method
+        if run["policy"] == policy and run["chosen_method"] == method and run["audit"]
     )
+
+
+def champion(registry: dict | None = None) -> dict | None:
+    """Corrida y método que el serving debe usar; None deja el diagnóstico no disponible."""
+    registry = load() if registry is None else registry
+    return registry["aliases"]["champion"]
 
 
 def main(argv=None) -> int:
@@ -143,13 +187,14 @@ def main(argv=None) -> int:
     add.add_argument("--manifest", type=Path, required=True)
     add.add_argument("--report", type=Path)
     add.add_argument("--policy", help="Política auditada para esta corrida, si la hay")
+    add.add_argument("--audit", type=Path, help="alert-evaluation.json de esa política")
     up = commands.add_parser("promote", help="Promover una corrida a campeona")
     up.add_argument("--run", required=True, help="SHA-256 del manifiesto de modelo")
     args = parser.parse_args(argv)
     registry = load()
     try:
         if args.command == "register":
-            print(register(registry, args.manifest, args.report, args.policy))
+            print(register(registry, args.manifest, args.report, args.policy, args.audit))
             save(registry)
         elif args.command == "promote":
             promote(registry, args.run)

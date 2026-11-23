@@ -247,7 +247,8 @@ Cada corrida se identifica por el SHA-256 de su manifiesto de modelo y guarda:
 ```bash
 python -m nafta2go.ml.registry show
 python -m nafta2go.ml.registry register --manifest "$MODEL_DIR/manifest.json" \
-  --report "$MODEL_DIR/report.json"
+  --report "$MODEL_DIR/report.json" \
+  [--policy conservative-v1 --audit "$AUDIT_DIR/alert-evaluation.json"]
 python -m nafta2go.ml.registry promote --run <sha256-del-manifiesto>
 ```
 
@@ -261,13 +262,27 @@ para elegir (ADR-014). Una promoción se rechaza sin tocar el archivo en estos c
 - el método elegido no es el ganador;
 - la corrida no fue auditada para la política del método.
 
-Por eso cambiar un alias no puede habilitar los umbrales de `conservative-v1` para
-otro modelo. Para revertir se vuelve a promover la corrida anterior.
+**Auditoría obligatoria.** Una corrida queda asociada a una política solo si se
+registra con su `alert-evaluation.json`. El registro verifica que esa auditoría:
+- corresponda al SHA de la corrida;
+- use el método de la política;
+- tenga los mismos umbrales por producto que sirve `domain/price_alert.py`.
 
-**Serving.** `domain/price_alert.py` acepta solo las corridas que el registro marca
-como auditadas para `conservative-v1`, que hoy son `91cb07a3…` y `b65d2d54…`. Ya no
-hay hashes escritos en el código. El manifiesto se sigue leyendo desde
-`NAFTA2GO_PRICE_MODEL_DIR`.
+Si la etiqueta de la política no viene acompañada de esa evidencia, la corrida se
+rechaza. Por eso cambiar un alias no puede habilitar los umbrales de
+`conservative-v1` para otro modelo. Para revertir se vuelve a promover la corrida
+anterior.
+
+**Serving.** El diagnóstico sirve solo la corrida del alias `champion`.
+- **Dónde busca el manifiesto:** `NAFTA2GO_PRICE_MODEL_DIR` puede ser un almacén
+  con una carpeta por versión (`<sha256>/manifest.json`), y entonces se usa la del
+  campeón. Si no, se usa una carpeta simple, que tiene que contener exactamente el
+  manifiesto del campeón. El dataset se resuelve igual, por el SHA de su manifiesto.
+- **Si lo configurado no es el campeón:** el diagnóstico responde no disponible, en
+  lugar de servir otra versión. Promover o revertir el alias cambia la versión
+  servida sin tocar el código.
+- **Alertas:** las emite `domain/price_alert.py` solo para las corridas con
+  auditoría verificada, que hoy son `91cb07a3…` y `b65d2d54…`.
 
 **Lo que no se conserva.** Está inventariado en el campo `missing` del registro:
 - la corrida del 13/11 fue solo el baseline, sin manifiesto de modelo;

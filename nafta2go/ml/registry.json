@@ -5,7 +5,11 @@
     "conservative-v1": {
       "method": "bandera_reciente",
       "adr": "adr/ADR-021-ranking-conservador-por-desvio.md",
-      "audit": "docs/evidencia/alertas-precios-2026-11-17/README.md"
+      "audit": "docs/evidencia/alertas-precios-2026-11-17/README.md",
+      "thresholds": {
+        "2": "0.05424409844299347",
+        "3": "0.054570259208731244"
+      }
     }
   },
   "runs": {
@@ -82,7 +86,8 @@
           "conserved_in_repo": false
         }
       },
-      "policy": null
+      "policy": null,
+      "audit": null
     },
     "065c5818f01ab887146f7daa7baf8b1210b4643eae378252640134a9928356ca": {
       "manifest": "docs/evidencia/ml-modelos-2026-11-17/model-manifest.json",
@@ -157,7 +162,8 @@
           "conserved_in_repo": false
         }
       },
-      "policy": null
+      "policy": null,
+      "audit": null
     },
     "91cb07a3ac0b99edd70e12b203318c1b498a1d06766011cbda5dd557852b5892": {
       "manifest": "docs/evidencia/alertas-precios-2026-11-17/model-manifest.received.json",
@@ -206,7 +212,11 @@
           "conserved_in_repo": false
         }
       },
-      "policy": "conservative-v1"
+      "policy": "conservative-v1",
+      "audit": {
+        "file": "docs/evidencia/alertas-precios-2026-11-17/alert-evaluation.json",
+        "sha256": "00e7168eb658f54851cb22ed1d6b6b1edeafc8cc639172b8fdf92ac046b15fd9"
+      }
     },
     "b65d2d54ff3229486c495a35d89985b42981648dd02d576bf6a02b6f539aaf83": {
       "manifest": "docs/evidencia/actualizacion-precios-2026-11-22/model-manifest.json",
@@ -281,7 +291,11 @@
           "conserved_in_repo": false
         }
       },
-      "policy": "conservative-v1"
+      "policy": "conservative-v1",
+      "audit": {
+        "file": "docs/evidencia/actualizacion-precios-2026-11-22/alert-evaluation.json",
+        "sha256": "9a6e9f9e2c0a1e983fcbb6ae7c6ff100e08014fd7c0b6d85220d9959814c4c7d"
+      }
     }
   },
   "aliases": {

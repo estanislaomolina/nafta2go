@@ -3,6 +3,7 @@
 import copy
 import hashlib
 import json
+from decimal import Decimal
 
 import pytest
 
@@ -80,7 +81,7 @@ def test_register_refuses_duplicates_and_unknown_policies(registry, tmp_path):
     copied = tmp_path / "model-manifest.json"
     copied.write_bytes(manifest.read_bytes() + b"\n")
     with pytest.raises(reg.RegistryError):
-        reg.register(trial, copied, report, "otra-politica")
+        reg.register(trial, copied, report, "otra-politica", CURRENT / "alert-evaluation.json")
     version = reg.register(trial, copied, report, None)
     assert trial["runs"][version]["candidates"]["ridge"]["kind"] == "model"
     assert reg.audited_versions("conservative-v1", "bandera_reciente", trial) == (
@@ -88,12 +89,49 @@ def test_register_refuses_duplicates_and_unknown_policies(registry, tmp_path):
     )
 
 
+def test_policy_requires_a_verified_audit_of_the_same_run(registry, tmp_path):
+    """Cambiar la semilla y reusar el reporte no habilita los umbrales sin su auditoría."""
+    trial = copy.deepcopy(registry)
+    model = json.loads((CURRENT / "model-manifest.json").read_bytes())
+    model["parameters"]["random_seed"] = 1
+    manifest = tmp_path / "model-manifest.json"
+    manifest.write_text(json.dumps(model))
+    report, audit = CURRENT / "model-report.json", CURRENT / "alert-evaluation.json"
+    with pytest.raises(reg.RegistryError):
+        reg.register(trial, manifest, report, "conservative-v1")
+    with pytest.raises(reg.RegistryError):
+        reg.register(trial, manifest, report, "conservative-v1", audit)
+    forged = json.loads(audit.read_bytes())
+    forged["model_manifest_sha256"] = hashlib.sha256(manifest.read_bytes()).hexdigest()
+    next(iter(forged["segments"].values()))["relative_deviation_threshold"] = 0.2
+    (tmp_path / "audit.json").write_text(json.dumps(forged))
+    with pytest.raises(reg.RegistryError):
+        reg.register(trial, manifest, report, "conservative-v1", tmp_path / "audit.json")
+    assert trial == registry
+    version = reg.register(trial, manifest, report, None)
+    trial["runs"][version]["policy"] = "conservative-v1"  # Etiqueta sin auditoría.
+    with pytest.raises(reg.RegistryError):
+        reg.promote(trial, version)
+    assert trial["aliases"] == registry["aliases"]
+    assert version not in reg.audited_versions("conservative-v1", "bandera_reciente", trial)
+
+
+def test_audited_runs_match_their_audit_and_the_served_thresholds(registry):
+    policy = registry["policies"]["conservative-v1"]
+    assert {int(k): Decimal(v) for k, v in policy["thresholds"].items()} == price_alert.THRESHOLDS
+    for version, run in registry["runs"].items():
+        if run["policy"] is None:
+            assert run["audit"] is None
+            continue
+        audit = ROOT / run["audit"]["file"]
+        assert hashlib.sha256(audit.read_bytes()).hexdigest() == run["audit"]["sha256"]
+        assert reg.verified_audit(registry, version, run["policy"], audit) == run["audit"]
+
+
 def test_cli_promotion_failure_leaves_the_file_untouched(tmp_path, monkeypatch, capsys):
     path = tmp_path / "registry.json"
     path.write_bytes(reg.REGISTRY.read_bytes())
     monkeypatch.setattr(reg, "REGISTRY", path)
-    monkeypatch.setattr(reg.load, "__defaults__", (path,))
-    monkeypatch.setattr(reg.save, "__defaults__", (path,))
     before = path.read_bytes()
     assert reg.main(["promote", "--run", "desconocida"]) == 1
     assert path.read_bytes() == before

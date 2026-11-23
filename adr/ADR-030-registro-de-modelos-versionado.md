@@ -44,11 +44,20 @@ las corridas, identificadas por el SHA-256 de su manifiesto, que es la versión 
 el serving. También guarda las políticas auditadas, los alias y el inventario de lo que
 no se conserva. `python -m nafta2go.ml.registry` registra, promueve y muestra:
 
-* La promoción elige el menor MAE de selección y rechaza la corrida si el método elegido
-  no coincide, si no conserva el reporte o si su política no corresponde al método.
+* La promoción elige el menor MAE de selección. Rechaza la corrida en cualquiera de
+  estos casos:
+  * el método elegido no coincide con el ganador;
+  * no conserva el reporte;
+  * no tiene una auditoría verificada para la política.
+* Una política solo se asocia con su `alert-evaluation.json`. Al registrar se verifica
+  que la auditoría corresponda al SHA de la corrida, al método y a los umbrales que se
+  sirven. La etiqueta sola no habilita alertas.
 * Un rechazo no modifica el archivo.
-* `domain/price_alert.py` toma del registro las corridas habilitadas para
-  `conservative-v1`, en lugar de tener los hashes escritos en el código.
+* El serving resuelve el alias `champion`: busca su manifiesto en el almacén
+  (`<sha256>/manifest.json`) o exige que la carpeta configurada contenga exactamente esa
+  versión. Si no, el diagnóstico queda no disponible.
+* `domain/price_alert.py` toma del registro las corridas con auditoría verificada, en
+  lugar de tener los hashes escritos en el código.
 
 Se importaron las corridas del 15/11, el 17/11 (la auditada y la corregida) y el 22/11,
 solo con los archivos que existen. El campeón es `bandera_reciente` de la corrida del
@@ -60,9 +69,8 @@ solo con los archivos que existen. El campeón es `bandera_reciente` de la corri
 * Good, because no agrega dependencias ni servicios, y la imagen ya incluye el registro.
 * Bad, because `model.joblib` y las predicciones siguen fuera de Git: se registran sus
   hashes, pero el registro no los almacena ni los sirve.
-* Bad, because el serving sigue cargando el manifiesto desde
-  `NAFTA2GO_PRICE_MODEL_DIR`. El registro decide qué versiones son válidas, pero no
-  descarga el artefacto.
+* Bad, because el almacén de manifiestos (`NAFTA2GO_PRICE_MODEL_DIR`) se prepara aparte:
+  el registro decide qué versión se sirve, pero no descarga el artefacto.
 * Bad, because no hay interfaz web ni comparación gráfica de corridas como en MLflow.
 
 ### Confirmation
@@ -71,8 +79,12 @@ solo con los archivos que existen. El campeón es `bandera_reciente` de la corri
 
 * los hashes de cada corrida contra sus archivos conservados;
 * que el campeón sea el ganador de selección aunque boosting gane en validación;
-* que el serving acepte exactamente las corridas auditadas;
+* que una corrida sin auditoría propia no se pueda registrar con la política, aunque
+  reuse el reporte de otra;
 * que una promoción incompatible se rechace sin cambiar el campeón.
+
+`tests/presentation/test_price_diagnostic.py` promueve y revierte el alias por HTTP y
+verifica que cambie la versión servida.
 
 ## Pros and Cons of the Options
 

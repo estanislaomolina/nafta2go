@@ -10,7 +10,9 @@ no puede enviar precio, fecha, features ni rutas de artefactos.
 Configurar `NAFTA2GO_PRICE_DATASET_DIR` y `NAFTA2GO_PRICE_MODEL_DIR` con los
 directorios generados según [ML](ML.md). Se leen sus `manifest.json`: deben
 coincidir hashes, features, captura histórica y reglas de normalización. Ventana
-y mínimo de historia proceden del dataset. En despliegue, usar directorios de
+y mínimo de historia proceden del dataset. Solo se sirve la corrida del alias
+`champion` del [registro de modelos](ML.md#registro-de-modelos-y-campeón-161).
+Cualquier otra versión deja el diagnóstico no disponible. En despliegue, usar directorios de
 confianza de sólo lectura; Docker requiere mounts y rutas del contenedor.
 
 El método servido es `chosen_method` si es una referencia admitida; no se carga
