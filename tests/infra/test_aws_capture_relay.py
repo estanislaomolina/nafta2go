@@ -62,6 +62,7 @@ def test_storage_is_private_encrypted_and_retained_after_stack_deletion():
 def test_acquisition_has_no_environment_or_sso_dependency_and_runs_serially():
     workflow = yaml.safe_load((ROOT / ".github/workflows/acquire-prices.yml").read_text())
     job = workflow["jobs"]["acquire"]
+    assert "NAFTA2GO_ACQUISITION_RUNNER" in job["runs-on"]
     assert "environment" not in job
     assert job["permissions"] == {"contents": "read", "id-token": "write"}
     assert workflow["concurrency"]["cancel-in-progress"] is False

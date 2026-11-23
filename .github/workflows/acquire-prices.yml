@@ -16,7 +16,7 @@ permissions:
 jobs:
   acquire:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.NAFTA2GO_ACQUISITION_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 20
     permissions:
       contents: read
