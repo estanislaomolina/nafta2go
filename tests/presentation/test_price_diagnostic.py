@@ -502,3 +502,49 @@ def test_http_recommendation_applies_same_diagnostic_and_keeps_general(
     assert "8" in {c["station_id"] for c in result["alternatives"]}
     assert provider.matrix.call_count == 1
     assert all(d["history_run_id"] == runs["historico"] for d in block["diagnostics"])
+
+
+def test_batch_matches_individual_diagnostics_with_one_history_read(engine, prepared, monkeypatch):
+    from nafta2go.application.price_diagnostic import (
+        price_diagnostic_on_connection,
+        price_diagnostics_on_connection,
+    )
+
+    runs, _, target, _ = prepared
+    with engine.begin() as conn:
+        conn.execute(
+            station_prices.insert(),
+            [
+                {
+                    **target,
+                    "id": None,
+                    "run_id": runs["vigente"],
+                    "station_id": 8,
+                    "source_row": 902,
+                    "valid_from": target["valid_from"] - timedelta(days=1),
+                    "price": 999999,
+                },
+                {
+                    **target,
+                    "id": None,
+                    "run_id": runs["vigente"],
+                    "station_id": 9,
+                    "source_row": 903,
+                },
+            ],
+        )
+    spy = Mock(wraps=repo.diagnostic_history)
+    monkeypatch.setattr(repo, "diagnostic_history", spy)
+    with engine.connect() as conn:
+        batch = price_diagnostics_on_connection(conn, [7, 8, 9, 999], 2, 2, NOW)
+        assert spy.call_count == 1
+        individual = {
+            station: price_diagnostic_on_connection(conn, station, 2, 2, NOW)
+            for station in [7, 8, 9, 999]
+        }
+        assert batch == individual
+        assert batch[999] is None
+        assert batch[8]["status"] == "unavailable"
+        assert batch[7]["reference_ars_per_l"] == batch[9]["reference_ars_per_l"] == "120.000"
+        with pytest.raises(ValueError):
+            price_diagnostics_on_connection(conn, list(range(21)), 2, 2, NOW)
