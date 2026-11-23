@@ -46,8 +46,8 @@ resuelto en POC-02 de esta forma:
 | RF07 Explicar cada resultado | `query` CLI y `application/query` | Implementado: dirección, precio, fecha, litros, consumo, reserva, desvío, alertas y fuente; JSON con todos los descartes |
 | RF08 Ingerir y normalizar | `adapters/energy_source`, `normalization/`, `services/ingestion` | Implementado, con corrida real documentada |
 | RF09 Umbral configurable de vigencia | `application/coverage_rules`, `stored_query` | Implementado: 30 días, configurable en un solo módulo. Estimación rotulada de 31 a 120 días (ADR-020) en `application/stale_price_estimate`, fuera del ranking |
-| RF10 Diagnóstico de precio | `application/price_diagnostic`, `ml/` | Parcial: sirve la referencia elegida y su versión (ADR-015), con `alert_level=not_calibrated` hasta aprobar una política de alertas (#19). Ver sección 11 |
-| RF11 Ranking conservador | — | Pendiente: la regla se discute en #20 |
+| RF10 Diagnóstico de precio | `application/price_diagnostic`, `domain/price_alert`, `ml/` | Implementado: sirve la referencia elegida y su versión (ADR-015). La alerta provisional `conservative-v1` (ADR-021, #140) se activa solo para selecciones auditadas; otras quedan `not_calibrated`. Ver sección 11 |
+| RF11 Ranking conservador | `application/conservative_ranking`, API y web | Implementado (#141): comparación separada que excluye las excedencias de `conservative-v1` sin cambiar el ranking general (ADR-021) |
 | RF12 Autenticación administrativa | `presentation/http`, `NAFTA2GO_ADMIN_TOKEN` | Implementado: token administrativo separado del de conductor (ADR-016) |
 | RF13 Configurar sin modificar código | Variables de entorno, `compose.yaml` | Parcial: vigencia, caché y cupo de rutas se configuran por entorno; no hay auditoría de cambios |
 | RF14 Estado operativo | `/operacion`, `GET /api/v1/operations` | Implementado: ingestas, alertas, consultas/rutas y métricas operativas del diagnóstico |
@@ -394,7 +394,7 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 | Parte | Simplificación | Plan para el MVP |
 |---|---|---|
 | Interfaz | API HTTP y web local con código de demo y caché por proceso | QA de navegador automatizado; faltan coordinación entre réplicas y despliegue público |
-| Ranking | Tres prioridades determinísticas; equilibrio con igual peso a ganancia neta y km extra normalizados | Ranking conservador pendiente (#20) |
+| Ranking | Tres prioridades determinísticas; equilibrio con igual peso a ganancia neta y km extra normalizados | Ranking conservador como comparación separada con regla provisional, sin precisión medida (ADR-021) |
 | Candidatas | Límite configurable hasta 20; diez por defecto para reproducir la POC | Validar cuota y latencia de veinte candidatas en vivo |
 | Corredor | Desvío estimado en línea recta | Se mantiene como prefiltro; el desvío real ya lo calcula el motor |
 | Escenario histórico | Una sola captura congelada | Congelar capturas nuevas con el mismo script |
@@ -519,7 +519,8 @@ flowchart LR
 - **Diagnóstico de una publicación** (`GET /api/v1/price-diagnostics/{station_id}`,
   [ADR-015](../adr/ADR-015-referencia-servida-y-abstencion-de-alertas.md)): con
   `NAFTA2GO_PRICE_DATASET_DIR` y `NAFTA2GO_PRICE_MODEL_DIR` configurados, verifica
-  los manifiestos y sirve la referencia elegida, nunca el modelo guardado. Devuelve
+  los manifiestos y sirve la referencia elegida por el campeón del registro
+  (ADR-030), nunca el modelo guardado. Devuelve
   precio oficial, referencia, diferencia, método y versión con
   `alert_level=not_calibrated`. Sin configuración, la consulta habitual sigue
   funcionando.
