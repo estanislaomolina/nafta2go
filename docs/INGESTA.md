@@ -388,6 +388,9 @@ pero conserva el bucket: revisar su contenido/costo antes de borrarlo aparte.
 
 La infraestructura quedó creada el 23/11; [evidencia del canal](evidencia/ingesta-canal-2026-11-23/infra.json).
 La creación de roles y S3 no acredita una corrida OIDC ni una ingesta automática.
-El cierre de #160 requiere observar el recorrido completo después de la revisión
+El [preflight del host](evidencia/ingesta-canal-2026-11-23/preflight.json)
+confirmó identidad EC2 renovable y que la imagen activa aún no admite `--receipt`;
+no se habilitaron servicios incompatibles. El cierre de #160 requiere activar
+una imagen compatible y observar el recorrido completo después de la revisión
 e integración. Referencias: [OIDC de GitHub](https://docs.github.com/en/actions/reference/security/oidc)
 y [S3 en CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-s3-bucket.html).
