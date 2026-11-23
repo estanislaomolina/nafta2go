@@ -9,6 +9,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from nafta2go.domain.price_alert import provisional_alert
+from nafta2go.ml import registry
 from nafta2go.ml.temporal import FEATURES_VERSION, build_temporal_dataset
 from nafta2go.normalization.rules import LOCAL_TIMEZONE
 from nafta2go.persistence import repository as repo
@@ -30,6 +31,12 @@ def reference_price(features, method):
     return Decimal(str(reference)).quantize(Decimal("0.001"))
 
 
+def _manifest(directory, version):
+    """Un almacén guarda cada versión en <sha256>/; una carpeta simple, en su raíz."""
+    stored = Path(directory) / version / "manifest.json"
+    return (stored if stored.is_file() else Path(directory) / "manifest.json").read_bytes()
+
+
 def _selection():
     try:
         if any(
@@ -37,11 +44,21 @@ def _selection():
             for key in ("NAFTA2GO_PRICE_DATASET_DIR", "NAFTA2GO_PRICE_MODEL_DIR")
         ):
             raise ValueError("Falta configuración")
-        dataset_bytes = (
-            Path(os.environ["NAFTA2GO_PRICE_DATASET_DIR"]) / "manifest.json"
-        ).read_bytes()
-        raw = (Path(os.environ["NAFTA2GO_PRICE_MODEL_DIR"]) / "manifest.json").read_bytes()
-        dataset, model = json.loads(dataset_bytes), json.loads(raw)
+        champion = registry.champion()
+        if champion is None:
+            raise ValueError("Sin campeón registrado")
+        raw = _manifest(os.environ["NAFTA2GO_PRICE_MODEL_DIR"], champion["run"])
+        model = json.loads(raw)
+        # Solo se sirve la corrida del alias champion; promover o revertir cambia esta versión.
+        if (
+            hashlib.sha256(raw).hexdigest() != champion["run"]
+            or model["chosen_method"] != champion["method"]
+        ):
+            raise ValueError("La selección configurada no es el campeón del registro")
+        dataset_bytes = _manifest(
+            os.environ["NAFTA2GO_PRICE_DATASET_DIR"], model["dataset_manifest_sha256"]
+        )
+        dataset = json.loads(dataset_bytes)
         options = dataset["parameters"]
         window, minimum = options["window_days"], options["min_history"]
         valid = (
@@ -72,6 +89,17 @@ def price_diagnostic(engine, station_id, product_id, schedule_id, now):
 
 
 def price_diagnostic_on_connection(conn, station_id, product_id, schedule_id, now):
+    return price_diagnostics_on_connection(conn, [station_id], product_id, schedule_id, now)[
+        station_id
+    ]
+
+
+def price_diagnostics_on_connection(conn, station_ids, product_id, schedule_id, now):
+    station_ids = tuple(dict.fromkeys(station_ids))
+    if len(station_ids) > 20:
+        raise ValueError("Se admiten hasta veinte publicaciones por lote")
+    if not station_ids:
+        return {}
     if now.utcoffset() is None:
         raise ValueError("La referencia requiere zona horaria")
     model, dataset, version = _selection()
@@ -88,30 +116,62 @@ def price_diagnostic_on_connection(conn, station_id, product_id, schedule_id, no
     capture = repo.raw_capture_for_run(conn, historical)
     if capture is None or capture["sha256"] != model["source_sha256"]:
         raise DiagnosticUnavailable
-    target = repo.diagnostic_publication(
-        conn, current, station_id, product_id, schedule_id, local_now
-    )
-    if target is None:
-        return None
+    targets = {
+        station: repo.diagnostic_publication(
+            conn, current, station, product_id, schedule_id, local_now
+        )
+        for station in station_ids
+    }
+    publications = [row for row in targets.values() if row is not None]
+    if not publications:
+        return targets
     history = repo.diagnostic_history(
-        conn, historical, product_id, schedule_id, target["valid_from"]
+        conn, historical, product_id, schedule_id, max(row["valid_from"] for row in publications)
     )
-    # Misma preparación que el entrenamiento; todo el instante objetivo queda fuera del contexto.
     examples, _ = build_temporal_dataset(
-        [*history, target],
+        history,
         now,
+        targets=publications,
         window_days=dataset["parameters"]["window_days"],
         min_history=dataset["parameters"]["min_history"],
     )
-    published = target["valid_from"].replace(tzinfo=ZoneInfo(LOCAL_TIMEZONE)).astimezone(UTC)
-    example = next(
-        (
-            r
-            for r in examples
-            if r["station_id"] == station_id and r["target_at_utc"] == published.isoformat()
-        ),
-        None,
-    )
+    indexed = {(row["station_id"], row["target_at_utc"]): row for row in examples}
+    result = {}
+    for station, target in targets.items():
+        if target is None:
+            result[station] = None
+            continue
+        published = target["valid_from"].replace(tzinfo=ZoneInfo(LOCAL_TIMEZONE)).astimezone(UTC)
+        example = indexed.get((station, published.isoformat()))
+        result[station] = _present_diagnostic(
+            target,
+            example,
+            station,
+            product_id,
+            schedule_id,
+            published,
+            model,
+            version,
+            current,
+            historical,
+            capture,
+        )
+    return result
+
+
+def _present_diagnostic(
+    target,
+    example,
+    station_id,
+    product_id,
+    schedule_id,
+    published,
+    model,
+    version,
+    current,
+    historical,
+    capture,
+):
     value = reference_price(example["features"], model["chosen_method"]) if example else None
     alert = provisional_alert(target["price"], value, product_id, model["chosen_method"], version)
     return {

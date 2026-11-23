@@ -1,0 +1,100 @@
+{
+  "format_version": 1,
+  "measured_at_utc": "2026-11-23T19:15:16.846474+00:00",
+  "profile": "sostenida",
+  "configuration": {
+    "users": [
+      10
+    ],
+    "step_seconds": 120,
+    "think_seconds": 1.0,
+    "quota_per_minute": null
+  },
+  "scope": "local_recorded_routes",
+  "excludes": [
+    "llamada real a OpenRouteService",
+    "red entre cliente y servidor"
+  ],
+  "requests": 988,
+  "steps": [
+    {
+      "users": 10,
+      "requests": 987,
+      "requests_per_second": 8.22,
+      "latency_s": {
+        "p50": 0.123,
+        "p95": 0.467,
+        "p99": 5.0126,
+        "max": 8.5039
+      },
+      "error_rate": 0.0091,
+      "statuses": {
+        "200": 978,
+        "503": 9
+      },
+      "error_codes": {
+        "data_unavailable": 9
+      }
+    }
+  ],
+  "saturation": {
+    "users": null,
+    "reasons": []
+  },
+  "server_resources": [
+    {
+      "users": 10,
+      "cpu_percent_mean": 50.6,
+      "cpu_percent_max": 79.9,
+      "rss_mb_max": 159.0
+    }
+  ],
+  "persistence": {
+    "successful_responses": 979,
+    "stored_recommendations": 979,
+    "all_successes_stored": true,
+    "stored_without_recorded_response": 0,
+    "audit": {
+      "audit_version": "recommendation-audit-v2",
+      "recommendations": 979,
+      "origins": {
+        "ingesta_vigente": 0,
+        "escenario_historico": 979
+      },
+      "trazabilidad": {
+        "cumplen": 979,
+        "total": 979,
+        "proporcion": 1.0
+      },
+      "frescura": {
+        "cumplen": 9790,
+        "total": 9790,
+        "proporcion": 1.0,
+        "unidad": "precios evaluados"
+      },
+      "privacidad": {
+        "cumplen": 979,
+        "total": 979,
+        "proporcion": 1.0
+      },
+      "fallas": {
+        "trazabilidad": {},
+        "frescura": {},
+        "privacidad": {}
+      }
+    }
+  },
+  "quota": null,
+  "code": {
+    "git_commit": "ac67b8cf69168dccdf29a32687fdfd2afc533985",
+    "git_dirty": false,
+    "files_sha256": "f676153af813d7aa8037faf6163aa63532c66bb0fcb578a0096cf0b4df3ed1da"
+  },
+  "environment": {
+    "python": "3.12.3",
+    "platform": "Linux x86_64",
+    "cpu_count": 16,
+    "cpu_model": "Intel(R) Core(TM) Ultra 9 285H",
+    "server": "uvicorn, un proceso"
+  }
+}

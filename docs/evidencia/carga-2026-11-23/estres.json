@@ -1,0 +1,214 @@
+{
+  "format_version": 1,
+  "measured_at_utc": "2026-11-23T19:18:25.002632+00:00",
+  "profile": "estres",
+  "configuration": {
+    "users": [
+      1,
+      5,
+      10,
+      20,
+      40,
+      80
+    ],
+    "step_seconds": 30,
+    "think_seconds": 0.0,
+    "quota_per_minute": null
+  },
+  "scope": "local_recorded_routes",
+  "excludes": [
+    "llamada real a OpenRouteService",
+    "red entre cliente y servidor"
+  ],
+  "requests": 2924,
+  "steps": [
+    {
+      "users": 1,
+      "requests": 990,
+      "requests_per_second": 33.0,
+      "latency_s": {
+        "p50": 0.0282,
+        "p95": 0.0385,
+        "p99": 0.0755,
+        "max": 0.124
+      },
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 990
+      },
+      "error_codes": {}
+    },
+    {
+      "users": 5,
+      "requests": 426,
+      "requests_per_second": 14.2,
+      "latency_s": {
+        "p50": 0.3449,
+        "p95": 0.4732,
+        "p99": 0.5269,
+        "max": 0.5783
+      },
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 426
+      },
+      "error_codes": {}
+    },
+    {
+      "users": 10,
+      "requests": 386,
+      "requests_per_second": 12.87,
+      "latency_s": {
+        "p50": 0.7587,
+        "p95": 0.9834,
+        "p99": 1.0672,
+        "max": 1.1431
+      },
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 386
+      },
+      "error_codes": {}
+    },
+    {
+      "users": 20,
+      "requests": 379,
+      "requests_per_second": 12.63,
+      "latency_s": {
+        "p50": 1.5503,
+        "p95": 2.0235,
+        "p99": 2.1961,
+        "max": 2.5126
+      },
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 379
+      },
+      "error_codes": {}
+    },
+    {
+      "users": 40,
+      "requests": 375,
+      "requests_per_second": 12.5,
+      "latency_s": {
+        "p50": 3.0815,
+        "p95": 4.8879,
+        "p99": 5.8807,
+        "max": 6.7234
+      },
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 375
+      },
+      "error_codes": {}
+    },
+    {
+      "users": 80,
+      "requests": 359,
+      "requests_per_second": 11.97,
+      "latency_s": {
+        "p50": 6.0895,
+        "p95": 8.1708,
+        "p99": 9.2437,
+        "max": 10.618
+      },
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 359
+      },
+      "error_codes": {}
+    }
+  ],
+  "saturation": {
+    "users": 5,
+    "reasons": [
+      "rendimiento_no_crece"
+    ]
+  },
+  "server_resources": [
+    {
+      "users": 1,
+      "cpu_percent_mean": 78.3,
+      "cpu_percent_max": 83.0,
+      "rss_mb_max": 134.9
+    },
+    {
+      "users": 5,
+      "cpu_percent_mean": 112.0,
+      "cpu_percent_max": 115.9,
+      "rss_mb_max": 150.4
+    },
+    {
+      "users": 10,
+      "cpu_percent_mean": 115.5,
+      "cpu_percent_max": 117.9,
+      "rss_mb_max": 164.3
+    },
+    {
+      "users": 20,
+      "cpu_percent_mean": 116.6,
+      "cpu_percent_max": 119.9,
+      "rss_mb_max": 195.1
+    },
+    {
+      "users": 40,
+      "cpu_percent_mean": 116.9,
+      "cpu_percent_max": 119.9,
+      "rss_mb_max": 242.8
+    },
+    {
+      "users": 80,
+      "cpu_percent_mean": 116.6,
+      "cpu_percent_max": 119.0,
+      "rss_mb_max": 244.7
+    }
+  ],
+  "persistence": {
+    "successful_responses": 2924,
+    "stored_recommendations": 3004,
+    "all_successes_stored": true,
+    "stored_without_recorded_response": 80,
+    "audit": {
+      "audit_version": "recommendation-audit-v2",
+      "recommendations": 3004,
+      "origins": {
+        "ingesta_vigente": 0,
+        "escenario_historico": 3004
+      },
+      "trazabilidad": {
+        "cumplen": 3004,
+        "total": 3004,
+        "proporcion": 1.0
+      },
+      "frescura": {
+        "cumplen": 30040,
+        "total": 30040,
+        "proporcion": 1.0,
+        "unidad": "precios evaluados"
+      },
+      "privacidad": {
+        "cumplen": 3004,
+        "total": 3004,
+        "proporcion": 1.0
+      },
+      "fallas": {
+        "trazabilidad": {},
+        "frescura": {},
+        "privacidad": {}
+      }
+    }
+  },
+  "quota": null,
+  "code": {
+    "git_commit": "ac67b8cf69168dccdf29a32687fdfd2afc533985",
+    "git_dirty": false,
+    "files_sha256": "f676153af813d7aa8037faf6163aa63532c66bb0fcb578a0096cf0b4df3ed1da"
+  },
+  "environment": {
+    "python": "3.12.3",
+    "platform": "Linux x86_64",
+    "cpu_count": 16,
+    "cpu_model": "Intel(R) Core(TM) Ultra 9 285H",
+    "server": "uvicorn, un proceso"
+  }
+}
