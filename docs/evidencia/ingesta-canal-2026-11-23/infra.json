@@ -1,0 +1,81 @@
+{
+  "observed_at_utc": "2026-11-23T22:03:39.153701+00:00",
+  "stack": "nafta2go-capture-relay",
+  "status": "CREATE_COMPLETE",
+  "outputs": [
+    {
+      "OutputKey": "BucketName",
+      "OutputValue": "nafta2go-capture-relay-captures-cabuvm01aktq"
+    },
+    {
+      "OutputKey": "RoleArn",
+      "OutputValue": "arn:aws:iam::132597215044:role/nafta2go-capture-relay-AcquisitionRole-9MVTm4iIife6"
+    }
+  ],
+  "local_template_matches_aws": true,
+  "template_file_sha256": "b1cea4d11a58a0308bc8a2d020f084787f3874878e5ad2022ecb54c65c4e2a9b",
+  "public_access": {
+    "PublicAccessBlockConfiguration": {
+      "BlockPublicAcls": true,
+      "IgnorePublicAcls": true,
+      "BlockPublicPolicy": true,
+      "RestrictPublicBuckets": true
+    }
+  },
+  "encryption": {
+    "ServerSideEncryptionConfiguration": {
+      "Rules": [
+        {
+          "ApplyServerSideEncryptionByDefault": {
+            "SSEAlgorithm": "AES256"
+          },
+          "BucketKeyEnabled": false,
+          "BlockedEncryptionTypes": {
+            "EncryptionType": [
+              "SSE-C"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "versioning": {
+    "Status": "Enabled"
+  },
+  "producer_trust": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Federated": "arn:aws:iam::132597215044:oidc-provider/token.actions.githubusercontent.com"
+        },
+        "Action": "sts:AssumeRoleWithWebIdentity",
+        "Condition": {
+          "StringEquals": {
+            "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+            "token.actions.githubusercontent.com:sub": [
+              "repo:estanislaomolina@129418393/nafta2go@1375908771:ref:refs/heads/main",
+              "repo:estanislaomolina@129418393/nafta2go@1375908771:ref:refs/heads/dev"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "host_read_policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Action": "s3:GetObject",
+        "Resource": [
+          "arn:aws:s3:::nafta2go-capture-relay-captures-cabuvm01aktq/vigente/*.csv",
+          "arn:aws:s3:::nafta2go-capture-relay-captures-cabuvm01aktq/vigente/latest.json"
+        ],
+        "Effect": "Allow"
+      }
+    ]
+  },
+  "automatic_ingestion_verified": false,
+  "oidc_run_verified": false
+}

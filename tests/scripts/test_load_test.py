@@ -2,21 +2,38 @@
 
 import json
 import os
+from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
 
+from nafta2go.ml import registry
+from nafta2go.persistence.database import upgrade_to_head
 from scripts.load_profile import (
     BODIES,
     PROFILES,
+    REQUIRED_DIAGNOSTICS,
     Profile,
+    diagnostics_complete,
     request_body,
     saturation,
     summarize,
     target_users,
 )
-from scripts.load_server import ADMIN_TOKEN, TOKEN, build_app
-from scripts.run_load_test import main, persistence_check, quota_check, resources_by_step
+from scripts.load_server import (
+    ADMIN_TOKEN,
+    TOKEN,
+    build_app,
+    build_real_history_app,
+    serve_audited_run,
+)
+from scripts.run_load_test import (
+    diagnostics_check,
+    main,
+    persistence_check,
+    quota_check,
+    resources_by_step,
+)
 
 PROFILE = Profile(users=(1, 5), step_seconds=10, think_seconds=0.0)
 
@@ -135,4 +152,70 @@ def test_remote_target_requires_an_explicit_cap_and_token(monkeypatch, capsys):
         with pytest.raises(SystemExit):
             main(argv)
     assert "NAFTA2GO_LOAD_TOKEN" not in os.environ
+    capsys.readouterr()
+
+
+def test_real_history_profile_requires_twenty_available_diagnostics():
+    assert request_body(0, real_history=True)["max_candidates"] == REQUIRED_DIAGNOSTICS
+    assert request_body(0, real_history=True) == request_body(7, real_history=True)
+    full = {"status": "available", "diagnostics": [{}] * REQUIRED_DIAGNOSTICS}
+    assert diagnostics_complete({"conservative_ranking": full})
+    assert not diagnostics_complete({"conservative_ranking": full | {"status": "unavailable"}})
+    assert not diagnostics_complete({"conservative_ranking": full | {"diagnostics": [{}] * 10}})
+    assert not diagnostics_complete({"status": "historical_scenario"})
+
+
+def test_a_success_without_diagnostics_counts_as_an_error_and_fails_the_report():
+    samples = [sample(1, 0, 0.5), sample(1, 1, 0.5, code="diagnostico_incompleto")]
+    (step,) = summarize(samples, Profile(users=(1,), step_seconds=10, think_seconds=0))
+    assert step["error_rate"] == 0.5 and step["error_codes"] == {"diagnostico_incompleto": 1}
+    assert diagnostics_check(samples) == {
+        "required_per_response": REQUIRED_DIAGNOSTICS,
+        "complete_responses": 1,
+        "incomplete_responses": 1,
+        "passed": False,
+    }
+    assert diagnostics_check(samples[:1])["passed"]
+    assert not diagnostics_check([])["passed"]
+
+
+def test_only_an_audited_run_replaces_the_champion_and_the_registry_is_untouched(
+    tmp_path, monkeypatch
+):
+    versioned = registry.REGISTRY
+    monkeypatch.setattr(registry, "REGISTRY", versioned)
+    content = versioned.read_text()
+    unaudited = next(
+        run for run in registry.load()["runs"] if not registry.load()["runs"][run]["audit"]
+    )
+    with pytest.raises(registry.RegistryError):
+        serve_audited_run(unaudited, tmp_path)
+    audited = min(registry.audited_versions("conservative-v1", "bandera_reciente"))
+    serve_audited_run(audited, tmp_path)
+    assert registry.champion() == {"run": audited, "method": "bandera_reciente"}
+    assert registry.REGISTRY == tmp_path / "registry.json"
+    assert versioned.read_text() == content
+
+
+def test_real_history_server_reads_a_copy_and_never_writes_the_source(tmp_path, tokens):
+    source = tmp_path / "fuente.db"
+    upgrade_to_head(f"sqlite:///{source}")
+    before = source.read_bytes()
+    reference = datetime.fromisoformat("2026-11-19T16:00:00+00:00")
+    app = build_real_history_app(source, tmp_path / "copia.db", reference)
+    with TestClient(app) as client:
+        assert client.get("/health").status_code == 200
+    assert source.read_bytes() == before and (tmp_path / "copia.db").exists()
+    with pytest.raises(ValueError):
+        build_real_history_app(source, tmp_path / "otra.db", datetime(2026, 11, 19))
+
+
+def test_real_history_profile_is_local_and_needs_its_data(capsys):
+    for argv in (
+        ["--profile", "historico"],
+        ["--profile", "historico", "--source-database", "base.db"],
+        ["--profile", "historico", "--target", "https://demo", "--max-requests", "5"],
+    ):
+        with pytest.raises(SystemExit):
+            main(argv)
     capsys.readouterr()

@@ -6,18 +6,11 @@ Los Architecture Decision Records documentan decisiones de diseño relevantes, l
 
 | ADR | Decisión | Estado |
 |---|---|---|
-| [ADR-001](ADR-001-alcance-y-estrategia-de-datos.md) | Alcance en CABA y estrategia frente a la baja cobertura reciente | Aceptado |
-| [ADR-002](ADR-002-recomendador-deterministico-y-diagnostico-ml.md) | Recomendador determinístico con diagnóstico ML separado | Aceptado |
-| [ADR-003](ADR-003-proveedor-de-rutas.md) | OpenRouteService como proveedor principal y OSRM como alternativa | Aceptado |
-| [ADR-004](ADR-004-arquitectura-por-capas.md) | Arquitectura modular por capas | Aceptado |
 
 ## Decisiones de la Entrega 2
 
 | ADR | Decisión | Estado |
 |---|---|---|
-| [ADR-005](ADR-005-persistencia-de-la-poc.md) | SQLite con SQLAlchemy y Alembic para la persistencia de la POC | Aceptado |
-| [ADR-006](ADR-006-escenario-historico-de-la-poc.md) | Captura vigente congelada como escenario histórico de la POC | Aceptado |
-| [ADR-007](ADR-007-trazabilidad-de-recomendaciones-historicas.md) | Origen de datos de recomendaciones históricas | Aceptado |
 
 La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de POC-03; el resultado está en [docs/RUTAS.md](../docs/RUTAS.md).
 
@@ -25,6 +18,13 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| [ADR-001](ADR-001-alcance-y-estrategia-de-datos.md) | Alcance en CABA y estrategia frente a la baja cobertura reciente | Aceptado |
+| [ADR-002](ADR-002-recomendador-deterministico-y-diagnostico-ml.md) | Recomendador determinístico con diagnóstico ML separado | Aceptado |
+| [ADR-003](ADR-003-proveedor-de-rutas.md) | OpenRouteService como proveedor principal y OSRM como alternativa | Aceptado |
+| [ADR-004](ADR-004-arquitectura-por-capas.md) | Arquitectura modular por capas | Aceptado |
+| [ADR-005](ADR-005-persistencia-de-la-poc.md) | SQLite con SQLAlchemy y Alembic para la persistencia de la POC | Aceptado |
+| [ADR-006](ADR-006-escenario-historico-de-la-poc.md) | Captura vigente congelada como escenario histórico de la POC | Aceptado |
+| [ADR-007](ADR-007-trazabilidad-de-recomendaciones-historicas.md) | Origen de datos de recomendaciones históricas | Aceptado |
 | [ADR-008](ADR-008-programacion-de-ingesta.md) | Programación local de la ingesta diaria con systemd | Aceptado |
 | [ADR-009](ADR-009-api-http-con-fastapi.md) | API HTTP con FastAPI sobre la capa de aplicación | Aceptado |
 | [ADR-010](ADR-010-cache-volatil-y-cupo-de-rutas.md) | Caché volátil y cupo por proceso para matrices de rutas | Aceptado |
@@ -43,5 +43,9 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 | [ADR-023](ADR-023-validacion-tecnica-sin-participantes.md) | Validación técnica de diez escenarios sin participantes | Aceptado |
 | [ADR-024](ADR-024-entrega-por-ssm-y-configuracion-cifrada.md) | Entrega por SSM y configuración cifrada | Reemplazado por ADR-025 |
 | [ADR-025](ADR-025-imagen-verificada-por-digest.md) | Imagen verificada en CI y entregada por digest | Propuesto |
+| [ADR-026](ADR-026-despliegue-con-oidc.md) | Despliegue con OIDC y aprobación independiente | Propuesto |
+| [ADR-027](ADR-027-observabilidad-con-prometheus-y-grafana.md) | Observabilidad con Prometheus y Grafana | Propuesto |
+| [ADR-028](ADR-028-url-https-con-cloudflare.md) | URL HTTPS de demo con Cloudflare Tunnel | Propuesto |
 | [ADR-029](ADR-029-pruebas-de-carga-con-locust.md) | Pruebas de carga y estrés con Locust sobre un servidor aislado | Propuesto |
 | [ADR-030](ADR-030-registro-de-modelos-versionado.md) | Registro de modelos versionado con alias de campeón | Propuesto |
+| [ADR-031](ADR-031-transferencia-verificada-de-capturas.md) | Transferencia verificada de capturas para la ingesta cloud | Propuesto |

@@ -4,7 +4,9 @@ Por defecto levanta `scripts/load_server.py` (base temporal, escenario históric
 rutas grabadas, sin red ni cuota de ORS), mide CPU y memoria del proceso servidor y,
 al terminar, verifica que cada respuesta 200 dejó su recomendación guardada y audita
 lo persistido. Con `--target` apunta a un despliegue existente: ahí las rutas son
-reales, por eso exige `--max-requests` como tope explícito de solicitudes.
+reales, por eso exige `--max-requests` como tope explícito de solicitudes. El perfil
+`historico` exige `--source-database` y `--reference-at` y falla si alguna respuesta
+no trae los veinte diagnósticos disponibles.
 
 Requiere `pip install -r requirements-load.txt`. Uso, desde la raíz del repositorio:
 
@@ -34,7 +36,12 @@ from nafta2go.application.price_dataset import code_provenance  # noqa: E402
 from nafta2go.application.recommendation_audit import audit_recommendations  # noqa: E402
 from nafta2go.persistence import repository as repo  # noqa: E402
 from nafta2go.persistence.database import create_db_engine  # noqa: E402
-from scripts.load_profile import PROFILES, saturation, summarize  # noqa: E402
+from scripts.load_profile import (  # noqa: E402
+    PROFILES,
+    REQUIRED_DIAGNOSTICS,
+    saturation,
+    summarize,
+)
 from scripts.load_server import TOKEN  # noqa: E402
 
 TICKS = os.sysconf("SC_CLK_TCK") if hasattr(os, "sysconf") else 100
@@ -161,6 +168,18 @@ def quota_check(samples: list[dict], profile) -> dict:
     }
 
 
+def diagnostics_check(samples: list[dict]) -> dict:
+    """El perfil de histórico real sólo vale si cada 200 trajo los veinte diagnósticos."""
+    incomplete = sum(1 for sample in samples if sample.get("code") == "diagnostico_incompleto")
+    complete = sum(1 for sample in samples if sample["status"] == 200) - incomplete
+    return {
+        "required_per_response": REQUIRED_DIAGNOSTICS,
+        "complete_responses": complete,
+        "incomplete_responses": incomplete,
+        "passed": complete > 0 and incomplete == 0,
+    }
+
+
 def run_locust(profile_name: str, host: str, token: str, samples: Path, max_requests: int | None):
     env = {
         **os.environ,
@@ -181,7 +200,10 @@ def read_samples(path: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
-def measure(profile_name: str, target: str | None, token: str | None, max_requests=None) -> dict:
+def measure(
+    profile_name: str, target: str | None, token: str | None, max_requests=None, history=None
+) -> dict:
+    """`history` son los argumentos del servidor para el perfil de histórico real."""
     profile = PROFILES[profile_name]
     with tempfile.TemporaryDirectory() as directory:
         samples_path = Path(directory) / "samples.jsonl"
@@ -193,6 +215,8 @@ def measure(profile_name: str, target: str | None, token: str | None, max_reques
                 command += ["--port", str(port), "--database", str(database)]
                 if profile.quota_per_minute is not None:
                     command += ["--quota-per-minute", str(profile.quota_per_minute)]
+                if profile.real_history:
+                    command += history
                 server = subprocess.Popen(command, cwd=ROOT)
                 host = f"http://127.0.0.1:{port}"
                 wait_healthy(host)
@@ -206,7 +230,12 @@ def measure(profile_name: str, target: str | None, token: str | None, max_reques
                 sampler.stop()
             if server is not None:
                 server.terminate()
-                server.wait(timeout=30)
+                try:
+                    server.wait(timeout=30)
+                except subprocess.TimeoutExpired:
+                    # Consultas encoladas al saturar retrasan el apagado ordenado de uvicorn.
+                    server.kill()
+                    server.wait(timeout=30)
         samples = read_samples(samples_path)
         steps = summarize(samples, profile)
         report = {
@@ -219,11 +248,19 @@ def measure(profile_name: str, target: str | None, token: str | None, max_reques
                 "think_seconds": profile.think_seconds,
                 "quota_per_minute": profile.quota_per_minute,
             },
-            "scope": "local_recorded_routes" if target is None else "remote_target",
+            "scope": (
+                "remote_target"
+                if target is not None
+                else "local_real_history_synthetic_routes"
+                if profile.real_history
+                else "local_recorded_routes"
+            ),
             "excludes": (
-                ["llamada real a OpenRouteService", "red entre cliente y servidor"]
-                if target is None
-                else ["CPU y memoria del servidor remoto"]
+                ["CPU y memoria del servidor remoto"]
+                if target is not None
+                else ["rutas reales (distancias sintéticas)", "red entre cliente y servidor"]
+                if profile.real_history
+                else ["llamada real a OpenRouteService", "red entre cliente y servidor"]
             ),
             "requests": len(samples),
             "steps": steps,
@@ -231,6 +268,7 @@ def measure(profile_name: str, target: str | None, token: str | None, max_reques
             "server_resources": resources_by_step(sampler.samples, profile) if sampler else None,
             "persistence": persistence_check(database, samples) if target is None else None,
             "quota": quota_check(samples, profile) if profile.quota_per_minute else None,
+            "diagnostics": diagnostics_check(samples) if profile.real_history else None,
             "code": code_provenance(),
             "environment": {
                 "python": platform.python_version(),
@@ -249,18 +287,28 @@ def main(argv=None) -> int:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--target", help="URL de un despliegue existente; usa rutas reales")
     parser.add_argument("--max-requests", type=int, help="Tope obligatorio con --target")
+    parser.add_argument("--source-database", type=Path, help="Base con histórico real")
+    parser.add_argument("--reference-at", help="Instante ISO con zona horaria del histórico")
+    parser.add_argument("--model-run", help="Corrida auditada a servir en lugar del campeón")
     args = parser.parse_args(argv)
     if args.target and not (args.max_requests and args.max_requests > 0):
         parser.error("--target requiere --max-requests positivo: consume cuota real de ORS")
+    history = None
+    if PROFILES[args.profile].real_history:
+        if args.target or not (args.source_database and args.reference_at):
+            parser.error("historico es local y requiere --source-database y --reference-at")
+        history = ["--source-database", str(args.source_database.resolve())]
+        history += ["--reference-at", args.reference_at]
+        history += ["--model-run", args.model_run] if args.model_run else []
     token = os.environ.get("NAFTA2GO_LOAD_TOKEN") if args.target else None
     if args.target and not token:
         parser.error("--target requiere el código de conductor en NAFTA2GO_LOAD_TOKEN")
-    report = measure(args.profile, args.target, token, args.max_requests)
+    report = measure(args.profile, args.target, token, args.max_requests, history)
     encoded = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
     if args.output:
         args.output.write_text(encoded, encoding="utf-8")
     print(encoded, end="")
-    return 0
+    return 1 if report["diagnostics"] and not report["diagnostics"]["passed"] else 0
 
 
 if __name__ == "__main__":

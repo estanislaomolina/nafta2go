@@ -1,0 +1,203 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Nafta2Go: transferencia de capturas con OIDC de Actions y lectura desde el rol EC2 existente. Requiere el proveedor OIDC de demo-cd.",
+  "Parameters": {
+    "DemoRoleName": {
+      "Type": "String",
+      "AllowedPattern": "[a-zA-Z0-9+=,.@_-]{1,64}",
+      "Description": "Nombre del rol EC2 existente, no el instance profile"
+    }
+  },
+  "Resources": {
+    "Captures": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "OwnershipControls": {
+          "Rules": [
+            {
+              "ObjectOwnership": "BucketOwnerEnforced"
+            }
+          ]
+        },
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "VersioningConfiguration": {
+          "Status": "Enabled"
+        },
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "Id": "expirar-transferencias",
+              "Status": "Enabled",
+              "Prefix": "vigente/",
+              "ExpirationInDays": 90,
+              "NoncurrentVersionExpiration": {
+                "NoncurrentDays": 7
+              },
+              "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": 1
+              }
+            }
+          ]
+        },
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "Nafta2Go"
+          }
+        ]
+      }
+    },
+    "TransportPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "Captures"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:*",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "Captures",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Sub": "${Captures.Arn}/*"
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "AcquisitionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "MaxSessionDuration": 3600,
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {
+                  "Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com"
+                }
+              },
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                  "token.actions.githubusercontent.com:sub": [
+                    "repo:estanislaomolina@129418393/nafta2go@1375908771:ref:refs/heads/main",
+                    "repo:estanislaomolina@129418393/nafta2go@1375908771:ref:refs/heads/dev"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "publicar-capturas",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "s3:PutObject",
+                  "Resource": [
+                    {
+                      "Fn::Sub": "${Captures.Arn}/vigente/*.csv"
+                    },
+                    {
+                      "Fn::Sub": "${Captures.Arn}/vigente/latest.json"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "Nafta2Go"
+          }
+        ]
+      }
+    },
+    "HostReadPolicy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": {
+          "Fn::Sub": "${AWS::StackName}-leer-capturas"
+        },
+        "Roles": [
+          {
+            "Ref": "DemoRoleName"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": "s3:GetObject",
+              "Resource": [
+                {
+                  "Fn::Sub": "${Captures.Arn}/vigente/*.csv"
+                },
+                {
+                  "Fn::Sub": "${Captures.Arn}/vigente/latest.json"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "BucketName": {
+      "Value": {
+        "Ref": "Captures"
+      }
+    },
+    "RoleArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "AcquisitionRole",
+          "Arn"
+        ]
+      }
+    }
+  }
+}

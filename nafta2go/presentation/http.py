@@ -32,9 +32,10 @@ from nafta2go.application.ingestion_status import ingestion_status
 from nafta2go.application.place_search import PlaceSearch
 from nafta2go.application.price_diagnostic import DiagnosticUnavailable, price_diagnostic
 from nafta2go.application.query import recommend_from_database
+from nafta2go.application.readiness import data_readiness
 from nafta2go.application.scenario import ScenarioIntegrityError
 from nafta2go.domain.places import PlaceBusy, PlaceUnavailable
-from nafta2go.persistence.database import create_db_engine, database_is_ready
+from nafta2go.persistence.database import create_db_engine
 from nafta2go.presentation.diagnostic_telemetry import (
     DiagnosticTelemetry,
     DiagnosticTelemetryMiddleware,
@@ -47,6 +48,7 @@ from nafta2go.presentation.models import (
     RecommendationOutput,
 )
 from nafta2go.presentation.navigation import present_recommendation
+from nafta2go.presentation.prometheus import HTTPMetrics, MetricsMiddleware
 from nafta2go.presentation.telemetry import QueryTelemetry, QueryTelemetryMiddleware
 from nafta2go.presentation.web import install_web
 
@@ -137,6 +139,17 @@ def create_app(
     application.add_middleware(QueryTelemetryMiddleware, telemetry=telemetry)
     application.add_middleware(DiagnosticTelemetryMiddleware, telemetry=diagnostic_telemetry)
 
+    metrics = HTTPMetrics()
+    application.add_middleware(MetricsMiddleware, metrics=metrics)
+
+    @application.get("/metrics", dependencies=[Depends(authorize_admin)])
+    def prometheus_metrics():
+        return Response(
+            metrics.render(application.state.engine, shared_cache(), diagnostic_telemetry, clock()),
+            media_type="text/plain; version=0.0.4",
+            headers={"Cache-Control": "no-store"},
+        )
+
     install_web(application)
     application.add_exception_handler(RequestValidationError, validation_error)
     for error in (
@@ -206,10 +219,16 @@ def create_app(
             configured_max_price_age_days()
         except CoverageConfigurationError:
             configured = False
-        available = configured and database_is_ready(application.state.engine)
+        data = {"usable": False, "data_status": "unavailable"}
+        try:
+            if configured:
+                data = data_readiness(application.state.engine, clock())
+        except (SQLAlchemyError, OSError, ValueError, KeyError):
+            pass
+        available = configured and data["usable"]
         return JSONResponse(
             status_code=200 if available else 503,
-            content={"status": "ready" if available else "unavailable"},
+            content={"status": "ready" if available else "unavailable", **data},
         )
 
     @application.post(
