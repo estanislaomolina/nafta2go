@@ -45,8 +45,8 @@ teclado y los descartes de UC06, errores, privacidad y layouts de escritorio/mó
 emulado. Axe-core registró cero violaciones e incompletos en doce estados de
 la corrida local; no se declara conformidad completa con WCAG. Falta teléfono
 físico, otros navegadores y lector de pantalla.
-El diagnóstico ML, ranking conservador, perfiles y autenticación pública siguen
-pendientes en sus respectivos issues. La web usa diez candidatas por defecto;
+El diagnóstico ML y el ranking conservador están descritos más abajo; perfiles y
+autenticación pública siguen pendientes. La web usa diez candidatas por defecto;
 la API admite un límite de 3 a 20. No completa por sí sola MVP-03.
 
 ## Panel local de operación

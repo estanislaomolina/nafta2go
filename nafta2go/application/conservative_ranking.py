@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 from nafta2go.application.price_diagnostic import (
     DiagnosticUnavailable,
-    price_diagnostic_on_connection,
+    price_diagnostics_on_connection,
 )
 from nafta2go.domain import price_alert
 from nafta2go.domain.ranking import rank_alternatives
@@ -30,12 +30,17 @@ def conservative_ranking(conn, evaluations, rows, *, status, run_id, product_id,
         return block
     diagnostics, excluded, unknown = [], [], []
     try:
+        batch = price_diagnostics_on_connection(
+            conn,
+            [int(station) for station, value in evaluations.items() if value.feasible],
+            product_id,
+            schedule_id,
+            now,
+        )
         for station_id, evaluation in evaluations.items():
             if not evaluation.feasible:
                 continue
-            item = price_diagnostic_on_connection(
-                conn, int(station_id), product_id, schedule_id, now
-            )
+            item = batch[int(station_id)]
             if (
                 item is None
                 or item["data_run_id"] != run_id

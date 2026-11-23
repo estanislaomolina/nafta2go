@@ -5,11 +5,13 @@ from decimal import Decimal, localcontext
 import pytest
 
 from nafta2go.domain.price_alert import (
-    AUDITED_MODEL_VERSION,
+    AUDITED_MODEL_VERSIONS,
     POLICY_VERSION,
     THRESHOLDS,
     provisional_alert,
 )
+
+AUDITED = min(AUDITED_MODEL_VERSIONS)
 
 
 def alert(
@@ -17,7 +19,7 @@ def alert(
     reference=Decimal(100),
     product=2,
     method="bandera_reciente",
-    version=AUDITED_MODEL_VERSION,
+    version=AUDITED,
 ):
     return provisional_alert(published, reference, product, method, version)
 
@@ -68,13 +70,11 @@ def test_new_audited_manifest_matches_policy_and_preserves_old_selection():
     import json
     from pathlib import Path
 
-    from nafta2go.domain.price_alert import ADDITIONAL_AUDITED_MODEL_VERSIONS
-
     folder = Path(__file__).resolve().parents[1] / "docs/evidencia/actualizacion-precios-2026-11-22"
     raw = (folder / "model-manifest.json").read_bytes()
     version = hashlib.sha256(raw).hexdigest()
     model = json.loads(raw)
-    assert version in ADDITIONAL_AUDITED_MODEL_VERSIONS
+    assert version in AUDITED_MODEL_VERSIONS
     assert model["chosen_method"] == "bandera_reciente"
     audit = json.loads((folder / "alert-evaluation.json").read_text())
     assert audit["model_manifest_sha256"] == version
