@@ -380,3 +380,18 @@ def _alerts_text(value: object) -> str:
     if isinstance(value, list | tuple):
         return "; ".join(str(v) for v in value)
     return str(value)
+
+
+def recommendation_results(conn: Connection):
+    """Recorrer resultados sin cargar requests ni toda la historia en memoria."""
+    query = select(recommendations.c.result).order_by(recommendations.c.id)
+    for row in conn.execution_options(yield_per=100).execute(query):
+        yield row.result
+
+
+def open_ingestion_alert_count(conn: Connection) -> int:
+    return conn.execute(
+        select(func.count())
+        .select_from(ingestion_alerts)
+        .where(ingestion_alerts.c.resolved_at.is_(None))
+    ).scalar_one()

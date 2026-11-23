@@ -1,0 +1,137 @@
+{
+  "observed_at_utc": "2026-11-23T22:04:52.839590+00:00",
+  "instance_id": "i-052e34f43e12d676d",
+  "command_id": "a6fda54f-d997-4113-84e8-797515440110",
+  "status": "Failed",
+  "stdout": "estado_instancia\nenabled\nNEXT                        LEFT          LAST PASSED UNIT                     ACTIVATES\nTue 2026-11-24 00:01:11 UTC 1h 59min left -    -      nafta2go-demo-stop.timer nafta2go-demo-stop.service\n\n1 timers listed.\nPass --all to see loaded but inactive timers, too.\ndns_fuente\n168.101.26.134  STREAM datos.energia.gob.ar\n168.101.26.134  DGRAM  \n168.101.26.134  RAW    \nruta_fuente\n168.101.26.134 via 10.20.0.1 dev ens5 src 10.20.0.58 uid 0 \n    cache \nconexion_catalogo\nhttp=000 remote_ip= tiempo=10.002986\n",
+  "stderr": "curl: (28) Connection timed out after 10002 milliseconds\nfailed to run commands: exit status 28",
+  "security_groups": [
+    {
+      "Id": "sg-0eddc68711fa8934b",
+      "Egress": [
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 80,
+          "ToPort": 80,
+          "UserIdGroupPairs": [],
+          "IpRanges": [
+            {
+              "Description": "Catalogo y CSV publicos de Energia; sin credenciales",
+              "CidrIp": "168.101.26.134/32"
+            }
+          ],
+          "Ipv6Ranges": [],
+          "PrefixListIds": []
+        },
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 7844,
+          "ToPort": 7844,
+          "UserIdGroupPairs": [],
+          "IpRanges": [
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.192.167/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.192.67/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.192.57/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.192.107/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.192.27/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.192.7/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.192.227/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.192.47/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.192.37/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.192.77/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.200.13/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.200.193/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.200.33/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.200.233/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.200.53/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.200.63/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.200.113/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.200.73/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.200.43/32"
+            },
+            {
+              "Description": "Cloudflare Tunnel HTTP2; sin entrada publica",
+              "CidrIp": "198.41.200.23/32"
+            }
+          ],
+          "Ipv6Ranges": [],
+          "PrefixListIds": []
+        },
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 443,
+          "ToPort": 443,
+          "UserIdGroupPairs": [],
+          "IpRanges": [
+            {
+              "CidrIp": "0.0.0.0/0"
+            }
+          ],
+          "Ipv6Ranges": [],
+          "PrefixListIds": []
+        }
+      ],
+      "Ingress": []
+    }
+  ],
+  "dns_ipv4": "168.101.26.134",
+  "http_exception_matches_dns": true,
+  "catalog_connection_succeeded": false,
+  "conclusion": "DNS y ruta presentes; IPv4 autorizada por TCP/80 /32; conexi\u00f3n HTTP sin establecer tras 10 s. No se ampl\u00eda la salida. Se prepara adquisici\u00f3n fuera del host."
+}

@@ -1,0 +1,16 @@
+{
+  "kind": "energy_network_diagnosis",
+  "resolved_ipv4": [
+    "168.101.26.134"
+  ],
+  "tcp_80": {
+    "result": "timeout",
+    "seconds": 5.545
+  },
+  "tcp_443": {
+    "result": "timeout",
+    "seconds": 5.006
+  },
+  "http_catalog": "URLError",
+  "https_catalog": "URLError"
+}

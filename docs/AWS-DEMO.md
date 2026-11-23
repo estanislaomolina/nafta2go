@@ -13,7 +13,8 @@ el cambio, IMDSv2, rol `AmazonSSMManagedInstanceCore` y grupo sin entrada. Salid
 HTTPS por defecto con IPv4 pública asignada a la instancia, sin EIP ni NAT.
 Existe una excepción HTTP opcional y acotada para la fuente de Energía (abajo). La API continuará
 ligada a loopback; el túnel de Session Manager exige autorización IAM/SSO.
-No entrega una URL pública ni reemplaza la autenticación de conductor/administrador.
+La URL pública opcional se habilita con el [servicio HTTPS versionado](AWS-HTTPS.md);
+no reemplaza la autenticación de conductor/administrador.
 
 El administrador del sandbox debe permitir IAM/PassRole, instancia, disco, grupo
 y SSM; el dry-run de VPC anterior no verifica esos permisos. La red/subred deben
@@ -159,10 +160,10 @@ El parámetro privado contiene `DATABASE_URL=sqlite:////app/data/nafta2go.db`,
 caché y cuota. Se recupera sólo en el host a un env con permisos 0600, fuera de la
 release. El puerto se liga a `127.0.0.1:8000`; las credenciales no se imprimen.
 
-Antes de activar se aplican migraciones e ingesta vigente sobre almacenamiento
-persistente; si ya hay base, se respalda usando la API SQLite y se comprueba
+Antes de activar se aplican migraciones sobre almacenamiento
+persistente; la adquisición se ejecuta por separado; si ya hay base, se respalda usando la API SQLite y se comprueba
 integridad. El servicio anterior continúa mientras se descarga la imagen y se
-preparan los datos. Después se sustituye el contenedor y se comprueba `/ready`;
+preparan los datos. Después se sustituye el contenedor y se ejecuta el smoke de [entrega](ENTREGA-AWS.md);
 si falla, se intenta recuperar la imagen anterior. El rollback es de código,
 con la configuración actual: no revierte migraciones ni restaura datos. El esquema
 0003 es compatible entre las primeras releases; una migración futura debe revisar
@@ -206,7 +207,7 @@ se contrastaron hash del gzip, cantidad de partes, tamaño y SHA-256 del origina
 El archivo público queda en `data/imports/<sha256>.csv`, con permisos para el UID de
 la aplicación. No se transfieren tokens mediante ese mecanismo.
 
-El despliegue admite opcionalmente `--capture-file /app/data/imports/<sha256>.csv`.
+El procedimiento original (anterior a #157) admitía `--capture-file /app/data/imports/<sha256>.csv`.
 Sólo acepta esa ruta con nombre de hash completo; ejecuta el mismo normalizador
 con `--file`. Es una importación explícita, no una descarga exitosa desde AWS.
 La captura ya cargada no elimina la necesidad de resolver la adquisición
@@ -242,3 +243,8 @@ por fragmentos; resta automatizar su retención y recuperación operativa.
 El primer apagado está programado para el 21/11 a las 23:51 UTC (20:51 de Argentina).
 Después del apagado la URL local requiere volver a iniciar la instancia y el túnel;
 no confundir cerrar CloudShell o el túnel con detener el servidor.
+
+La prueba temporal de Cloudflare se convirtió en un [procedimiento HTTPS](AWS-HTTPS.md)
+con servicio, versión/hash fijados y salida opcional de CloudFormation. Quick no
+requiere token; el modo administrado sí gestiona credenciales. La prueba desde
+un teléfono físico sigue siendo un criterio distinto del smoke HTTP automatizado.
