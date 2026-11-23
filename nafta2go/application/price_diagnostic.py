@@ -9,6 +9,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from nafta2go.domain.price_alert import provisional_alert
+from nafta2go.ml import registry
 from nafta2go.ml.temporal import FEATURES_VERSION, build_temporal_dataset
 from nafta2go.normalization.rules import LOCAL_TIMEZONE
 from nafta2go.persistence import repository as repo
@@ -30,6 +31,12 @@ def reference_price(features, method):
     return Decimal(str(reference)).quantize(Decimal("0.001"))
 
 
+def _manifest(directory, version):
+    """Un almacén guarda cada versión en <sha256>/; una carpeta simple, en su raíz."""
+    stored = Path(directory) / version / "manifest.json"
+    return (stored if stored.is_file() else Path(directory) / "manifest.json").read_bytes()
+
+
 def _selection():
     try:
         if any(
@@ -37,11 +44,21 @@ def _selection():
             for key in ("NAFTA2GO_PRICE_DATASET_DIR", "NAFTA2GO_PRICE_MODEL_DIR")
         ):
             raise ValueError("Falta configuración")
-        dataset_bytes = (
-            Path(os.environ["NAFTA2GO_PRICE_DATASET_DIR"]) / "manifest.json"
-        ).read_bytes()
-        raw = (Path(os.environ["NAFTA2GO_PRICE_MODEL_DIR"]) / "manifest.json").read_bytes()
-        dataset, model = json.loads(dataset_bytes), json.loads(raw)
+        champion = registry.champion()
+        if champion is None:
+            raise ValueError("Sin campeón registrado")
+        raw = _manifest(os.environ["NAFTA2GO_PRICE_MODEL_DIR"], champion["run"])
+        model = json.loads(raw)
+        # Solo se sirve la corrida del alias champion; promover o revertir cambia esta versión.
+        if (
+            hashlib.sha256(raw).hexdigest() != champion["run"]
+            or model["chosen_method"] != champion["method"]
+        ):
+            raise ValueError("La selección configurada no es el campeón del registro")
+        dataset_bytes = _manifest(
+            os.environ["NAFTA2GO_PRICE_DATASET_DIR"], model["dataset_manifest_sha256"]
+        )
+        dataset = json.loads(dataset_bytes)
         options = dataset["parameters"]
         window, minimum = options["window_days"], options["min_history"]
         valid = (

@@ -519,7 +519,8 @@ flowchart LR
 - **Diagnóstico de una publicación** (`GET /api/v1/price-diagnostics/{station_id}`,
   [ADR-015](../adr/ADR-015-referencia-servida-y-abstencion-de-alertas.md)): con
   `NAFTA2GO_PRICE_DATASET_DIR` y `NAFTA2GO_PRICE_MODEL_DIR` configurados, verifica
-  los manifiestos y sirve la referencia elegida, nunca el modelo guardado. Devuelve
+  los manifiestos y sirve la referencia elegida por el campeón del registro
+  (ADR-030), nunca el modelo guardado. Devuelve
   precio oficial, referencia, diferencia, método y versión con
   `alert_level=not_calibrated`. Sin configuración, la consulta habitual sigue
   funcionando.

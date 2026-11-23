@@ -231,3 +231,64 @@ La carga histórica y los directorios deben incorporarse al procedimiento de #22
 ninguno de estos pasos crea recursos AWS. La prueba de rendimiento sintética de
 [VALIDACION](VALIDACION.md#costo-del-diagnóstico-activo-con-veinte-candidatas)
 no sustituye esta preparación con datos reales.
+
+## Registro de modelos y campeón (#161)
+
+[ADR-030](../adr/ADR-030-registro-de-modelos-versionado.md). El registro es
+[`nafta2go/ml/registry.json`](../nafta2go/ml/registry.json) y se versiona en Git.
+Cada corrida se identifica por el SHA-256 de su manifiesto de modelo y guarda:
+
+- parámetros y linaje: hashes del dataset y del histórico, y commit;
+- el MAE de selección y de validación de cada candidato, marcado como `reference` o
+  `model`;
+- los hashes de `model.joblib` y de las predicciones;
+- la política de alertas para la que fue auditada, si la hay.
+
+```bash
+python -m nafta2go.ml.registry show
+python -m nafta2go.ml.registry register --manifest "$MODEL_DIR/manifest.json" \
+  --report "$MODEL_DIR/report.json" \
+  [--policy conservative-v1 --audit "$AUDIT_DIR/alert-evaluation.json"]
+python -m nafta2go.ml.registry promote --run <sha256-del-manifiesto>
+```
+
+**Campeón y retadores.** El campeón actual es `bandera_reciente` de la corrida del
+22/11 (`b65d2d54…`). Ridge y boosting de esa corrida son retadores: quedan
+registrados con sus métricas, pero no se sirven.
+
+**Promoción.** Gana el menor MAE de selección; la validación de 2026 nunca se usa
+para elegir (ADR-014). Una promoción se rechaza sin tocar el archivo en estos casos:
+- la corrida no conserva el reporte;
+- el método elegido no es el ganador;
+- la corrida no fue auditada para la política del método.
+
+**Auditoría obligatoria.** Una corrida queda asociada a una política solo si se
+registra con su `alert-evaluation.json`. El registro verifica que esa auditoría:
+- corresponda al SHA de la corrida;
+- use el método de la política;
+- tenga los mismos umbrales por producto que sirve `domain/price_alert.py`.
+
+Si la etiqueta de la política no viene acompañada de esa evidencia, la corrida se
+rechaza. Por eso cambiar un alias no puede habilitar los umbrales de
+`conservative-v1` para otro modelo. Para revertir se vuelve a promover la corrida
+anterior.
+
+**Serving.** El diagnóstico sirve solo la corrida del alias `champion`.
+- **Dónde busca el manifiesto:** `NAFTA2GO_PRICE_MODEL_DIR` puede ser un almacén
+  con una carpeta por versión (`<sha256>/manifest.json`), y entonces se usa la del
+  campeón. Si no, se usa una carpeta simple, que tiene que contener exactamente el
+  manifiesto del campeón. El dataset se resuelve igual, por el SHA de su manifiesto.
+- **Si lo configurado no es el campeón:** el diagnóstico responde no disponible, en
+  lugar de servir otra versión. Promover o revertir el alias cambia la versión
+  servida sin tocar el código.
+- **Alertas:** las emite `domain/price_alert.py` solo para las corridas con
+  auditoría verificada, que hoy son `91cb07a3…` y `b65d2d54…`.
+
+**Lo que no se conserva.** Está inventariado en el campo `missing` del registro:
+- la corrida del 13/11 fue solo el baseline, sin manifiesto de modelo;
+- la corrida auditada `91cb07a3…` no tiene el reporte de selección en el repositorio,
+  así que está registrada pero no se puede promover;
+- `model.joblib` y las predicciones de todas las corridas están fuera de Git;
+- Ridge no guarda artefacto, porque solo se serializa el mejor modelo aprendido.
+
+Nada de esto se reconstruyó.
