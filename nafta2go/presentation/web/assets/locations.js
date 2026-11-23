@@ -47,7 +47,7 @@
       const timer = setTimeout(() => controller.abort(), 15000);
       field.button.disabled = true; field.status.textContent = 'Buscando lugares en CABA…';
       try {
-        const response = await fetch('/api/v1/places', {method: 'POST', credentials: 'omit', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer', signal: controller.signal,
+        const response = await fetch(apiUrl('/api/v1/places'), {method: 'POST', credentials: 'omit', cache: 'no-store', redirect: 'error', referrerPolicy: 'no-referrer', signal: controller.signal,
           headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + access}, body: JSON.stringify({text})});
         if (generation !== field.generation) return;
         if (!response.ok) {

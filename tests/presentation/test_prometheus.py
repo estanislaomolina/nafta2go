@@ -88,6 +88,22 @@ def test_stored_estimates_deduplicate_winners_and_scrapes(client, engine):
     assert sum(values(samples, "queries_total")) == 1
 
 
+def test_business_cache_is_bounded_and_request_counters_stay_fresh(client, monkeypatch):
+    clock = [0.0]
+    monkeypatch.setattr("nafta2go.presentation.prometheus.monotonic", lambda: clock[0])
+    headers = {"Authorization": "Bearer private-driver"}
+    client.post("/api/v1/recommendations", json=BODY, headers=headers)
+    _, first = scrape(client)
+    assert sum(values(first, "recommendations_stored")) == 1
+    client.post("/api/v1/recommendations", json=BODY, headers=headers)
+    _, cached = scrape(client)
+    assert sum(values(cached, "recommendations_stored")) == 1
+    assert sum(values(cached, "queries_total")) == 2
+    clock[0] = 121
+    _, refreshed = scrape(client)
+    assert sum(values(refreshed, "recommendations_stored")) == 2
+
+
 def test_missing_coverage_is_counted_in_process_without_private_rows(client, engine):
     result = client.post(
         "/api/v1/recommendations",

@@ -53,6 +53,7 @@ fi
 old_image=$(cat "$base/current-image" 2>/dev/null || true)
 start_api() {
   docker run -d --name nafta2go-api --restart unless-stopped \
+    --label com.docker.compose.service=api --label com.docker.compose.project=nafta2go \
     --env-file "$base/private/runtime.env" -v "$base/data:/app/data" \
     -p 127.0.0.1:8000:8000 "$1" uvicorn nafta2go.presentation.http:app \
     --host 0.0.0.0 --port 8000 --no-access-log --log-config deploy/logging.json

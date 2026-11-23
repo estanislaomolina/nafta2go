@@ -12,6 +12,18 @@ ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / "deploy/observability"
 
 
+def test_aws_datasource_matches_dashboards_and_metrics_stay_on_loopback():
+    source = yaml.safe_load((BASE / "prometheus-aws-datasource.yaml").read_text())["datasources"][0]
+    assert source["url"] == "http://127.0.0.1:9090"
+    for name in ("business", "operations"):
+        dashboard = json.loads((BASE / f"grafana/dashboards/{name}.json").read_text())
+        assert all(panel["datasource"]["uid"] == source["uid"] for panel in dashboard["panels"])
+    services = yaml.safe_load((BASE / "aws-compose.yaml").read_text())["services"]
+    assert "--web.listen-address=127.0.0.1:9090" in services["prometheus"]["command"]
+    assert services["grafana"]["environment"]["GF_SERVER_HTTP_ADDR"] == "127.0.0.1"
+    assert "--listen_ip=127.0.0.1" in services["cadvisor"]["command"]
+
+
 def test_dashboards_have_eight_panels_and_the_same_datasource():
     for name in ("business", "operations"):
         dashboard = json.loads((BASE / f"grafana/dashboards/{name}.json").read_text())
