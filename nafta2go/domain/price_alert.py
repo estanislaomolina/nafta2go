@@ -2,14 +2,12 @@
 
 from decimal import Context, Decimal, localcontext
 
+from nafta2go.ml.registry import audited_versions
+
 POLICY_VERSION = "conservative-v1"
-AUDITED_MODEL_VERSION = "91cb07a3ac0b99edd70e12b203318c1b498a1d06766011cbda5dd557852b5892"
-# Repetición auditada del origen actualizado; mismos método y umbrales.
-ADDITIONAL_AUDITED_MODEL_VERSIONS = frozenset(
-    {
-        "b65d2d54ff3229486c495a35d89985b42981648dd02d576bf6a02b6f539aaf83",
-    }
-)
+POLICY_METHOD = "bandera_reciente"
+# Corridas auditadas para esta política según el registro de modelos (#161).
+AUDITED_MODEL_VERSIONS = audited_versions(POLICY_VERSION, POLICY_METHOD)
 THRESHOLDS = {
     2: Decimal("0.05424409844299347"),
     3: Decimal("0.054570259208731244"),
@@ -22,12 +20,9 @@ NOTICE = (
 
 def policy_compatible(method, model_version):
     return (
-        method == "bandera_reciente"
+        method == POLICY_METHOD
         and isinstance(model_version, str)
-        and (
-            model_version == AUDITED_MODEL_VERSION
-            or model_version in ADDITIONAL_AUDITED_MODEL_VERSIONS
-        )
+        and model_version in AUDITED_MODEL_VERSIONS
     )
 
 
