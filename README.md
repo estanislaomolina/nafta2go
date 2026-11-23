@@ -28,6 +28,7 @@ Santiago Bunge
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
 - [Enlaces de Google Maps](docs/MAPS.md): navegación por alternativa en API/CLI/web; pruebas en navegador y móvil emulado; teléfono físico pendiente.
 - [Validación integral](docs/VALIDACION.md): matriz de requisitos y evidencia, latencia de la API y auditoría de trazabilidad, frescura y privacidad (MVP-09).
+- [Guion de demo](docs/GUION-DEMO.md): recorrido del video de la Entrega 3, con lo que se muestra y las limitaciones que se dicen en cada bloque.
 - [Validación conjunta local](docs/INTEGRACION.md): pruebas de ingesta, caché, API, web y Docker; alcances pendientes de MVP-09.
 - [Aplicación web local](docs/WEB.md): formulario y resultados explicados sobre la API y panel local `/operacion`, con acceso por código.
 - [API local](docs/API.md): consulta HTTP autenticada, OpenAPI, validaciones, errores y ejecución con Python o Docker (incremento de MVP-02).
