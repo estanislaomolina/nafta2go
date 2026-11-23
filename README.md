@@ -209,3 +209,6 @@ commit específico de `main` y la URL del video.
 La observabilidad opcional de Prometheus/Grafana se levanta con la
 [guía de dashboards](docs/OBSERVABILIDAD.md); sus métricas de negocio son
 recomendaciones y estimaciones, no compras confirmadas.
+La demo admite una [URL HTTPS temporal mediante Cloudflare](docs/AWS-HTTPS.md),
+conservando el código de acceso y el apagado automático. Obtener una posición GPS
+en un teléfono depende además de permisos y del dispositivo.

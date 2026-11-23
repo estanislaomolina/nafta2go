@@ -1,0 +1,24 @@
+[Unit]
+Description=URL HTTPS temporal de Nafta2Go mediante Cloudflare Tunnel
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+StateDirectory=nafta2go-tunnel
+Environment=HOME=/var/lib/nafta2go-tunnel
+ExecStart=/usr/bin/env /usr/local/bin/cloudflared tunnel --no-autoupdate --protocol http2 --edge-ip-version 4 --url http://127.0.0.1:8000 --metrics 127.0.0.1:20241
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

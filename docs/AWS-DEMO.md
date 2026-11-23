@@ -13,7 +13,8 @@ el cambio, IMDSv2, rol `AmazonSSMManagedInstanceCore` y grupo sin entrada. Salid
 HTTPS por defecto con IPv4 pública asignada a la instancia, sin EIP ni NAT.
 Existe una excepción HTTP opcional y acotada para la fuente de Energía (abajo). La API continuará
 ligada a loopback; el túnel de Session Manager exige autorización IAM/SSO.
-No entrega una URL pública ni reemplaza la autenticación de conductor/administrador.
+La URL pública opcional se habilita con el [servicio HTTPS versionado](AWS-HTTPS.md);
+no reemplaza la autenticación de conductor/administrador.
 
 El administrador del sandbox debe permitir IAM/PassRole, instancia, disco, grupo
 y SSM; el dry-run de VPC anterior no verifica esos permisos. La red/subred deben
@@ -242,3 +243,8 @@ por fragmentos; resta automatizar su retención y recuperación operativa.
 El primer apagado está programado para el 21/11 a las 23:51 UTC (20:51 de Argentina).
 Después del apagado la URL local requiere volver a iniciar la instancia y el túnel;
 no confundir cerrar CloudShell o el túnel con detener el servidor.
+
+La prueba temporal de Cloudflare se convirtió en un [procedimiento HTTPS](AWS-HTTPS.md)
+con servicio, versión/hash fijados y salida opcional de CloudFormation. Quick no
+requiere token; el modo administrado sí gestiona credenciales. La prueba desde
+un teléfono físico sigue siendo un criterio distinto del smoke HTTP automatizado.
