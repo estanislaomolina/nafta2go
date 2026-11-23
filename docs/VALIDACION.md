@@ -74,8 +74,8 @@ una corrida nueva de 120 consultas dio los mismos 123/123, 1.230/1.230 y 123/123
 | RF07 Explicar cada resultado | Cumple | `tests/application/test_query.py`, `tests/browser/web.test.cjs`, [WEB](WEB.md) | Prueba de comprensión con usuarios (ver criterios) |
 | RF08 Ingesta diaria | Cumple | `tests/services/test_ingestion.py`, `tests/normalization/`, [INGESTA](INGESTA.md), [ADR-008](../adr/ADR-008-programacion-de-ingesta.md) | Operación continua: ver criterio de ingesta |
 | RF09 Vigencia configurable | Cumple | `tests/application/test_coverage_rules.py`, frescura 100 % en la auditoría de las recomendaciones generadas en la medición y la prueba integral | — |
-| RF10 Diagnóstico del precio | Parcial | `tests/presentation/test_price_diagnostic.py`, [ADR-015](../adr/ADR-015-referencia-servida-y-abstencion-de-alertas.md) | Sirve la referencia y su versión, pero Regla provisional de [ADR-021](../adr/ADR-021-ranking-conservador-por-desvio.md); tests de fronteras y selección versionada (#140), pendiente de integrar |
-| RF11 Ranking conservador | Parcial | API/web y tests integrados de la comparación en #141 | Integrar #140/#141 con revisión; regla provisional sin precisión/sensibilidad medidas |
+| RF10 Diagnóstico del precio | Cumple | `tests/presentation/test_price_diagnostic.py`, `tests/test_price_alert.py`, [ADR-015](../adr/ADR-015-referencia-servida-y-abstencion-de-alertas.md), [ADR-021](../adr/ADR-021-ranking-conservador-por-desvio.md) (#140) | Regla provisional sin precisión ni sensibilidad medidas para errores reales |
+| RF11 Ranking conservador | Cumple | API/web y tests de la comparación (#141), `tests/application/test_query.py` | Regla provisional sin precisión ni sensibilidad medidas |
 | RF12 Autenticación administrativa | Cumple | `tests/presentation/test_ingestion_status.py`, `tests/presentation/test_http.py`, [ADR-016](../adr/ADR-016-acceso-administrativo-separado.md) | — |
 | RF13 Configuración sin código | Parcial | Vigencia por variable de entorno (#96), parámetros de caché y cupo en Compose | No hay auditoría de cambios de configuración |
 | RF14 Estado operativo | Cumple | Panel `/operacion`, métricas de ingesta/consultas/rutas/diagnóstico, `tests/presentation/test_price_diagnostic.py` y prueba móvil del panel | — |
@@ -115,8 +115,8 @@ una corrida nueva de 120 consultas dio los mismos 123/123, 1.230/1.230 y 123/123
 - **Utilidad y comprensión:** se reemplazó el estudio por simulación técnica por
   decisión del 21/11 ([ADR-023](../adr/ADR-023-validacion-tecnica-sin-participantes.md)).
   No hay participantes ni métricas humanas; esos objetivos no están acreditados.
-- **Ranking conservador (RF11):** implementación API/web en #141, dependiente de
-  #140 y pendiente de integrar. La regla provisional no mide sensibilidad ni precisión.
+- **Ranking conservador (RF11):** integrado en API y web (#140, #141). La regla
+  provisional no mide sensibilidad ni precisión.
 - **Rendimiento:** el lote del 21/11 incluye ORS real, pero sólo cinco solicitudes
   por caso de uso y HTTP en proceso. Falta medir la red del cliente y el despliegue.
 - **Accesibilidad y operación:** faltan la verificación en un teléfono físico y la
