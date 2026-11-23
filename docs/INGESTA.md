@@ -1,5 +1,20 @@
 # Ingesta diaria y alertas locales — MVP-01
 
+## Recibos de adquisición remota — parte de #160
+
+La CLI admite `--source vigente --file CAPTURA.csv --receipt RECIBO.json`.
+Comprueba tamaño, SHA-256, origen y fecha antes de normalizar: rechaza recibos de
+más de 36 horas y fechas más de cinco minutos futuras. Conserva URL y adquisición
+originales en lugar de la URI/mtime de la copia. El reporte guarda corrida de
+Actions, commit y hash del recibo; la fecha de cada precio no cambia.
+
+Un fallo de validación deja una ejecución fallida y conserva los precios
+anteriores. El recibo no firma al proveedor HTTP: requiere un canal privado y
+autenticado. El productor y receptor se incorporan como otro tramo de #160,
+según [ADR-031](../adr/ADR-031-transferencia-verificada-de-capturas.md).
+Pruebas de integridad, linaje y persistencia: `tests/adapters/test_capture_relay.py`.
+#160 sigue abierto: este contrato no instala programación ni acredita autonomía.
+
 RF08 requiere una ingesta diaria. El comando registra `running` **antes** de
 consultar el catálogo: un fallo de catálogo, descarga, archivo local o normalización
 queda en `failed`, con inicio, fin y error. La última versión exitosa sigue

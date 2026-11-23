@@ -63,6 +63,8 @@ def ingest_from_source(
         _check_report(result)
         with engine.begin() as conn:
             report = dict(result.report, acquisition_attempts=attempts)
+            if capture.provenance is not None:
+                report["acquisition_provenance"] = dict(capture.provenance)
             previous = repo.find_run_by_sha256(conn, capture.source, capture.sha256)
             if previous is not None:
                 report["duplicate_of_run_id"] = previous
