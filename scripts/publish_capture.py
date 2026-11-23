@@ -1,7 +1,7 @@
 """Adquirir y publicar una captura vigente en S3 con identidad de máquina.
 
 El puntero latest.json se publica después del CSV y de validar su calidad.
-Un fallo deja el puntero anterior; el consumidor exige antigüedad máxima de 36 h.
+Un fallo previo al recibo deja el puntero anterior; el consumidor limita su edad.
 """
 
 import argparse

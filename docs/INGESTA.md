@@ -328,5 +328,66 @@ se detecta por antigüedad en el monitor.
 
 Las pruebas ejecutan el receptor real con AWS/Docker sustituidos y comprueban
 éxito, descarga fallida y corrupción. No representan una ejecución en AWS.
-El contrato de recibos se revisa en #176; programación e infraestructura son el
-siguiente tramo de #160. Estos ejecutables por sí solos no cierran el issue.
+El contrato de recibos se revisa en #176 y el transporte en #177.
+Estos ejecutables por sí solos no cierran el issue.
+
+## Programación e identidad de máquina en AWS
+
+`infra/aws/capture-relay.json` crea S3 privado, cifrado y versionado; una identidad
+OIDC con permiso exclusivo de publicación bajo `vigente/`, y una política de sólo
+lectura adjunta al rol EC2 existente. Reutiliza el proveedor OIDC de #164. La
+confianza exige audiencia STS y el subject inmutable de este repositorio para
+`main` o `dev`; no admite PRs, otras ramas ni `environment:demo`.
+
+`.github/workflows/acquire-prices.yml` programa adquisición a las 09:17 UTC
+(06:17 Argentina). No usa environment ni aprobación interactiva en cada corrida:
+es una identidad distinta del despliegue de #156. `workflow_dispatch` permite
+probar desde `dev` una vez integradas todas las dependencias. El cron sólo corre
+desde la rama predeterminada, actualmente `main`, y GitHub puede retrasarlo.
+Las variables de repositorio `NAFTA2GO_CAPTURE_BUCKET` y
+`NAFTA2GO_CAPTURE_ROLE_ARN` son referencias públicas, no credenciales.
+
+### Instalación sobre una release revisada
+
+1. Aplicar el change set de `capture-relay.json` con `DemoRoleName` igual al rol
+   EC2 existente; el proveedor OIDC debe existir. Usar sus outputs para las dos
+   variables de repositorio. No crear access keys ni copiar sesiones SSO al host.
+2. Integrar #176/#177 y la programación; activar una imagen que incluya
+   `--receipt`. Mantener base/configuración privadas del host. El instalador
+   verifica esa capacidad antes de habilitar los servicios.
+3. Desde el directorio de esa release, ejecutar mediante SSM como root
+   `bash deploy/install-aws-ingestion.sh BUCKET_PRIVADO`. Instala los dos scripts,
+   `nafta2go-aws-ingestion.service/.timer` y `nafta2go-aws-monitor.service/.timer`;
+   no cambia los servicios locales. El env sólo contiene el nombre del bucket.
+4. Disparar la adquisición en Actions y observar la ingesta por timer en AWS.
+   Contrastar el `workflow_run`, commit, hash y tamaño del reporte con la corrida
+   y los originales. Revisar `systemctl list-timers 'nafta2go-aws-*'` y el journal.
+   Un `systemctl start` manual no demuestra que el calendario diario haya corrido.
+
+La ingesta del host está programada a las 06:45 de Argentina; el monitor, cada
+hora y ante fallo del servicio. Ambos timers tienen `Persistent=true`: si el host
+estaba apagado, recuperan un disparo omitido al arrancar, no cada día perdido.
+Una captura de más de 36 horas se rechaza; no se transforma una descarga vieja
+en datos actuales. No se despierta EC2 para adquirir ni se elimina su apagado
+automático. Esto no ofrece operación 24/7 ni notificaciones a receptores externos.
+
+El receptor limita su servicio a 30 minutos y cada llamada AWS a tres intentos.
+El productor tiene un límite de 20 minutos y serializa corridas. Un fallo antes
+de publicar el recibo conserva el puntero anterior; un timeout de la respuesta
+del PUT del recibo puede dejar su resultado incierto y exige consultar S3.
+No se borran originales locales referenciados. S3 expira transferencias a los 90
+días y versiones previas a los siete; el bucket se conserva al borrar el stack.
+
+### Reversión y evidencia
+
+Para desactivar la programación, detener y deshabilitar ambos timers AWS, esperar
+servicios sin PID activo y conservar configuración, originales y base. No restaura
+SQLite ni revierte migraciones. Deshabilitar también el workflow si se abandona
+la adquisición. Eliminar el stack retira sus políticas y rol de publicación,
+pero conserva el bucket: revisar su contenido/costo antes de borrarlo aparte.
+
+La infraestructura quedó creada el 23/11; [evidencia del canal](evidencia/ingesta-canal-2026-11-23/infra.json).
+La creación de roles y S3 no acredita una corrida OIDC ni una ingesta automática.
+El cierre de #160 requiere observar el recorrido completo después de la revisión
+e integración. Referencias: [OIDC de GitHub](https://docs.github.com/en/actions/reference/security/oidc)
+y [S3 en CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-s3-bucket.html).

@@ -49,8 +49,15 @@ y autenticado. Una publicación fallida conserva el puntero anterior; el recepto
 rechaza ese puntero si vence. Se conservan originales desde que el importador
 puede referenciarlos, incluso si se interrumpe después de guardar.
 
-Esta etapa implementa el contrato de importación, con pruebas sin AWS. No
-provisiona S3/IAM, workflow ni timers; tampoco instala ni activa nada en AWS.
-Esos componentes y una ejecución automática exitosa son condiciones pendientes
-para cerrar #160. El rol del productor deberá tener escritura acotada; el de
-EC2, lectura. No se usará una sesión SSO personal para tareas programadas.
+La implementación se divide en contrato, transporte y programación. La plantilla
+S3/IAM y el workflow usan una identidad distinta del despliegue: sin environment,
+con subject inmutable de este repositorio para `main`/`dev`. El productor tiene
+escritura acotada; EC2, lectura desde su rol renovable. Los servicios AWS corren
+en contenedores con `current-image`, separados de los servicios locales. No se
+copia una sesión SSO personal para tareas programadas.
+
+La adquisición se programa antes del consumo; no enciende EC2. Timers persistentes
+recuperan al arrancar un disparo omitido y rechazan recibos vencidos. Se mantienen
+apagado automático y límites de duración. Las pruebas simulan transporte, fallos
+y permisos; la evidencia de creación de infraestructura no reemplaza una corrida
+OIDC ni una ingesta automática exitosa. Sin esa comprobación #160 sigue abierto.
