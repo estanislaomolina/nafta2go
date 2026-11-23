@@ -93,3 +93,43 @@ cambio; las pruebas locales no acreditan una publicación ni un despliegue en AW
 
 Fuentes: [compartir la imagen entre jobs](https://docs.docker.com/build/ci/github-actions/share-image-jobs/)
 y [acceso y visibilidad en GHCR](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry).
+
+## Despliegue continuo y protecciones
+
+`CI` publica tras todos los checks en push a dev/main o tags `entrega-*`. Sólo
+main y esos tags pueden iniciar el job de despliegue. El job espera la aprobación
+del environment `demo`, recibe el digest de esa corrida, asume el rol OIDC,
+enciende la EC2, espera SSM y ejecuta el procedimiento. Un fallo de smoke, aun con
+recuperación exitosa, hace fallar el workflow. Un push nuevo no cancela un
+despliegue activo. No se despliega automáticamente desde dev.
+
+La API de GitHub confirmó `use_immutable_subject=true` para este repositorio;
+el subject es
+`repo:estanislaomolina@129418393/nafta2go@1375908771:environment:demo`.
+Se usa en [la plantilla del rol](../infra/aws/demo-cd.json) con audiencia
+`sts.amazonaws.com`. Al usar environment no sirve el subject de rama. Las reglas
+de `demo` restringen las ramas/tags y requieren aprobación de Felipe, con
+`prevent_self_review=true` y `can_admins_bypass=false`.
+
+Aplicación reproducible de las protecciones (requiere administración del repo):
+
+```bash
+python scripts/configure_demo_environment.py
+```
+
+Crear la infraestructura revisada una sola vez (sin cómputo adicional):
+
+```bash
+aws cloudformation deploy --profile nafta2go --region us-east-2 \
+  --template-file infra/aws/demo-cd.json --stack-name nafta2go-demo-cd \
+  --parameter-overrides InstanceId="$INSTANCE_ID" --capabilities CAPABILITY_IAM
+```
+
+Guardar en las variables del environment `demo` el output `RoleArn` como
+`DEMO_ROLE_ARN`, la instancia como `DEMO_INSTANCE_ID` y el nombre de SecureString
+como `DEMO_RUNTIME_PARAMETER`. No guardar su contenido ni access keys.
+El runner no necesita acceso a Parameter Store/KMS: lo mantiene el rol de EC2.
+Si la cuenta ya tiene un proveedor OIDC de GitHub, adaptar y revisar la plantilla
+para reutilizarlo antes de crear otro. La activación se acredita con una corrida
+real aprobada del workflow; la validación de plantillas no la sustituye.
+[Alternativas](../adr/ADR-026-despliegue-con-oidc.md).

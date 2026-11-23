@@ -3,13 +3,14 @@ name: CI
 on:
   push:
     branches: [main, dev]
+    tags: ["entrega-*"]
   pull_request:
     branches: [main, dev]
 
-# Un push nuevo cancela la corrida anterior de la misma rama.
+# Cancelar PRs y dev obsoletos; no interrumpir un despliegue de main/entrega.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/dev' }}
 
 permissions:
   contents: read
@@ -213,3 +214,47 @@ jobs:
           name: web-qa
           path: /tmp/nafta2go-web-artifacts
           retention-days: 7
+
+  deploy:
+    name: Desplegar demo
+    needs: publish
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/entrega-'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: demo
+    concurrency:
+      group: demo
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      DEMO_INSTANCE_ID: ${{ vars.DEMO_INSTANCE_ID }}
+      RUNTIME_PARAMETER: ${{ vars.DEMO_RUNTIME_PARAMETER }}
+      RELEASE_COMMIT: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: referencia-imagen
+          path: /tmp/release
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.DEMO_ROLE_ARN }}
+          aws-region: us-east-2
+      - name: Encender la demo y esperar SSM
+        run: |
+          aws ec2 start-instances --instance-ids "$DEMO_INSTANCE_ID" > /dev/null
+          aws ec2 wait instance-status-ok --instance-ids "$DEMO_INSTANCE_ID"
+          for attempt in {1..30}; do
+            ping=$(aws ssm describe-instance-information --filters "Key=InstanceIds,Values=$DEMO_INSTANCE_ID" --query 'InstanceInformationList[0].PingStatus' --output text)
+            if [[ "$ping" == Online ]]; then exit 0; fi
+            sleep 10
+          done
+          echo 'SSM no quedó disponible' >&2
+          exit 1
+      - name: Desplegar el digest probado y esperar smoke o recuperación
+        run: |
+          digest=$(cat /tmp/release/image-digest.txt)
+          command_id=$(python scripts/aws_demo_command.py --instance-id "$DEMO_INSTANCE_ID" --commit "$RELEASE_COMMIT" --parameter "$RUNTIME_PARAMETER" --image "$digest")
+          python scripts/aws_demo_wait.py --instance-id "$DEMO_INSTANCE_ID" --command-id "$command_id"

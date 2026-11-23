@@ -49,7 +49,9 @@ def main(argv=None):
     parser.add_argument("--parameter", required=True)
     parser.add_argument("--image", required=True, help="Referencia GHCR por digest SHA-256")
     parser.add_argument("--mode", choices=("deploy", "rollback"), default="deploy")
-    parser.add_argument("--profile", default="nafta2go")
+    parser.add_argument(
+        "--profile", help="Omitir para usar las credenciales del entorno, como OIDC"
+    )
     parser.add_argument("--aws", default="aws")
     args = parser.parse_args(argv)
     payload = request(args.instance_id, args.commit, args.parameter, args.image, args.mode)
@@ -59,8 +61,7 @@ def main(argv=None):
             args.aws,
             "ssm",
             "send-command",
-            "--profile",
-            args.profile,
+            *(["--profile", args.profile] if args.profile else []),
             "--region",
             "us-east-2",
             "--cli-input-json",

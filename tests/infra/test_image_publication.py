@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_publication_waits_for_all_checks_and_cannot_run_on_pr():
     workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
     publish = workflow["jobs"]["publish"]
-    assert set(publish["needs"]) == set(workflow["jobs"]) - {"publish"}
+    assert set(publish["needs"]) == set(workflow["jobs"]) - {"publish", "deploy"}
     assert publish["if"] == "github.event_name == 'push'"
     assert workflow["permissions"] == {"contents": "read"}
     assert publish["permissions"] == {"contents": "read", "packages": "write"}
