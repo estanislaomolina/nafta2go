@@ -1,5 +1,5 @@
 ---
-status: Propuesto
+status: Reemplazado por ADR-025
 date: 2026-11-21
 decision-makers: Equipo Nafta2Go
 consulted: ADR-018, ADR-019, issues 22 y 59
@@ -7,6 +7,9 @@ informed: Cátedra
 ---
 
 # Entrega de demo por SSM y configuración cifrada
+
+Reemplazado por [ADR-025](ADR-025-imagen-verificada-por-digest.md). Se conserva el
+registro de la entrega original; SSM y SecureString continúan en el procedimiento.
 
 ## Context and Problem Statement
 

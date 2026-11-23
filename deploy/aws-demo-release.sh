@@ -5,16 +5,20 @@ umask 077
 
 release_commit=${1:?Se requiere el commit revisado}
 runtime_parameter=${2:?Se requiere el nombre del parámetro SecureString}
-capture_file=${3:-}
+image=${3:?Se requiere la imagen de GHCR por digest}
+capture_file=${4:-}
 [[ "$release_commit" =~ ^[0-9a-f]{40}$ ]] || exit 2
 [[ "$runtime_parameter" =~ ^/nafta2go/demo/[a-zA-Z0-9/_-]+$ ]] || exit 2
+[[ "$image" =~ ^ghcr.io/estanislaomolina/nafta2go@sha256:[0-9a-f]{64}$ ]] || exit 2
 [[ -z "$capture_file" || "$capture_file" =~ ^/app/data/imports/[0-9a-f]{64}\.csv$ ]] || exit 2
 
 base=${NAFTA2GO_DEPLOY_BASE:-/opt/nafta2go}
-release_dir="$base/releases/$release_commit"
-image="nafta2go:$release_commit"
-mkdir -p "$release_dir" "$base/private" "$base/data" "$base/backups"
+mkdir -p "$base/releases" "$base/private" "$base/data" "$base/backups"
 chmod 700 "$base/private" "$base/backups"
+# El registro debe ser público: no se pasan credenciales de GHCR al host.
+# Rechazar una imagen que no corresponde al commit revisado antes de migrar.
+docker pull "$image"
+[[ "$(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" == "$release_commit" ]] || exit 5
 aws ssm get-parameters --region us-east-2 --names "$runtime_parameter" \
   --with-decryption --query 'Parameters[0].Value' --output text > "$base/private/runtime.env.next"
 [[ -s "$base/private/runtime.env.next" ]] || exit 3
@@ -23,13 +27,6 @@ grep -q '^NAFTA2GO_ADMIN_TOKEN=.' "$base/private/runtime.env.next"
 grep -q '^ORS_API_KEY=.' "$base/private/runtime.env.next"
 mv "$base/private/runtime.env.next" "$base/private/runtime.env"
 
-if [[ ! -f "$release_dir/Dockerfile" ]]; then
-  curl --fail --silent --show-error --location --retry 2 \
-    "https://github.com/estanislaomolina/nafta2go/archive/$release_commit.tar.gz" \
-    --output "$base/private/source.tar.gz"
-  tar -xzf "$base/private/source.tar.gz" --strip-components=1 -C "$release_dir"
-fi
-docker build --label "org.opencontainers.image.revision=$release_commit" -t "$image" "$release_dir"
 chown 10001:10001 "$base/data"
 
 # El respaldo usa la API SQLite, también si existe un escritor concurrente.
@@ -59,7 +56,7 @@ ready() {
   done
   return 1
 }
-# Se conserva el servicio anterior mientras se construye y prepara la versión.
+# Se conserva el servicio anterior mientras se descarga y prepara la versión.
 docker rm -f nafta2go-api 2>/dev/null || true
 if ! start_api "$image" || ! ready; then
   docker rm -f nafta2go-api 2>/dev/null || true
@@ -68,5 +65,6 @@ if ! start_api "$image" || ! ready; then
   exit 4
 fi
 printf '%s\n' "$image" > "$base/current-image"
+printf '%s\n' "$image" > "$base/releases/$release_commit.image"
 echo 'Release instalada y readiness correcto'
 docker image inspect "$image" --format '{{.Id}}'

@@ -144,14 +144,15 @@ El [ejecutable local](../scripts/aws_demo_command.py) envía el
 ```bash
 python scripts/aws_demo_command.py --profile nafta2go \
   --instance-id "$INSTANCE_ID" --commit "$REVIEWED_COMMIT" \
-  --parameter /nafta2go/demo/runtime
+  --parameter /nafta2go/demo/runtime --image "$IMAGE_DIGEST"
 ```
 
 Usa un SHA completo, valida instancia/parámetro y devuelve el ID del comando.
 Consultar su estado; no reenviarlo mientras siga ejecutándose. La aplicación se
-obtiene de GitHub por ese SHA, se construye y registra una imagen local identificada
-por commit. La base Python y las dependencias con rangos pueden cambiar entre
-construcciones: conservar el ID real de imagen, no afirmar bytes reproducibles.
+descarga de GHCR por el digest del artefacto `referencia-imagen` del CI y se verifica
+su etiqueta de commit; no se construye en EC2. El paquete debe permitir lectura
+anónima. Conservar el digest de la corrida elegida; reconstruir un commit con
+dependencias con rangos puede producir otra imagen. Ver [entrega](ENTREGA-AWS.md).
 
 El parámetro privado contiene `DATABASE_URL=sqlite:////app/data/nafta2go.db`,
 `ORS_API_KEY`, tokens distintos de conductor/administrador y límites de vigencia,
@@ -160,7 +161,7 @@ release. El puerto se liga a `127.0.0.1:8000`; las credenciales no se imprimen.
 
 Antes de activar se aplican migraciones e ingesta vigente sobre almacenamiento
 persistente; si ya hay base, se respalda usando la API SQLite y se comprueba
-integridad. El servicio anterior continúa mientras se construye la imagen y se
+integridad. El servicio anterior continúa mientras se descarga la imagen y se
 preparan los datos. Después se sustituye el contenedor y se comprueba `/ready`;
 si falla, se intenta recuperar la imagen anterior. El rollback es de código,
 con la configuración actual: no revierte migraciones ni restaura datos. El esquema
@@ -168,7 +169,7 @@ con la configuración actual: no revierte migraciones ni restaura datos. El esqu
 esa premisa. La base y originales del host no son todavía un backup externo.
 
 Las pruebas aisladas ejecutan el script con dependencias falsas para verificar
-fallo de construcción, recuperación ante readiness fallido, conservación de la
+fallo de descarga o discrepancia de revisión, recuperación ante readiness fallido, conservación de la
 imagen anterior y ausencia de valores privados en la salida. La validación del
 transporte rechaza inyección y referencias fuera del prefijo permitido. No se
 confunden estas pruebas con un rollback provocado en AWS.
