@@ -45,7 +45,10 @@ el commit `ac67b8c` ([evidencia](evidencia/carga-2026-11-23/README.md), ADR-029)
   errores.
 - El cupo de rutas dejó pasar exactamente 60 matrices en 90 s y bloqueó el resto.
 
-No incluye ORS ni la red del cliente, y falta repetirla contra AWS.
+No incluye ORS ni la red del cliente. El escenario es el histórico congelado, con
+diez candidatas y sin diagnóstico ni ranking conservador activos. Faltan el
+escenario de #158 (veinte candidatas con diagnóstico sobre el histórico real,
+después de #152) y la repetición contra AWS.
 
 **Trazabilidad, frescura y privacidad.** `python -m nafta2go.audit` revisa lo que
 quedó guardado en `recommendations`, no lo que el código intentó guardar:
@@ -96,7 +99,7 @@ una corrida nueva de 120 consultas dio los mismos 123/123, 1.230/1.230 y 123/123
 
 | ID | Estado | Evidencia | Falta |
 |---|---|---|---|
-| RNF01 Rendimiento | Parcial | Medición en proceso, composición con ORS y carga con Locust (arriba): p95 ≤ 5 s hasta 40 usuarios simultáneos | Medir red del cliente y carga contra el despliegue de AWS; ver lote real del 21/11 |
+| RNF01 Rendimiento | Parcial | Medición en proceso, composición con ORS y carga con Locust sin diagnóstico activo (arriba): p95 ≤ 5 s hasta 40 usuarios simultáneos | Carga con veinte candidatas y diagnóstico sobre histórico real (#158, después de #152), red del cliente y despliegue de AWS; ver lote real del 21/11 |
 | RNF02 Disponibilidad | Cumple | `tests/adapters/test_openrouteservice.py` (401/403/429/5xx, timeout, matriz inválida) | — |
 | RNF03 Privacidad | Cumple | Auditoría 100 % sobre las recomendaciones generadas en la medición y la prueba integral, `tests/integration/test_local_mvp.py`, `tests/presentation/test_telemetry.py` | Auditar la base del despliegue (#22) |
 | RNF04 Seguridad | Cumple | Check Secretos del CI, pruebas de acceso administrativo, [CALIDAD](CALIDAD.md) | — |

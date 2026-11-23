@@ -1,6 +1,6 @@
 # Carga y estrés de la API — 23/11/2026
 
-Issue #158, [ADR-029](../../../adr/ADR-029-pruebas-de-carga-con-locust.md). Las tres
+Refs #158, [ADR-029](../../../adr/ADR-029-pruebas-de-carga-con-locust.md). Las tres
 corridas usan el commit `ac67b8c` con el árbol limpio (`git_dirty: false` en cada
 reporte), Linux x86_64, Python 3.12.3, Intel Core Ultra 9 285H (16 CPU) y uvicorn
 con **un proceso**. Locust y el servidor corren en la misma máquina.
@@ -9,6 +9,18 @@ Alcance: la API real (autenticación, validación, lectura de precios, motor, gu
 y telemetría) sobre una base temporal con el escenario histórico. ORS se reemplaza
 por la matriz grabada de POC-05, así que **no incluye la latencia de ORS ni la red
 del cliente**. No es una medición del despliegue en AWS.
+
+**Escenario medido.** Cada consulta responde así:
+- `status=historical_scenario`, con la captura congelada del 24/10;
+- **diez evaluaciones**, porque `max_candidates` queda en el valor por defecto;
+- `conservative_ranking` no disponible (`historical_or_insufficient_coverage`), porque
+  la base no tiene histórico real ni una selección de modelo configurada.
+
+Por eso estas corridas **no ejercitan el cuello de botella que pide #158**: veinte
+candidatas con diagnóstico activo y ranking conservador sobre el histórico real,
+después de integrar #152. Miden la API sin diagnóstico. Quedan como línea de base y
+como verificación del arnés, el cupo y la persistencia, **no como cumplimiento del
+criterio de rendimiento de #158**.
 
 ```bash
 pip install -r requirements-load.txt
@@ -62,12 +74,15 @@ cupo de ADR-010 bloquea en vez de agotar la cuota diaria de ORS.
 
 ## Conclusión y pendientes
 
-Un proceso de la API cumple RNF01 con holgura para el uso esperado de la demo y
-hasta unos 40 usuarios simultáneos sin pausa. El cuello de botella es la CPU de un
+Sin diagnóstico activo, un proceso de la API cumple RNF01 con holgura para el uso
+esperado de la demo y hasta unos 40 usuarios simultáneos sin pausa. El cuello de botella es la CPU de un
 único proceso. Agregar workers de uvicorn exigiría compartir la caché y el cupo de
 rutas entre procesos (ADR-010), así que no se cambia en esta etapa.
 
-Pendientes:
+Pendientes para cerrar #158:
+
+- un perfil con histórico real, una selección compatible y `max_candidates=20`, que
+  aborte si falta el diagnóstico o las veinte evaluaciones, medido después de #152;
 
 - medir con `--target` contra la instancia `t3.small` de AWS;
 - repetir esta evidencia cuando #173 esté en `dev`.

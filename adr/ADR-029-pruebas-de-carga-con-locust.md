@@ -65,6 +65,8 @@ perfiles y análisis vive en `scripts/load_profile.py`, que se prueba sin Locust
 `tests/scripts/test_load_test.py` verifica perfiles, análisis por escalón, detección de
 saturación, el bloqueo del cupo con la API real y el chequeo de persistencia, sin
 Locust ni red. La evidencia de cada perfil está en `docs/evidencia/carga-2026-11-23/`.
+Esa evidencia mide el escenario histórico sin diagnóstico activo. El perfil con
+histórico real y veinte candidatas queda pendiente de #152 y no se confirma todavía.
 
 ## Pros and Cons of the Options
 
