@@ -2,7 +2,8 @@
 
 Variables: NAFTA2GO_LOAD_PROFILE (perfil de load_profile), NAFTA2GO_LOAD_TOKEN y
 NAFTA2GO_LOAD_SAMPLES (archivo JSONL donde se registra cada solicitud) y
-NAFTA2GO_LOAD_MAX_REQUESTS (tope de solicitudes; 0 sin tope).
+NAFTA2GO_LOAD_MAX_REQUESTS (tope de solicitudes; 0 sin tope). En el perfil de
+histórico real, la primera respuesta sin los veinte diagnósticos detiene la prueba.
 """
 
 import itertools
@@ -10,7 +11,8 @@ import json
 import os
 import time
 
-from load_profile import PROFILES, request_body, target_users
+import gevent
+from load_profile import PROFILES, diagnostics_complete, request_body, target_users
 from locust import HttpUser, LoadTestShape, constant, events, task
 from locust.exception import StopUser
 
@@ -43,6 +45,10 @@ def record(response_time, response, exception, **_):
             code = response.json()["detail"]["code"]
         except (AttributeError, KeyError, TypeError, ValueError):
             code = type(exception).__name__ if exception else None
+    elif PROFILE.real_history and not diagnostics_complete(response.json()):
+        code = "diagnostico_incompleto"
+        # Sin diagnóstico activo la prueba no mide #158: se aborta en vez de promediarla.
+        gevent.spawn(STATE["environment"].runner.quit)
     sample = {
         "elapsed_s": round(time.monotonic() - STATE["started"], 3),
         "users": STATE["environment"].runner.user_count,
@@ -63,7 +69,7 @@ class Driver(HttpUser):
             raise StopUser()
         self.client.post(
             "/api/v1/recommendations",
-            json=request_body(index),
+            json=request_body(index, PROFILE.real_history),
             headers={"Authorization": "Bearer " + os.environ["NAFTA2GO_LOAD_TOKEN"]},
             name="POST /api/v1/recommendations",
         )
