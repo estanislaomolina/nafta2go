@@ -72,6 +72,17 @@ def price_diagnostic(engine, station_id, product_id, schedule_id, now):
 
 
 def price_diagnostic_on_connection(conn, station_id, product_id, schedule_id, now):
+    return price_diagnostics_on_connection(conn, [station_id], product_id, schedule_id, now)[
+        station_id
+    ]
+
+
+def price_diagnostics_on_connection(conn, station_ids, product_id, schedule_id, now):
+    station_ids = tuple(dict.fromkeys(station_ids))
+    if len(station_ids) > 20:
+        raise ValueError("Se admiten hasta veinte publicaciones por lote")
+    if not station_ids:
+        return {}
     if now.utcoffset() is None:
         raise ValueError("La referencia requiere zona horaria")
     model, dataset, version = _selection()
@@ -88,30 +99,62 @@ def price_diagnostic_on_connection(conn, station_id, product_id, schedule_id, no
     capture = repo.raw_capture_for_run(conn, historical)
     if capture is None or capture["sha256"] != model["source_sha256"]:
         raise DiagnosticUnavailable
-    target = repo.diagnostic_publication(
-        conn, current, station_id, product_id, schedule_id, local_now
-    )
-    if target is None:
-        return None
+    targets = {
+        station: repo.diagnostic_publication(
+            conn, current, station, product_id, schedule_id, local_now
+        )
+        for station in station_ids
+    }
+    publications = [row for row in targets.values() if row is not None]
+    if not publications:
+        return targets
     history = repo.diagnostic_history(
-        conn, historical, product_id, schedule_id, target["valid_from"]
+        conn, historical, product_id, schedule_id, max(row["valid_from"] for row in publications)
     )
-    # Misma preparación que el entrenamiento; todo el instante objetivo queda fuera del contexto.
     examples, _ = build_temporal_dataset(
-        [*history, target],
+        history,
         now,
+        targets=publications,
         window_days=dataset["parameters"]["window_days"],
         min_history=dataset["parameters"]["min_history"],
     )
-    published = target["valid_from"].replace(tzinfo=ZoneInfo(LOCAL_TIMEZONE)).astimezone(UTC)
-    example = next(
-        (
-            r
-            for r in examples
-            if r["station_id"] == station_id and r["target_at_utc"] == published.isoformat()
-        ),
-        None,
-    )
+    indexed = {(row["station_id"], row["target_at_utc"]): row for row in examples}
+    result = {}
+    for station, target in targets.items():
+        if target is None:
+            result[station] = None
+            continue
+        published = target["valid_from"].replace(tzinfo=ZoneInfo(LOCAL_TIMEZONE)).astimezone(UTC)
+        example = indexed.get((station, published.isoformat()))
+        result[station] = _present_diagnostic(
+            target,
+            example,
+            station,
+            product_id,
+            schedule_id,
+            published,
+            model,
+            version,
+            current,
+            historical,
+            capture,
+        )
+    return result
+
+
+def _present_diagnostic(
+    target,
+    example,
+    station_id,
+    product_id,
+    schedule_id,
+    published,
+    model,
+    version,
+    current,
+    historical,
+    capture,
+):
     value = reference_price(example["features"], model["chosen_method"]) if example else None
     alert = provisional_alert(target["price"], value, product_id, model["chosen_method"], version)
     return {
