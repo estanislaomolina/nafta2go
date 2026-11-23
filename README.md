@@ -85,10 +85,12 @@ Cada decisión estructural tiene un ADR con alternativas comparadas; el índice 
   - AWS: red y servidor de demo;
   - ML: evaluación y selección de modelos, referencia servida, umbrales y estimación de precios antiguos;
   - ranking conservador, búsqueda de direcciones, validación técnica y entrega por SSM;
-  - imagen verificada en el CI y entregada por digest, pruebas de carga con Locust y
-    registro de modelos con alias de campeón.
+  - imagen verificada en el CI y entregada por digest, despliegue con OIDC,
+    observabilidad con Prometheus y Grafana, URL HTTPS con Cloudflare Tunnel, pruebas
+    de carga con Locust, registro de modelos con alias de campeón y transferencia
+    verificada de capturas.
 
-  Abarca de ADR-008 a ADR-025, ADR-029 y ADR-030. ADR-026 a ADR-028 están en revisión.
+  Abarca de ADR-008 a ADR-031.
 
 ## Desarrollo local
 
@@ -133,10 +135,10 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración; la Ent
 | Caché y cupo de rutas | MVP-02 (#55) | Matrices en RAM con TTL y LRU, límites por proceso y credencial, y métricas sin ubicaciones; ver docs/RUTAS.md |
 | Motor determinístico | POC-04 | Implementado y probado; PR #26 integrado |
 | Flujo de punta a punta | POC-05 | Implementado: consulta explicada, ranking, rutas reales guardadas y registro trazable; ver docs/POC-05.md |
-| Levantar el sistema completo con contenedores | POC-07, MVP-08 | Implementado: migraciones, consulta y API con web (perfil `mvp`); el CI construye una imagen, migra y consulta sin red; publica por digest tras aprobar los checks; el primer digest se publicó el 23/11, pero el paquete de GHCR sigue privado |
+| Levantar el sistema completo con contenedores | POC-07, MVP-08 | Implementado: migraciones, consulta y API con web (perfil `mvp`); el CI construye una imagen, migra y consulta sin red; publica por digest tras aprobar los checks; el primer digest se publicó el 23/11 y el paquete de GHCR es público |
 | Entrenamiento y selección de modelos | MVP-04 | Implementado offline y reproducible; el método elegido es una referencia (mediana de la bandera), no un modelo; ver docs/ML.md |
 | Registro de modelos | MVP-04 (#161) | Implementado: registro versionado con alias de campeón; la API sirve sólo el campeón y la política exige una auditoría verificada (ADR-030); ver docs/ML.md |
-| Pruebas de carga | MVP-09 (#158) | Línea de base local con Locust sin diagnóstico activo, cupo y persistencia bajo carga (ADR-029); faltan la medición con diagnóstico activo y la de la `t3.small`; ver docs/VALIDACION.md |
+| Pruebas de carga | MVP-09 (#158) | Locust local (ADR-029): sin diagnóstico activo, p95 ≤ 5 s hasta 40 usuarios simultáneos; con diagnóstico sobre histórico real y veinte candidatas, sólo hasta 2. Cupo y persistencia verificados bajo carga; falta la medición en la `t3.small`; ver docs/VALIDACION.md |
 | Diagnóstico estadístico servido | MVP-05 (#19) | Implementado: la API y la web sirven la referencia elegida y una alerta provisional `conservative-v1` solo para las selecciones auditadas (ADR-021). No tiene precisión medida para detectar errores reales; ver docs/API.md |
 | Ranking conservador | MVP-06 (#20) | Implementado como comparación separada que excluye excedencias de `conservative-v1`, sin cambiar el ranking general ni el precio oficial (ADR-021); ver docs/WEB.md |
 | Estimación de precios de 31 a 120 días | #117 | Implementada en API y web, rotulada y fuera del ranking (ADR-020) |

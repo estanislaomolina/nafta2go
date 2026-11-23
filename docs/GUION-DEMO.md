@@ -65,16 +65,15 @@ la recomendación.
 - Una PR real: issue vinculada, review de otro integrante y CI en verde.
 - Pruebas de carga ([ADR-029](../adr/ADR-029-pruebas-de-carga-con-locust.md),
   [evidencia](evidencia/carga-2026-11-23/README.md)): el cupo de rutas bloquea en vez de
-  agotar la cuota de ORS y no se pierden recomendaciones. Si #179 está integrada,
-  mostrar el hallazgo: con el diagnóstico activo un proceso cumple p95 ≤ 5 s sólo hasta
-  dos consultas simultáneas.
+  agotar la cuota de ORS y no se pierden recomendaciones. Mostrar el hallazgo: con el
+  diagnóstico activo un proceso cumple p95 ≤ 5 s sólo hasta dos consultas simultáneas.
 
 ## 6. Demo en AWS — 1 min
 
 - Mostrar la instancia `t3.small` efímera, la entrega versionada y el acceso
-  ([AWS-DEMO](AWS-DEMO.md)). Mostrar sólo lo que esté integrado en el commit de
-  entrega: URL pública, despliegue desde el CI e ingesta autónoma (#155, #156, #160)
-  dependen de PRs en revisión.
+  ([AWS-DEMO](AWS-DEMO.md)). La URL HTTPS, el despliegue con OIDC y la ingesta
+  autónoma ya están integrados, pero #155, #156 y #160 siguen abiertas: mostrar sólo
+  lo que se haya verificado en la instancia y decir lo que falta.
 
 ## 7. Limitaciones y cierre — 1 min
 

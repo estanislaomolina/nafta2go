@@ -89,9 +89,8 @@ imagen por las copias explícitas del Dockerfile.
 
 La primera publicación corrió en `dev` el 23/11 (commit `683fe05`, digest
 `sha256:6bf993df84ff3e18d851ebe0e94b9aec034f947ac835670939a54fdd90d4ee0f`). El
-paquete sigue privado: pedir ese manifiesto sin sesión devuelve 404. Falta que el
-titular lo haga público y repetir la comprobación. Una publicación no acredita un
-despliegue en AWS.
+paquete es público: el 23/11, pedir ese manifiesto con un token anónimo de GHCR
+devolvió 200. Una publicación no acredita un despliegue en AWS.
 [Decisión y alternativas](../adr/ADR-025-imagen-verificada-por-digest.md).
 
 Fuentes: [compartir la imagen entre jobs](https://docs.docker.com/build/ci/github-actions/share-image-jobs/)
