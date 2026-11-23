@@ -33,6 +33,24 @@ class RouteCache:
         with self._state:
             return {**self._metrics, "entries": len(self._entries)}
 
+    def quota_snapshot(self):
+        with self._state:
+            now = self.clock()
+            active = list(self._requests.values())
+            day = min(
+                (self.per_day - sum(t > now - 86400 for t in times) for times in active),
+                default=self.per_day,
+            )
+            minute = min(
+                (self.per_minute - sum(t > now - 60 for t in times) for times in active),
+                default=self.per_minute,
+            )
+            blocked = any(until > now for until in self._blocked.values())
+            return {
+                "remaining_day": max(0, day),
+                "remaining_minute": 0 if blocked else max(0, minute),
+            }
+
     def _lookup(self, key):
         now = self.clock()
         for expired in [k for k, (until, _) in self._entries.items() if until <= now]:

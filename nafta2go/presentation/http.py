@@ -48,6 +48,7 @@ from nafta2go.presentation.models import (
     RecommendationOutput,
 )
 from nafta2go.presentation.navigation import present_recommendation
+from nafta2go.presentation.prometheus import HTTPMetrics, MetricsMiddleware
 from nafta2go.presentation.telemetry import QueryTelemetry, QueryTelemetryMiddleware
 from nafta2go.presentation.web import install_web
 
@@ -137,6 +138,17 @@ def create_app(
     diagnostic_telemetry = DiagnosticTelemetry()
     application.add_middleware(QueryTelemetryMiddleware, telemetry=telemetry)
     application.add_middleware(DiagnosticTelemetryMiddleware, telemetry=diagnostic_telemetry)
+
+    metrics = HTTPMetrics()
+    application.add_middleware(MetricsMiddleware, metrics=metrics)
+
+    @application.get("/metrics", dependencies=[Depends(authorize_admin)])
+    def prometheus_metrics():
+        return Response(
+            metrics.render(application.state.engine, shared_cache(), diagnostic_telemetry, clock()),
+            media_type="text/plain; version=0.0.4",
+            headers={"Cache-Control": "no-store"},
+        )
 
     install_web(application)
     application.add_exception_handler(RequestValidationError, validation_error)
