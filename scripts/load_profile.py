@@ -25,6 +25,8 @@ class Profile:
     step_seconds: int
     think_seconds: float
     quota_per_minute: int | None = None
+    # Copia de la base con histórico real: veinte candidatas con diagnóstico activo.
+    real_history: bool = False
 
 
 PROFILES = {
@@ -36,7 +38,13 @@ PROFILES = {
     "estres": Profile(users=(1, 5, 10, 20, 40, 80), step_seconds=30, think_seconds=0.0),
     # Cupo real de rutas sin caché: cada consulta exitosa consume una matriz.
     "cupo": Profile(users=(10,), step_seconds=90, think_seconds=0.0, quota_per_minute=30),
+    # Cuello de botella de #158: cada consulta prepara veinte diagnósticos del histórico real.
+    "historico": Profile(
+        users=(1, 2, 5, 10, 20), step_seconds=30, think_seconds=0.0, real_history=True
+    ),
 }
+
+REQUIRED_DIAGNOSTICS = 20
 
 
 def target_users(profile: Profile, elapsed: float) -> int | None:
@@ -47,11 +55,28 @@ def target_users(profile: Profile, elapsed: float) -> int | None:
 
 # Un ciclo completo de variaciones de vehículo y presupuesto de measure_query_latency.
 BODIES = tuple(bodies(252))
+# La consulta de measure_real_history_diagnostics (#152), con veinte candidatas.
+HISTORY_BODY = bodies(1)[0] | {
+    "max_candidates": REQUIRED_DIAGNOSTICS,
+    "consumption_l_per_100km": "10",
+    "tank_capacity_l": "50",
+    "remaining_l": "10",
+    "budget_ars": "12000",
+}
 
 
-def request_body(index: int) -> dict:
+def request_body(index: int, real_history: bool = False) -> dict:
     """Consultas UC01 válidas que coinciden con la matriz grabada de POC-05."""
-    return BODIES[index % len(BODIES)]
+    return HISTORY_BODY if real_history else BODIES[index % len(BODIES)]
+
+
+def diagnostics_complete(result: dict) -> bool:
+    """Una respuesta 200 sin los veinte diagnósticos disponibles no mide el cuello de botella."""
+    block = result.get("conservative_ranking") or {}
+    return (
+        block.get("status") == "available"
+        and len(block.get("diagnostics") or []) == REQUIRED_DIAGNOSTICS
+    )
 
 
 def percentile(values: list[float], share: float) -> float | None:
@@ -69,7 +94,7 @@ def summarize(samples: list[dict], profile: Profile) -> list[dict]:
         start, end = index * profile.step_seconds, (index + 1) * profile.step_seconds
         rows = [s for s in samples if s["users"] == users and start <= s["elapsed_s"] < end]
         latencies = [row["latency_s"] for row in rows]
-        failures = [row for row in rows if row["status"] != 200]
+        failures = [row for row in rows if row["status"] != 200 or row.get("code")]
         statuses, codes = {}, {}
         for row in rows:
             statuses[str(row["status"])] = statuses.get(str(row["status"]), 0) + 1
