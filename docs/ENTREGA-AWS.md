@@ -87,8 +87,10 @@ Los fixtures históricos recortados y la matriz de rutas forman parte de la prue
 las capturas operativas, SQLite, modelos privados y secretos quedan fuera de la
 imagen por las copias explícitas del Dockerfile.
 
-La activación real y el acceso anónimo a GHCR quedan pendientes hasta publicar el
-cambio; las pruebas locales no acreditan una publicación ni un despliegue en AWS.
+La primera publicación corrió en `dev` el 23/11 (commit `683fe05`, digest
+`sha256:6bf993df84ff3e18d851ebe0e94b9aec034f947ac835670939a54fdd90d4ee0f`). El
+paquete es público: el 23/11, pedir ese manifiesto con un token anónimo de GHCR
+devolvió 200. Una publicación no acredita un despliegue en AWS.
 [Decisión y alternativas](../adr/ADR-025-imagen-verificada-por-digest.md).
 
 Fuentes: [compartir la imagen entre jobs](https://docs.docker.com/build/ci/github-actions/share-image-jobs/)
