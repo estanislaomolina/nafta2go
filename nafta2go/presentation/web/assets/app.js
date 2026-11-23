@@ -37,7 +37,7 @@ function priceReference(data, row) {
     const timer = setTimeout(() => controller.abort(), 15000);
     result.replaceChildren(node('p', 'Consultando referencia…')); result.setAttribute('aria-busy', 'true'); button.disabled = true;
     try {
-      const response = await fetch('/api/v1/price-diagnostics/' + encodeURIComponent(row.station_id) + '?product_id=' + product + '&schedule_id=' + schedule,
+      const response = await fetch(apiUrl('/api/v1/price-diagnostics/' + encodeURIComponent(row.station_id) + '?product_id=' + product + '&schedule_id=' + schedule),
         {signal: controller.signal, credentials: 'omit', redirect: 'error', cache: 'no-store', referrerPolicy: 'no-referrer', headers: {Authorization: 'Bearer ' + access.value.trim()}});
       if (!response.ok) throw new QueryError(response.status === 401 ? 'Revisá el código de acceso para consultar la referencia.' : response.status === 404 ? 'No encontramos esa publicación. Volvé a buscar estaciones.' : 'La referencia no está disponible por ahora. El precio publicado conserva su valor y fecha.');
       const value = await response.json();
@@ -185,7 +185,7 @@ form.addEventListener("submit", async event => {
   status.textContent = "Buscando estaciones…"; submit.disabled = true; submit.textContent = "Buscando…";
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 60000);
   try {
-    const response = await fetch("/api/v1/recommendations", {method: "POST", credentials: "omit", redirect: "error", cache: "no-store", referrerPolicy: "no-referrer", signal: controller.signal,
+    const response = await fetch(apiUrl("/api/v1/recommendations"), {method: "POST", credentials: "omit", redirect: "error", cache: "no-store", referrerPolicy: "no-referrer", signal: controller.signal,
       headers: {"Content-Type": "application/json", Authorization: "Bearer " + access.value.trim()}, body: JSON.stringify(body)});
     const result = await response.json();
     if (!response.ok) {

@@ -1,0 +1,20 @@
+global:
+  scrape_interval: 30s
+scrape_configs:
+  - job_name: nafta2go
+    metrics_path: /metrics
+    authorization:
+      type: Bearer
+      credentials_file: /run/secrets/api_admin_token
+    static_configs:
+      - targets: [127.0.0.1:8000]
+  - job_name: cadvisor
+    static_configs:
+      - targets: [127.0.0.1:8080]
+    metric_relabel_configs:
+      - source_labels: [container_label_com_docker_compose_service]
+        regex: api
+        action: keep
+      - source_labels: [__name__]
+        regex: container_cpu_usage_seconds_total|container_memory_working_set_bytes
+        action: keep

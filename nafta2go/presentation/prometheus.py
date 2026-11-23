@@ -1,5 +1,7 @@
 """Métricas acotadas por aplicación; sin etiquetas derivadas de entradas privadas."""
 
+from datetime import datetime
+from threading import Lock
 from time import monotonic
 
 from prometheus_client import CollectorRegistry, Counter, Histogram, generate_latest
@@ -32,6 +34,9 @@ class Snapshot:
 
 class HTTPMetrics:
     def __init__(self):
+        self._business = None
+        self._business_at = 0.0
+        self._business_lock = Lock()
         self.registry = CollectorRegistry()
         self.responses = Counter(
             "nafta2go_http_responses",
@@ -67,7 +72,19 @@ class HTTPMetrics:
                 metric.add_metric([str(key)] if label else [], value)
             registry.register(Snapshot(metric))
 
-        business = business_metrics(engine)
+        # Los agregados persistidos pueden demorar hasta dos minutos en reflejar cambios.
+        # Serializar la renovación evita recorrer la historia por cada scraper concurrente.
+        with self._business_lock:
+            captured_at = monotonic()
+            if self._business is None or captured_at - self._business_at >= 120:
+                self._business = business_metrics(engine)
+                self._business_at = captured_at
+            business = self._business
+        gauge(
+            "business_snapshot_age_seconds",
+            "Edad del agregado persistido",
+            captured_at - self._business_at,
+        )
         for key, label in (
             ("stored", "outcome"),
             ("station", "station_id"),
@@ -127,8 +144,6 @@ class HTTPMetrics:
                 attempt.get("duration_seconds", 0),
             )
             successful = status["latest_successful"] or {}
-            from datetime import datetime
-
             timestamp = (
                 datetime.fromisoformat(successful["finished_at"]).timestamp()
                 if successful.get("finished_at")

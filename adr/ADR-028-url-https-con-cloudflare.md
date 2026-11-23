@@ -1,5 +1,5 @@
 ---
-status: Propuesto
+status: Reemplazado por ADR-032
 date: 2026-11-22
 decision-makers: Equipo Nafta2Go
 consulted: ADR-018, issue 155
