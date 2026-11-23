@@ -35,7 +35,8 @@ class _Window:
         return self.prices[low] + (self.prices[high] - self.prices[low]) * (position - low)
 
 
-def build_temporal_dataset(rows, cutoff: datetime, *, window_days=30, min_history=5):
+def build_temporal_dataset(rows, cutoff: datetime, *, window_days=30, min_history=5, targets=None):
+    """Con targets emite sólo esas publicaciones, sin agregarlas al contexto."""
     if cutoff.utcoffset() is None:
         raise ValueError("El corte requiere zona horaria")
     if any(isinstance(v, bool) or not isinstance(v, int) for v in (window_days, min_history)):
@@ -46,28 +47,32 @@ def build_temporal_dataset(rows, cutoff: datetime, *, window_days=30, min_histor
     windows, previous = defaultdict(_Window), {}
     examples, totals = [], {"train": 0, "validation": 0}
     discarded = 0
+    events = [(row, False) for row in rows]
+    if targets is not None:
+        events.extend((row, True) for row in targets)
     ordered = sorted(
-        rows,
-        key=lambda r: (
-            r["valid_from"],
-            r["station_id"],
-            r["product_id"],
-            r["schedule_id"],
-            r["source_row"],
+        events,
+        key=lambda item: (
+            item[0]["valid_from"],
+            item[0]["station_id"],
+            item[0]["product_id"],
+            item[0]["schedule_id"],
+            item[0]["source_row"],
         ),
     )
-    for date, batch in groupby(ordered, key=lambda row: row["valid_from"]):
+    for date, batch in groupby(ordered, key=lambda item: item[0]["valid_from"]):
         if date.utcoffset() is not None:
             raise ValueError("Las fechas normalizadas deben ser locales sin zona")
         when = date.replace(tzinfo=ZoneInfo(LOCAL_TIMEZONE)).astimezone(UTC)
         partition = "train" if when < cutoff else "validation"
         pending, seen = [], set()
-        for row in batch:
+        for row, is_target in batch:
             key = (row["product_id"], row["schedule_id"])
             identity = (row["station_id"], *key)
-            if identity in seen:
+            seen_key = (identity, is_target)
+            if seen_key in seen:
                 raise ValueError("Observación duplicada en una misma fecha")
-            seen.add(identity)
+            seen.add(seen_key)
             lat, lon, price = row["lat"], row["lon"], float(row["price"])
             if not math.isfinite(price) or price <= 0:
                 raise ValueError("El objetivo debe ser un precio positivo y finito")
@@ -81,7 +86,8 @@ def build_temporal_dataset(rows, cutoff: datetime, *, window_days=30, min_histor
             ):
                 discarded += 1
                 continue
-            totals[partition] += 1
+            if targets is None or is_target:
+                totals[partition] += 1
             zone = (math.floor(lat / ZONE_DEGREES), math.floor(lon / ZONE_DEGREES))
             regional, city = windows[(*key, *zone)], windows[key]
             for window in (regional, city):
@@ -91,7 +97,7 @@ def build_temporal_dataset(rows, cutoff: datetime, *, window_days=30, min_histor
                 window.expire(when - timedelta(days=RECENT_DAYS))
             history = regional if len(regional.prices) >= min_history else city
             scope = "zone" if history is regional else "caba"
-            if len(history.prices) >= min_history:
+            if (targets is None or is_target) and len(history.prices) >= min_history:
                 last = previous.get(identity)
                 features = {
                     "product_id": key[0],
@@ -123,7 +129,8 @@ def build_temporal_dataset(rows, cutoff: datetime, *, window_days=30, min_histor
                         "features": features,
                     }
                 )
-            pending.append((identity, price, (regional, city, recent, brand)))
+            if not is_target:
+                pending.append((identity, price, (regional, city, recent, brand)))
         # Primero predecir todo el instante; después incorporar sus precios al historial.
         for identity, price, histories in pending:
             for window in histories:
