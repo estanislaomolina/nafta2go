@@ -1,0 +1,323 @@
+{
+  "format_version": 1,
+  "selection_rule": "ADR-014: gana el menor MAE de selección; la validación no se usa para elegir",
+  "policies": {
+    "conservative-v1": {
+      "method": "bandera_reciente",
+      "adr": "adr/ADR-021-ranking-conservador-por-desvio.md",
+      "audit": "docs/evidencia/alertas-precios-2026-11-17/README.md",
+      "thresholds": {
+        "2": "0.05424409844299347",
+        "3": "0.054570259208731244"
+      }
+    }
+  },
+  "runs": {
+    "c3531b7ecdefd85fd69d185de7430fc8e9678f2d5b45b1f4f60198ddf62a23c5": {
+      "manifest": "docs/evidencia/ml-modelos-2026-11-15/model-manifest.json",
+      "report": "docs/evidencia/ml-modelos-2026-11-15/model-report.json",
+      "report_sha256": "10ed439ab83097ccf9744a67efd3e4965fcd49951da8d5d1e98b4bd2070a2ab3",
+      "chosen_method": "bandera_reciente",
+      "features_version": "price-temporal-v2",
+      "parameters": {
+        "candidates": {
+          "boosting": {
+            "learning_rate": 0.05,
+            "loss": "absolute_error",
+            "max_iter": 300,
+            "max_leaf_nodes": 15,
+            "min_samples_leaf": 50
+          },
+          "ridge": {
+            "alpha": 1.0
+          }
+        },
+        "random_seed": 0,
+        "references": [
+          "mediana_previa",
+          "ultimo_precio",
+          "bandera_reciente"
+        ],
+        "selection_start_utc": "2025-01-01T03:00:00+00:00",
+        "threads": 1
+      },
+      "lineage": {
+        "dataset_sha256": "ea952f51479ca2493e6dbc15428d77bf552db919ccde4010011a1c8219a6f25e",
+        "dataset_manifest_sha256": "b36a1b7418920df8c229a877f9d2c187a6240c0d43872b7a39b86042619c8973",
+        "source_sha256": "950f748f881c95ea5bf9511a0c0ea120d6fc9a28345052ad46c8fc5d41f528bb",
+        "git_commit": "f0e6c3f1968435062d8d342f1d2455837c2b6c7a",
+        "git_dirty": false
+      },
+      "candidates": {
+        "bandera_reciente": {
+          "kind": "reference",
+          "selection_mae_ars_per_l": 20.616749856018433,
+          "validation_mae_ars_per_l": 41.21439668565511
+        },
+        "boosting": {
+          "kind": "model",
+          "selection_mae_ars_per_l": 22.68868031190549,
+          "validation_mae_ars_per_l": 31.390407502955163
+        },
+        "mediana_previa": {
+          "kind": "reference",
+          "selection_mae_ars_per_l": 45.731944711076984,
+          "validation_mae_ars_per_l": 79.72320041429312
+        },
+        "ridge": {
+          "kind": "model",
+          "selection_mae_ars_per_l": 35.37393113077714,
+          "validation_mae_ars_per_l": 31.23840871403257
+        },
+        "ultimo_precio": {
+          "kind": "reference",
+          "selection_mae_ars_per_l": 25.404722595507778,
+          "validation_mae_ars_per_l": 39.120403935784566
+        }
+      },
+      "artifacts": {
+        "model.joblib": {
+          "model": "boosting",
+          "sha256": "1d03060ab336b2d6fddb1b4bce8e2a33b9ecb8a840441bb574792339a2c45de5",
+          "conserved_in_repo": false
+        },
+        "validation-predictions.jsonl": {
+          "sha256": "d84092ef7b117fd785fcbf0f4d34fbb96fd2867a7e076f4a6ae5e4a39b01c79e",
+          "conserved_in_repo": false
+        }
+      },
+      "policy": null,
+      "audit": null
+    },
+    "065c5818f01ab887146f7daa7baf8b1210b4643eae378252640134a9928356ca": {
+      "manifest": "docs/evidencia/ml-modelos-2026-11-17/model-manifest.json",
+      "report": "docs/evidencia/ml-modelos-2026-11-17/model-report.json",
+      "report_sha256": "2172a04765219119c852f5433c67679039a2868fe95a360435243c5182e78784",
+      "chosen_method": "bandera_reciente",
+      "features_version": "price-temporal-v2",
+      "parameters": {
+        "candidates": {
+          "boosting": {
+            "learning_rate": 0.05,
+            "loss": "absolute_error",
+            "max_iter": 300,
+            "max_leaf_nodes": 15,
+            "min_samples_leaf": 50
+          },
+          "ridge": {
+            "alpha": 1.0
+          }
+        },
+        "random_seed": 0,
+        "references": [
+          "mediana_previa",
+          "ultimo_precio",
+          "bandera_reciente"
+        ],
+        "selection_start_utc": "2025-01-01T03:00:00+00:00",
+        "threads": 1
+      },
+      "lineage": {
+        "dataset_sha256": "ea952f51479ca2493e6dbc15428d77bf552db919ccde4010011a1c8219a6f25e",
+        "dataset_manifest_sha256": "f5094a384516448b06ecd05a71b8679384c9b6cb7ed6b9385b0a8795e2d4162b",
+        "source_sha256": "950f748f881c95ea5bf9511a0c0ea120d6fc9a28345052ad46c8fc5d41f528bb",
+        "git_commit": "cef0c9ae89cbb79ab5f66ce154c0408c39e05033",
+        "git_dirty": false
+      },
+      "candidates": {
+        "bandera_reciente": {
+          "kind": "reference",
+          "selection_mae_ars_per_l": 20.616749856018433,
+          "validation_mae_ars_per_l": 41.21439668565511
+        },
+        "boosting": {
+          "kind": "model",
+          "selection_mae_ars_per_l": 24.243486185320325,
+          "validation_mae_ars_per_l": 31.9006747984348
+        },
+        "mediana_previa": {
+          "kind": "reference",
+          "selection_mae_ars_per_l": 45.731944711076984,
+          "validation_mae_ars_per_l": 79.72320041429312
+        },
+        "ridge": {
+          "kind": "model",
+          "selection_mae_ars_per_l": 35.297459090103565,
+          "validation_mae_ars_per_l": 31.00471526659517
+        },
+        "ultimo_precio": {
+          "kind": "reference",
+          "selection_mae_ars_per_l": 25.404722595507778,
+          "validation_mae_ars_per_l": 39.120403935784566
+        }
+      },
+      "artifacts": {
+        "model.joblib": {
+          "model": "boosting",
+          "sha256": "30326745d93bc82feeba2b22a0df5b5190ea7ef9ec6374d3684328af57887f35",
+          "conserved_in_repo": false
+        },
+        "validation-predictions.jsonl": {
+          "sha256": "79790818a0df32b61de0c572291ec9dccaaa0055bdfa856e36c12c7a86ec94ec",
+          "conserved_in_repo": false
+        }
+      },
+      "policy": null,
+      "audit": null
+    },
+    "91cb07a3ac0b99edd70e12b203318c1b498a1d06766011cbda5dd557852b5892": {
+      "manifest": "docs/evidencia/alertas-precios-2026-11-17/model-manifest.received.json",
+      "report": null,
+      "report_sha256": null,
+      "chosen_method": "bandera_reciente",
+      "features_version": "price-temporal-v2",
+      "parameters": {
+        "candidates": {
+          "boosting": {
+            "learning_rate": 0.05,
+            "loss": "absolute_error",
+            "max_iter": 300,
+            "max_leaf_nodes": 15,
+            "min_samples_leaf": 50
+          },
+          "ridge": {
+            "alpha": 1.0
+          }
+        },
+        "random_seed": 0,
+        "references": [
+          "mediana_previa",
+          "ultimo_precio",
+          "bandera_reciente"
+        ],
+        "selection_start_utc": "2025-01-01T03:00:00+00:00",
+        "threads": 1
+      },
+      "lineage": {
+        "dataset_sha256": "ea952f51479ca2493e6dbc15428d77bf552db919ccde4010011a1c8219a6f25e",
+        "dataset_manifest_sha256": "f5094a384516448b06ecd05a71b8679384c9b6cb7ed6b9385b0a8795e2d4162b",
+        "source_sha256": "950f748f881c95ea5bf9511a0c0ea120d6fc9a28345052ad46c8fc5d41f528bb",
+        "git_commit": "f712f5c1412009cbd27e4d9ed6ea25c12549b2c2",
+        "git_dirty": true
+      },
+      "candidates": null,
+      "artifacts": {
+        "model.joblib": {
+          "model": "boosting",
+          "sha256": "1d03060ab336b2d6fddb1b4bce8e2a33b9ecb8a840441bb574792339a2c45de5",
+          "conserved_in_repo": false
+        },
+        "validation-predictions.jsonl": {
+          "sha256": "d84092ef7b117fd785fcbf0f4d34fbb96fd2867a7e076f4a6ae5e4a39b01c79e",
+          "conserved_in_repo": false
+        }
+      },
+      "policy": "conservative-v1",
+      "audit": {
+        "file": "docs/evidencia/alertas-precios-2026-11-17/alert-evaluation.json",
+        "sha256": "00e7168eb658f54851cb22ed1d6b6b1edeafc8cc639172b8fdf92ac046b15fd9"
+      }
+    },
+    "b65d2d54ff3229486c495a35d89985b42981648dd02d576bf6a02b6f539aaf83": {
+      "manifest": "docs/evidencia/actualizacion-precios-2026-11-22/model-manifest.json",
+      "report": "docs/evidencia/actualizacion-precios-2026-11-22/model-report.json",
+      "report_sha256": "aca012ece131ce76ae179f857f4e967b9ef42e4520776930dd27ddce38f2a178",
+      "chosen_method": "bandera_reciente",
+      "features_version": "price-temporal-v2",
+      "parameters": {
+        "candidates": {
+          "boosting": {
+            "learning_rate": 0.05,
+            "loss": "absolute_error",
+            "max_iter": 300,
+            "max_leaf_nodes": 15,
+            "min_samples_leaf": 50
+          },
+          "ridge": {
+            "alpha": 1.0
+          }
+        },
+        "random_seed": 0,
+        "references": [
+          "mediana_previa",
+          "ultimo_precio",
+          "bandera_reciente"
+        ],
+        "selection_start_utc": "2025-01-01T03:00:00+00:00",
+        "threads": 1
+      },
+      "lineage": {
+        "dataset_sha256": "a6524b88d6fb900f69aed42c2001105ac3db32a332c2ac7029058cbcbf80ab58",
+        "dataset_manifest_sha256": "7d5a2fd9ea1329c28f7c4b8ac55025f4965a7dd6e4cc8b973f48acd074581cfe",
+        "source_sha256": "5a03269876a0facd38290938fcc580d6cf03fdae30264e5549affde22e3a1e70",
+        "git_commit": "af00cab3441b72cc567331adfb34a10e015078c2",
+        "git_dirty": false
+      },
+      "candidates": {
+        "bandera_reciente": {
+          "kind": "reference",
+          "selection_mae_ars_per_l": 20.616749856018433,
+          "validation_mae_ars_per_l": 41.16010230179029
+        },
+        "boosting": {
+          "kind": "model",
+          "selection_mae_ars_per_l": 24.243486185320325,
+          "validation_mae_ars_per_l": 32.24585634087972
+        },
+        "mediana_previa": {
+          "kind": "reference",
+          "selection_mae_ars_per_l": 45.731944711076984,
+          "validation_mae_ars_per_l": 79.13401534526854
+        },
+        "ridge": {
+          "kind": "model",
+          "selection_mae_ars_per_l": 35.297459090103565,
+          "validation_mae_ars_per_l": 31.040448883041634
+        },
+        "ultimo_precio": {
+          "kind": "reference",
+          "selection_mae_ars_per_l": 25.404722595507778,
+          "validation_mae_ars_per_l": 39.063171355498724
+        }
+      },
+      "artifacts": {
+        "model.joblib": {
+          "model": "boosting",
+          "sha256": "30326745d93bc82feeba2b22a0df5b5190ea7ef9ec6374d3684328af57887f35",
+          "conserved_in_repo": false
+        },
+        "validation-predictions.jsonl": {
+          "sha256": "f5389be2a37ca6f184076b28af68f4fc11408e51d0c5d38edf8d160344ed74e1",
+          "conserved_in_repo": false
+        }
+      },
+      "policy": "conservative-v1",
+      "audit": {
+        "file": "docs/evidencia/actualizacion-precios-2026-11-22/alert-evaluation.json",
+        "sha256": "9a6e9f9e2c0a1e983fcbb6ae7c6ff100e08014fd7c0b6d85220d9959814c4c7d"
+      }
+    }
+  },
+  "aliases": {
+    "champion": {
+      "run": "b65d2d54ff3229486c495a35d89985b42981648dd02d576bf6a02b6f539aaf83",
+      "method": "bandera_reciente"
+    },
+    "challengers": [
+      {
+        "run": "b65d2d54ff3229486c495a35d89985b42981648dd02d576bf6a02b6f539aaf83",
+        "method": "boosting"
+      },
+      {
+        "run": "b65d2d54ff3229486c495a35d89985b42981648dd02d576bf6a02b6f539aaf83",
+        "method": "ridge"
+      }
+    ]
+  },
+  "missing": [
+    "13/11: corrida de baseline sin manifiesto de modelo (docs/evidencia/ml-baseline-2026-11-13); no hay entrenamiento que registrar.",
+    "91cb07a3…: el reporte de selección no se conservó en el repositorio; la corrida queda registrada pero no se puede promover.",
+    "Todas las corridas: model.joblib y validation-predictions.jsonl están fuera de Git; se registran solo sus hashes.",
+    "Todas las corridas: Ridge no guarda artefacto propio (model.joblib es el de boosting); se registran sus métricas."
+  ]
+}
