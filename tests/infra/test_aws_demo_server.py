@@ -12,6 +12,28 @@ TEMPLATE = json.loads(
 )
 RESOURCES = TEMPLATE["Resources"]
 INSTANCE = RESOURCES["DemoInstance"]["Properties"]
+CLOUDFLARE_IPS = {
+    "198.41.200.73/32",
+    "198.41.200.233/32",
+    "198.41.200.23/32",
+    "198.41.192.167/32",
+    "198.41.200.13/32",
+    "198.41.200.63/32",
+    "198.41.192.107/32",
+    "198.41.192.47/32",
+    "198.41.192.77/32",
+    "198.41.200.33/32",
+    "198.41.192.57/32",
+    "198.41.200.53/32",
+    "198.41.192.227/32",
+    "198.41.200.43/32",
+    "198.41.192.27/32",
+    "198.41.192.67/32",
+    "198.41.192.37/32",
+    "198.41.200.113/32",
+    "198.41.192.7/32",
+    "198.41.200.193/32",
+}
 
 
 def test_compute_is_bounded_without_optional_billed_services():
@@ -30,7 +52,8 @@ def test_compute_is_bounded_without_optional_billed_services():
 
 
 @pytest.mark.parametrize("energy_http", [False, True])
-def test_ssm_access_stays_closed_and_http_is_limited_to_explicit_host(energy_http):
+@pytest.mark.parametrize("tunnel", [False, True])
+def test_ssm_access_stays_closed_and_http_is_limited_to_explicit_host(energy_http, tunnel):
     group = RESOURCES["DemoSecurityGroup"]["Properties"]
     assert group["VpcId"] == {"Ref": "VpcId"}
     assert not group.get("SecurityGroupIngress")
@@ -39,16 +62,19 @@ def test_ssm_access_stays_closed_and_http_is_limited_to_explicit_host(energy_htt
     for rule in group["SecurityGroupEgress"]:
         if "Fn::If" in rule:
             condition, allowed, otherwise = rule["Fn::If"]
-            assert condition == "AllowEnergyHttp" and otherwise == {"Ref": "AWS::NoValue"}
-            if energy_http:
+            assert condition in {"AllowEnergyHttp", "AllowCloudflareTunnel"}
+            assert otherwise == {"Ref": "AWS::NoValue"}
+            if {"AllowEnergyHttp": energy_http, "AllowCloudflareTunnel": tunnel}[condition]:
                 effective.append(allowed)
         else:
             effective.append(rule)
-    assert len(effective) == (2 if energy_http else 1)
+    assert len(effective) == 1 + int(energy_http) + 20 * int(tunnel)
     for rule in effective:
         assert rule["IpProtocol"] == "tcp" and rule["FromPort"] == rule["ToPort"]
         if rule["ToPort"] == 80:
             assert rule["CidrIp"] == {"Ref": "EnergyHttpCidr"}
+        elif rule["ToPort"] == 7844:
+            assert rule["CidrIp"] in CLOUDFLARE_IPS
         else:
             assert rule["ToPort"] == 443 and rule["CidrIp"] == "0.0.0.0/0"
     assert TEMPLATE["Parameters"]["EnergyHttpCidr"]["Default"] == ""

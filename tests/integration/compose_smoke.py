@@ -18,6 +18,7 @@ cache = shared_cache()
 assert (cache.ttl, cache.capacity, cache.per_minute, cache.per_day) == (19, 17, 2, 9)
 base = 'http://127.0.0.1:8000'
 assert requests.get(base + '/ready', timeout=3).status_code == 200
+assert requests.get(base + '/ready', timeout=3).json()['data_status'] == 'historical_scenario'
 html = requests.get(base + '/', timeout=3)
 assert html.status_code == 200 and 'Nafta2Go' in html.text
 assert requests.get(base + '/assets/app.js', timeout=3).status_code == 200
@@ -61,7 +62,44 @@ def main():
         override = Path(directory) / "override.yaml"
         settings = f"    image: {json.dumps(args.image)}\n    pull_policy: never\n"
         services = "".join(f"  {name}:\n{settings}" for name in ("migrate", "query", "api"))
-        override.write_text("services:\n" + services + "    ports: !reset []\n")
+        server = """
+from pathlib import Path
+import uvicorn
+from nafta2go.presentation.http import create_app
+from nafta2go.adapters.recorded_routes import RecordedRoutes
+from nafta2go.adapters.routing import DistanceMatrix
+class CapturedSubset(RecordedRoutes):
+    def matrix(self, sources, destinations):
+        rows = [self.sources.index(point) for point in sources]
+        columns = [self.destinations.index(point) for point in destinations]
+        value = self.matrix_value
+        return DistanceMatrix(
+            [[value.durations_s[i][j] for j in columns] for i in rows],
+            [[value.distances_m[i][j] for j in columns] for i in rows],
+            list(sources), list(destinations))
+uvicorn.run(create_app(provider_factory=lambda: CapturedSubset(
+    Path('docs/evidencia/poc-05-flujo-2026-10-26/matrix.json'))),
+    host='0.0.0.0', port=8000, access_log=False, log_config='deploy/logging.json')
+"""
+        override.write_text(
+            "services:\n"
+            + services
+            + "    ports: !reset []\n"
+            + "    healthcheck:\n      test: "
+            + json.dumps(
+                [
+                    "CMD",
+                    "python",
+                    "-c",
+                    "import requests; "
+                    "requests.get('http://127.0.0.1:8000/health', timeout=2).raise_for_status()",
+                ]
+            )
+            + "\n"
+            + "    command: "
+            + json.dumps(["python", "-c", server])
+            + "\n"
+        )
         command = [
             "docker",
             "compose",
@@ -85,6 +123,17 @@ def main():
             )
             subprocess.run(
                 [*command, "exec", "-T", "api", "python", "-c", PROBE], check=True, **options
+            )
+            subprocess.run(
+                [*command, "up", "--no-build", "--force-recreate", "--wait", "api"],
+                check=True,
+                env=environment | {"NAFTA2GO_MAX_PRICE_AGE_DAYS": "30"},
+                cwd=root,
+            )
+            subprocess.run(
+                [*command, "exec", "-T", "api", "python", "deploy/smoke.py"],
+                check=True,
+                **options,
             )
             logs = subprocess.run(
                 [*command, "logs", "--no-log-prefix", "api"],

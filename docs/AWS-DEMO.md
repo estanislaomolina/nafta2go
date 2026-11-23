@@ -13,7 +13,8 @@ el cambio, IMDSv2, rol `AmazonSSMManagedInstanceCore` y grupo sin entrada. Salid
 HTTPS por defecto con IPv4 pública asignada a la instancia, sin EIP ni NAT.
 Existe una excepción HTTP opcional y acotada para la fuente de Energía (abajo). La API continuará
 ligada a loopback; el túnel de Session Manager exige autorización IAM/SSO.
-No entrega una URL pública ni reemplaza la autenticación de conductor/administrador.
+La URL pública opcional se habilita con el [servicio HTTPS versionado](AWS-HTTPS.md);
+no reemplaza la autenticación de conductor/administrador.
 
 El administrador del sandbox debe permitir IAM/PassRole, instancia, disco, grupo
 y SSM; el dry-run de VPC anterior no verifica esos permisos. La red/subred deben
@@ -144,31 +145,32 @@ El [ejecutable local](../scripts/aws_demo_command.py) envía el
 ```bash
 python scripts/aws_demo_command.py --profile nafta2go \
   --instance-id "$INSTANCE_ID" --commit "$REVIEWED_COMMIT" \
-  --parameter /nafta2go/demo/runtime
+  --parameter /nafta2go/demo/runtime --image "$IMAGE_DIGEST"
 ```
 
 Usa un SHA completo, valida instancia/parámetro y devuelve el ID del comando.
 Consultar su estado; no reenviarlo mientras siga ejecutándose. La aplicación se
-obtiene de GitHub por ese SHA, se construye y registra una imagen local identificada
-por commit. La base Python y las dependencias con rangos pueden cambiar entre
-construcciones: conservar el ID real de imagen, no afirmar bytes reproducibles.
+descarga de GHCR por el digest del artefacto `referencia-imagen` del CI y se verifica
+su etiqueta de commit; no se construye en EC2. El paquete debe permitir lectura
+anónima. Conservar el digest de la corrida elegida; reconstruir un commit con
+dependencias con rangos puede producir otra imagen. Ver [entrega](ENTREGA-AWS.md).
 
 El parámetro privado contiene `DATABASE_URL=sqlite:////app/data/nafta2go.db`,
 `ORS_API_KEY`, tokens distintos de conductor/administrador y límites de vigencia,
 caché y cuota. Se recupera sólo en el host a un env con permisos 0600, fuera de la
 release. El puerto se liga a `127.0.0.1:8000`; las credenciales no se imprimen.
 
-Antes de activar se aplican migraciones e ingesta vigente sobre almacenamiento
-persistente; si ya hay base, se respalda usando la API SQLite y se comprueba
-integridad. El servicio anterior continúa mientras se construye la imagen y se
-preparan los datos. Después se sustituye el contenedor y se comprueba `/ready`;
+Antes de activar se aplican migraciones sobre almacenamiento
+persistente; la adquisición se ejecuta por separado; si ya hay base, se respalda usando la API SQLite y se comprueba
+integridad. El servicio anterior continúa mientras se descarga la imagen y se
+preparan los datos. Después se sustituye el contenedor y se ejecuta el smoke de [entrega](ENTREGA-AWS.md);
 si falla, se intenta recuperar la imagen anterior. El rollback es de código,
 con la configuración actual: no revierte migraciones ni restaura datos. El esquema
 0003 es compatible entre las primeras releases; una migración futura debe revisar
 esa premisa. La base y originales del host no son todavía un backup externo.
 
 Las pruebas aisladas ejecutan el script con dependencias falsas para verificar
-fallo de construcción, recuperación ante readiness fallido, conservación de la
+fallo de descarga o discrepancia de revisión, recuperación ante readiness fallido, conservación de la
 imagen anterior y ausencia de valores privados en la salida. La validación del
 transporte rechaza inyección y referencias fuera del prefijo permitido. No se
 confunden estas pruebas con un rollback provocado en AWS.
@@ -205,7 +207,7 @@ se contrastaron hash del gzip, cantidad de partes, tamaño y SHA-256 del origina
 El archivo público queda en `data/imports/<sha256>.csv`, con permisos para el UID de
 la aplicación. No se transfieren tokens mediante ese mecanismo.
 
-El despliegue admite opcionalmente `--capture-file /app/data/imports/<sha256>.csv`.
+El procedimiento original (anterior a #157) admitía `--capture-file /app/data/imports/<sha256>.csv`.
 Sólo acepta esa ruta con nombre de hash completo; ejecuta el mismo normalizador
 con `--file`. Es una importación explícita, no una descarga exitosa desde AWS.
 La captura ya cargada no elimina la necesidad de resolver la adquisición
@@ -241,3 +243,8 @@ por fragmentos; resta automatizar su retención y recuperación operativa.
 El primer apagado está programado para el 21/11 a las 23:51 UTC (20:51 de Argentina).
 Después del apagado la URL local requiere volver a iniciar la instancia y el túnel;
 no confundir cerrar CloudShell o el túnel con detener el servidor.
+
+La prueba temporal de Cloudflare se convirtió en un [procedimiento HTTPS](AWS-HTTPS.md)
+con servicio, versión/hash fijados y salida opcional de CloudFormation. Quick no
+requiere token; el modo administrado sí gestiona credenciales. La prueba desde
+un teléfono físico sigue siendo un criterio distinto del smoke HTTP automatizado.

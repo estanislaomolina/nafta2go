@@ -1,0 +1,12 @@
+[Unit]
+Description=Ingerir captura verificada de Nafta2Go desde S3
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+OnFailure=nafta2go-aws-monitor.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/nafta2go/ingestion-relay.env
+ExecStart=/bin/bash /opt/nafta2go/ingestion/aws-ingestion-relay.sh
+TimeoutStartSec=30min
+UMask=0077

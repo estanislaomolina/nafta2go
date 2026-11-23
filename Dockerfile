@@ -17,6 +17,7 @@ COPY alembic.ini .
 COPY migrations ./migrations
 COPY nafta2go ./nafta2go
 COPY deploy/logging.json ./deploy/logging.json
+COPY deploy/smoke.py ./deploy/smoke.py
 COPY docs/evidencia/escenario-vigente-2026-10-24 ./docs/evidencia/escenario-vigente-2026-10-24
 COPY docs/evidencia/poc-05-flujo-2026-10-26/matrix.json ./docs/evidencia/poc-05-flujo-2026-10-26/matrix.json
 

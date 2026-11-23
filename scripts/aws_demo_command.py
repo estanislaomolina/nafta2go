@@ -13,19 +13,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def request(instance_id, commit, parameter, capture_file=None):
+def request(instance_id, commit, parameter, image, mode="deploy"):
     if not re.fullmatch(r"i-(?:[0-9a-f]{8}|[0-9a-f]{17})", instance_id):
         raise ValueError("ID de instancia inválido")
     if not re.fullmatch(r"[0-9a-f]{40}", commit):
         raise ValueError("Se requiere un SHA completo")
     if not re.fullmatch(r"/nafta2go/demo/[a-zA-Z0-9/_-]+", parameter):
         raise ValueError("Nombre de parámetro no admitido")
-    if capture_file is not None and not re.fullmatch(
-        r"/app/data/imports/[0-9a-f]{64}\.csv", capture_file
-    ):
-        raise ValueError("Ruta de captura no admitida")
-    capture_arg = " " + capture_file if capture_file else ""
+    if not re.fullmatch(r"ghcr.io/estanislaomolina/nafta2go@sha256:[0-9a-f]{64}", image):
+        raise ValueError("Se requiere una imagen de GHCR por digest SHA-256")
+    if mode not in {"deploy", "rollback"}:
+        raise ValueError("Modo no admitido")
     script = (ROOT / "deploy/aws-demo-release.sh").read_text()
+    probe = (ROOT / "deploy/smoke.py").read_text()
+    script = "smoke_source=$(cat <<'NAFTA2GO_SMOKE'\n" + probe + "\nNAFTA2GO_SMOKE\n)\n" + script
     return {
         "DocumentName": "AWS-RunShellScript",
         "InstanceIds": [instance_id],
@@ -33,7 +34,7 @@ def request(instance_id, commit, parameter, capture_file=None):
         "TimeoutSeconds": 900,
         "Parameters": {
             "commands": [
-                f"bash -s -- {commit} {parameter}{capture_arg} <<'NAFTA2GO_RELEASE'\n"
+                f"bash -s -- {commit} {parameter} {image} {mode} <<'NAFTA2GO_RELEASE'\n"
                 f"{script}\nNAFTA2GO_RELEASE"
             ],
             "executionTimeout": ["1800"],
@@ -46,19 +47,21 @@ def main(argv=None):
     parser.add_argument("--instance-id", required=True)
     parser.add_argument("--commit", required=True)
     parser.add_argument("--parameter", required=True)
-    parser.add_argument("--capture-file")
-    parser.add_argument("--profile", default="nafta2go")
+    parser.add_argument("--image", required=True, help="Referencia GHCR por digest SHA-256")
+    parser.add_argument("--mode", choices=("deploy", "rollback"), default="deploy")
+    parser.add_argument(
+        "--profile", help="Omitir para usar las credenciales del entorno, como OIDC"
+    )
     parser.add_argument("--aws", default="aws")
     args = parser.parse_args(argv)
-    payload = request(args.instance_id, args.commit, args.parameter, args.capture_file)
+    payload = request(args.instance_id, args.commit, args.parameter, args.image, args.mode)
     # El payload sólo contiene el nombre del parámetro, nunca el env privado.
     result = subprocess.run(
         [
             args.aws,
             "ssm",
             "send-command",
-            "--profile",
-            args.profile,
+            *(["--profile", args.profile] if args.profile else []),
             "--region",
             "us-east-2",
             "--cli-input-json",
