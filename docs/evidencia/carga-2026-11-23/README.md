@@ -30,6 +30,9 @@ repetición con el mismo perfil (1055 solicitudes) y otra con 20 clientes sin pa
 (1200 solicitudes) no dieron errores. Las 979 respuestas exitosas quedaron
 guardadas y la auditoría no encontró fallas.
 
+Seguimiento en #173: un test reproduce el bloqueo (un commit espera a las lecturas
+abiertas hasta el timeout) y el arreglo activa WAL en SQLite.
+
 ## Estrés — escalones de 1 a 80 usuarios sin pausa, 30 s cada uno
 
 [estres.json](estres.json): 2924 solicitudes, **0 errores**.
@@ -67,4 +70,4 @@ rutas entre procesos (ADR-010), así que no se cambia en esta etapa.
 Pendientes:
 
 - medir con `--target` contra la instancia `t3.small` de AWS;
-- confirmar el origen de los 503 intermitentes de la corrida sostenida.
+- repetir esta evidencia cuando #173 esté en `dev`.

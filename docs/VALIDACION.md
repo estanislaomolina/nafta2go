@@ -39,7 +39,7 @@ se conserva como medición histórica separada.
 **Carga y estrés (#158).** Con Locust contra uvicorn (un proceso), rutas grabadas y
 el commit `ac67b8c` ([evidencia](evidencia/carga-2026-11-23/README.md), ADR-029):
 - 10 usuarios con pausa: p95 0,47 s y 9 respuestas 503 intermitentes (0,91 %) sin
-  causa confirmada.
+  causa confirmada; seguimiento en #173.
 - Escalones sin pausa: el rendimiento se estanca en unas 12–14 consultas por segundo
   por la CPU de un proceso. El p95 es 4,89 s con 40 usuarios y 8,17 s con 80, sin
   errores.
