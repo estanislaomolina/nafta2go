@@ -16,6 +16,7 @@ from zoneinfo import ZoneInfo
 import requests
 
 from nafta2go.adapters.acquisition import acquire_with_retries
+from nafta2go.adapters.capture_relay import capture_from_receipt
 from nafta2go.adapters.energy_source import discover_resources, download
 from nafta2go.normalization.pipeline import normalize_capture
 from nafta2go.normalization.rules import LOCAL_TIMEZONE, SOURCES
@@ -29,9 +30,14 @@ HASH_CHUNK = 1024 * 1024
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = _parser().parse_args(argv)
+    parser = _parser()
+    args = parser.parse_args(argv)
+    if args.receipt is not None and (args.file is None or args.source != "vigente"):
+        parser.error("--receipt requiere --file y --source vigente")
 
     def acquire() -> RawCapture:
+        if args.receipt is not None:
+            return capture_from_receipt(args.file, args.receipt)
         if args.file is not None:
             return capture_from_file(args.file, args.source)
         return acquire_with_retries(acquire_remote, args.source)
@@ -97,6 +103,7 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="python -m nafta2go.normalization", description=__doc__)
     parser.add_argument("--source", required=True, choices=SOURCES)
     parser.add_argument("--file", type=Path, help="CSV ya descargado; si falta, se descarga")
+    parser.add_argument("--receipt", type=Path, help="Recibo de adquisición remota verificado")
     parser.add_argument("--json", action="store_true", help="Estado, duración y calidad en JSON")
     return parser
 

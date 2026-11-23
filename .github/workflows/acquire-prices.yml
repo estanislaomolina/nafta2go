@@ -1,0 +1,53 @@
+name: Adquirir precios para AWS
+
+on:
+  schedule:
+    - cron: "17 9 * * *"
+  workflow_dispatch:
+
+# El recibo se publica después del CSV; evitar productores concurrentes.
+concurrency:
+  group: adquirir-precios-aws
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  acquire:
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      CAPTURE_BUCKET: ${{ vars.NAFTA2GO_CAPTURE_BUCKET }}
+      CAPTURE_ROLE: ${{ vars.NAFTA2GO_CAPTURE_ROLE_ARN }}
+      AWS_RETRY_MODE: standard
+      AWS_MAX_ATTEMPTS: "3"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Comprobar configuración
+        run: test -n "$CAPTURE_BUCKET" && test -n "$CAPTURE_ROLE"
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements.txt
+      # Sin environment: el subject es el de la rama, no environment:demo.
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.CAPTURE_ROLE }}
+          role-session-name: captura-${{ github.run_id }}
+          aws-region: us-east-2
+          role-duration-seconds: 1800
+          unset-current-credentials: true
+      - name: Adquirir, verificar y transferir
+        run: python -m scripts.publish_capture --bucket "$CAPTURE_BUCKET" > acquisition.json
+      - name: Conservar resultado y linaje
+        uses: actions/upload-artifact@v4
+        with:
+          name: acquisition-${{ github.run_id }}
+          path: acquisition.json
+          retention-days: 30

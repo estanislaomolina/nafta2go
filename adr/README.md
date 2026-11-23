@@ -48,3 +48,4 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 | [ADR-028](ADR-028-url-https-con-cloudflare.md) | URL HTTPS de demo con Cloudflare Tunnel | Propuesto |
 | [ADR-029](ADR-029-pruebas-de-carga-con-locust.md) | Pruebas de carga y estrés con Locust sobre un servidor aislado | Propuesto |
 | [ADR-030](ADR-030-registro-de-modelos-versionado.md) | Registro de modelos versionado con alias de campeón | Propuesto |
+| [ADR-031](ADR-031-transferencia-verificada-de-capturas.md) | Transferencia verificada de capturas para la ingesta cloud | Propuesto |
