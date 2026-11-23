@@ -1,7 +1,9 @@
 """El presupuesto es acumulativo y el corte conserva los datos."""
 
+import json
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from pathlib import Path
 
 from deploy.budget_guard import cutoff
 
@@ -21,3 +23,10 @@ def test_fresh_low_spend_keeps_compute_and_stale_data_stops_it():
     budget = {"LastUpdatedTime": now, "CalculatedSpend": {"ActualSpend": {"Amount": "0.105"}}}
     assert cutoff(budget, now) == (False, Decimal("0.105"))
     assert cutoff(budget, now + timedelta(hours=37))[0]
+
+
+def test_deployed_lambda_matches_the_tested_guard():
+    root = Path(__file__).resolve().parents[2]
+    template = json.loads((root / "infra/aws/public-api.json").read_text())
+    inline = template["Resources"]["BudgetGuard"]["Properties"]["Code"]["ZipFile"]
+    assert inline == (root / "deploy/budget_guard.py").read_text()
