@@ -307,3 +307,26 @@ validaciones y trazabilidad ya verificadas. La ejecución 15 fue un timer de
 prueba y se conserva separada en la evidencia anterior. Dos ejecuciones exitosas
 no acreditan un SLA ni disponibilidad continua: la computadora apagada no ejecuta
 tareas. El despliegue y la validación integral siguen en #22, #23 y #59.
+
+
+## Productor y receptor de capturas — continuación de #160
+
+`python -m scripts.publish_capture --bucket BUCKET_PRIVADO` se ejecuta en el runner
+con `GITHUB_RUN_ID`, `GITHUB_SHA` e identidad AWS de máquina. Reutiliza los tres
+intentos de adquisición; verifica integridad y calidad antes de publicar el CSV
+por hash y después `vigente/latest.json`. Cada publicación limita AWS CLI a tres
+intentos y 300 segundos. No recibe un perfil SSO personal.
+
+El host usa `deploy/aws-ingestion-relay.sh` con `NAFTA2GO_CAPTURE_BUCKET` y el rol
+EC2. Descarga una sola vez el recibo y el CSV de su hash, y ejecuta el importador
+con la imagen de `current-image`. Comparte `private/deployment.lock` con el
+procedimiento de despliegue; espera hasta 60 s y falla si continúa ocupado.
+No adquiere nuevos precios durante un despliegue. Los originales quedan en
+`data/imports/relay-*` desde que pueden ser referenciados por una transacción.
+Una falla de descarga elimina el parcial y no ejecuta el importador; su ausencia
+se detecta por antigüedad en el monitor.
+
+Las pruebas ejecutan el receptor real con AWS/Docker sustituidos y comprueban
+éxito, descarga fallida y corrupción. No representan una ejecución en AWS.
+El contrato de recibos se revisa en #176; programación e infraestructura son el
+siguiente tramo de #160. Estos ejecutables por sí solos no cierran el issue.
