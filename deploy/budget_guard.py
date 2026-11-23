@@ -26,9 +26,7 @@ def handler(event, context):
     if stop:
         ec2 = boto3.client("ec2", region_name=os.environ["REGION"])
         instance = os.environ["INSTANCE"]
-        ec2.create_tags(
-            Resources=[instance], Tags=[{"Key": BUDGET_TAG, "Value": "exhausted"}]
-        )
+        ec2.create_tags(Resources=[instance], Tags=[{"Key": BUDGET_TAG, "Value": "exhausted"}])
         ec2.stop_instances(InstanceIds=[instance])
     return {
         "stop_requested": stop,
