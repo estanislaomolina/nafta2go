@@ -24,6 +24,7 @@ Santiago Bunge
 - [Ingesta diaria y monitor](docs/INGESTA.md): unidades systemd, alertas locales y evidencia de fallos/recuperación; supervisión sostenida pendiente (MVP-01).
 - [Preparación AWS](docs/AWS.md): acceso del sandbox, plantilla de red, validación y límites.
 - [Servidor de demo AWS](docs/AWS-DEMO.md): `t3.small` efímera, entrega versionada por SSM, costos, resultado de la primera demo y respaldo de la base.
+- [Hosting continuo](docs/HOSTING.md): web en GitHub Pages y API/Grafana por HTTPS en EC2 con guardia de presupuesto (ADR-032); evidencia operativa pendiente.
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
 - [Enlaces de Google Maps](docs/MAPS.md): navegación por alternativa en API/CLI/web; pruebas en navegador y móvil emulado; teléfono físico pendiente.

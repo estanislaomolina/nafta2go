@@ -35,7 +35,7 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 | [ADR-015](ADR-015-referencia-servida-y-abstencion-de-alertas.md) | Referencia seleccionada servida y abstención de alertas sin calibración | Propuesto |
 | [ADR-016](ADR-016-acceso-administrativo-separado.md) | Acceso administrativo separado del código de conductor | Propuesto |
 | [ADR-017](ADR-017-evaluacion-temporal-de-umbrales.md) | Evaluación temporal de umbrales candidatos antes de activar alertas | Propuesto |
-| [ADR-018](ADR-018-servidor-efimero-de-demo.md) | Servidor efímero de demo con acceso por Session Manager | Propuesto |
+| [ADR-018](ADR-018-servidor-efimero-de-demo.md) | Servidor efímero de demo con acceso por Session Manager | Reemplazado por ADR-032 para la operación continua |
 | [ADR-019](ADR-019-salida-http-acotada-de-energia.md) | Salida HTTP opcional acotada para la fuente de Energía | Propuesto |
 | [ADR-020](ADR-020-estimacion-de-precios-antiguos.md) | Estimación rotulada para precios de 31 a 120 días | Propuesto |
 | [ADR-021](ADR-021-ranking-conservador-por-desvio.md) | Ranking conservador por desvío provisional | Aceptado |
@@ -45,7 +45,7 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 | [ADR-025](ADR-025-imagen-verificada-por-digest.md) | Imagen verificada en CI y entregada por digest | Propuesto |
 | [ADR-026](ADR-026-despliegue-con-oidc.md) | Despliegue con OIDC y aprobación independiente | Propuesto |
 | [ADR-027](ADR-027-observabilidad-con-prometheus-y-grafana.md) | Observabilidad con Prometheus y Grafana | Propuesto |
-| [ADR-028](ADR-028-url-https-con-cloudflare.md) | URL HTTPS de demo con Cloudflare Tunnel | Propuesto |
+| [ADR-028](ADR-028-url-https-con-cloudflare.md) | URL HTTPS de demo con Cloudflare Tunnel | Reemplazado por ADR-032 |
 | [ADR-029](ADR-029-pruebas-de-carga-con-locust.md) | Pruebas de carga y estrés con Locust sobre un servidor aislado | Propuesto |
 | [ADR-030](ADR-030-registro-de-modelos-versionado.md) | Registro de modelos versionado con alias de campeón | Propuesto |
 | [ADR-031](ADR-031-transferencia-verificada-de-capturas.md) | Transferencia verificada de capturas para la ingesta cloud | Propuesto |

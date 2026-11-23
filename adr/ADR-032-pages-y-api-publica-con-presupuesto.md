@@ -16,15 +16,10 @@ Esto reemplaza el modo de demo de dos horas; Pages sólo aloja HTML y assets.
 
 ## Considered Options
 
-* Pages para la web, IP estable en EC2 y HTTPS con Caddy/dirección gratuita:
-  conserva la aplicación y evita comprar dominio, pero requiere entrada 80/443,
-  CORS acotado y controlar gastos. El DNS gratuito no ofrece SLA.
-* Cloudflare Quick Tunnel: mantiene entrada cerrada, pero cambia URL y no cumple
-  la nueva elección del titular.
-* Dominio propio y balanceador AWS: dirección administrada, pero agrega costos
-  y servicios injustificados para este presupuesto.
-* Pages como único alojamiento: gratuito para la web pública, pero no ejecuta
-  FastAPI, ingesta, SQLite ni Grafana.
+* Pages para la web, IP estable en EC2 y HTTPS con Caddy y dirección gratuita.
+* Cloudflare Quick Tunnel (ADR-028).
+* Dominio propio y balanceador de AWS.
+* Pages como único alojamiento.
 
 ## Decision Outcome
 
@@ -51,3 +46,28 @@ proveedor. La política de eliminación final requiere la elección del titular.
 La validación incluye CORS, build de Pages, acceso autenticado, dashboards,
 certificado público, timer/guardia e ingesta. Las capturas antiguas de Cloudflare
 se conservan como evidencia histórica, sin atribuirles la nueva disponibilidad.
+
+## Pros and Cons of the Options
+
+### Pages, IP estable en EC2 y HTTPS con Caddy
+
+* Bueno, porque conserva la aplicación completa y no requiere comprar un dominio.
+* Bueno, porque la dirección `sslip.io` de la IP estable permite certificados gratuitos.
+* Malo, porque abre la entrada 80/443 y exige CORS acotado y control de gastos.
+* Malo, porque el DNS gratuito no ofrece SLA.
+
+### Cloudflare Quick Tunnel
+
+* Bueno, porque mantiene cerrada la entrada de la instancia.
+* Malo, porque la URL cambia en cada arranque.
+* Malo, porque no cumple la nueva elección del titular.
+
+### Dominio propio y balanceador de AWS
+
+* Bueno, porque da una dirección administrada.
+* Malo, porque agrega costos y servicios injustificados para este presupuesto.
+
+### Pages como único alojamiento
+
+* Bueno, porque es gratuito para la web pública.
+* Malo, porque no ejecuta FastAPI, la ingesta, SQLite ni Grafana.
