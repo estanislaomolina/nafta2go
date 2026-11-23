@@ -23,6 +23,8 @@ aws ssm get-parameters --region us-east-2 --names /nafta2go/demo/grafana-admin \
 [[ -s "$base/private/observability/grafana_admin_password" ]]
 chmod 444 "$base/private/observability/"*
 cp -R "$source_dir/observability/." "$base/observability/"
+# Son configs públicas: Grafana/Prometheus usan UID distintos al root del host.
+chmod -R a+rX "$base/observability"
 cat > "$base/proxy/Caddyfile" <<EOF
 $public_host {
   log {
