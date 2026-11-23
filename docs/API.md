@@ -30,7 +30,9 @@ nulas; sin publicación, 404; sin datos/configuración compatibles, 503 seguro.
 La referencia no modifica motor, precio oficial, ranking ni vigencia.
 
 Las lecturas filtran en SQL la última publicación no futura de la estación y el
-histórico del mismo producto/franja estrictamente anterior al objetivo. Sólo
+histórico del mismo producto/franja estrictamente anterior al objetivo más reciente
+del lote. La preparación ordenada excluye el mismo instante y el futuro para cada
+publicación individual. Sólo
 materializan los campos de preparación temporal. El histórico conserva precios
 antiguos del grupo: el último precio propio puede ser anterior a la ventana de
 medianas y sigue siendo necesario para el fallback. Esto reduce lecturas ajenas
@@ -304,3 +306,20 @@ anterior; cualquier otro manifiesto se abstiene. El diagnóstico aún comprueba 
 el hash del histórico sea el del modelo: no permite mezclar las dos capturas.
 No se cambia el precio oficial ni se carga el artefacto aprendido descartado.
 La habilitación en AWS requiere revisión e integración de esta actualización.
+
+
+### Preparación compartida del contexto de diagnóstico
+
+El recomendador agrupa hasta veinte publicaciones viables del mismo producto/franja
+para leer la selección y el histórico una vez. Se calculan sus referencias en una
+sola pasada cronológica: las publicaciones consultadas no se incorporan como contexto
+de otras consultas. Se conservan el precio oficial, referencia, corte temporal,
+abstención y metadatos por publicación. El endpoint individual usa el mismo camino
+con un solo objetivo. No agrega llamadas de rutas ni expone un endpoint masivo.
+
+La preparación de entrenamiento por defecto conserva sus bytes; el modo de consulta
+emite sólo objetivos adicionales sin alterar el contexto histórico. Los tests
+comparan el lote contra preparaciones individuales, incluso con publicaciones
+históricas del mismo instante, objetivos intercalados y precios de consulta enormes.
+La medición real del histórico en [la evidencia de rendimiento](evidencia/diagnostico-lote-2026-11-22/README.md)
+se mantiene separada del lote con ORS y de la validación en AWS.

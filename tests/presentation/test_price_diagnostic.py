@@ -576,3 +576,49 @@ def test_promoting_and_reverting_the_champion_changes_the_served_version(
     model_registry.save(registry, path)
     with client(engine) as http:
         assert http.get(URL, headers=AUTH).status_code == 503
+
+
+def test_batch_matches_individual_diagnostics_with_one_history_read(engine, prepared, monkeypatch):
+    from nafta2go.application.price_diagnostic import (
+        price_diagnostic_on_connection,
+        price_diagnostics_on_connection,
+    )
+
+    runs, _, target, _ = prepared
+    with engine.begin() as conn:
+        conn.execute(
+            station_prices.insert(),
+            [
+                {
+                    **target,
+                    "id": None,
+                    "run_id": runs["vigente"],
+                    "station_id": 8,
+                    "source_row": 902,
+                    "valid_from": target["valid_from"] - timedelta(days=1),
+                    "price": 999999,
+                },
+                {
+                    **target,
+                    "id": None,
+                    "run_id": runs["vigente"],
+                    "station_id": 9,
+                    "source_row": 903,
+                },
+            ],
+        )
+    spy = Mock(wraps=repo.diagnostic_history)
+    monkeypatch.setattr(repo, "diagnostic_history", spy)
+    with engine.connect() as conn:
+        batch = price_diagnostics_on_connection(conn, [7, 8, 9, 999], 2, 2, NOW)
+        assert spy.call_count == 1
+        individual = {
+            station: price_diagnostic_on_connection(conn, station, 2, 2, NOW)
+            for station in [7, 8, 9, 999]
+        }
+        assert batch == individual
+        assert batch[999] is None
+        assert batch[8]["status"] == "unavailable"
+        assert batch[7]["reference_ars_per_l"] == batch[9]["reference_ars_per_l"] == "120.000"
+        with pytest.raises(ValueError):
+            price_diagnostics_on_connection(conn, list(range(21)), 2, 2, NOW)

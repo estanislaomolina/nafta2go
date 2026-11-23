@@ -370,7 +370,10 @@ def test_conservative_uses_existing_routes_and_persists_trace(engine, monkeypatc
         }
 
     monkeypatch.setattr(
-        "nafta2go.application.conservative_ranking.price_diagnostic_on_connection", diagnostic
+        "nafta2go.application.conservative_ranking.price_diagnostics_on_connection",
+        lambda conn, stations, product, schedule, now: {
+            station: diagnostic(conn, station, product, schedule, now) for station in stations
+        },
     )
     provider = Routes()
     result = query(engine, provider)
@@ -402,7 +405,7 @@ def test_historical_conservative_is_unavailable_without_reading_diagnostics(engi
         raise AssertionError("No diagnosticar un escenario histórico como vigente")
 
     monkeypatch.setattr(
-        "nafta2go.application.conservative_ranking.price_diagnostic_on_connection", forbidden
+        "nafta2go.application.conservative_ranking.price_diagnostics_on_connection", forbidden
     )
     result = query(engine)
     assert result["conservative_ranking"]["status"] == "unavailable"
