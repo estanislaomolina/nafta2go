@@ -1,0 +1,289 @@
+"""API local del recomendador: uvicorn nafta2go.presentation.http:app."""
+
+import logging
+import os
+from collections.abc import Callable
+from contextlib import asynccontextmanager
+from dataclasses import asdict
+from datetime import UTC, datetime
+from secrets import compare_digest
+from typing import Annotated, Literal
+
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import Engine
+from sqlalchemy.exc import SQLAlchemyError
+
+from nafta2go.adapters.recorded_routes import CapturedRoutes, shared_cache
+from nafta2go.adapters.routing import (
+    InvalidCredentials,
+    ProviderTimeout,
+    QuotaExceeded,
+    RoutingError,
+)
+from nafta2go.adapters.usig_places import USIGPlaces
+from nafta2go.application.coverage_rules import (
+    CoverageConfigurationError,
+    configured_max_price_age_days,
+)
+from nafta2go.application.ingestion_status import ingestion_status
+from nafta2go.application.place_search import PlaceSearch
+from nafta2go.application.price_diagnostic import DiagnosticUnavailable, price_diagnostic
+from nafta2go.application.query import recommend_from_database
+from nafta2go.application.readiness import data_readiness
+from nafta2go.application.scenario import ScenarioIntegrityError
+from nafta2go.domain.places import PlaceBusy, PlaceUnavailable
+from nafta2go.persistence.database import create_db_engine
+from nafta2go.presentation.diagnostic_telemetry import (
+    DiagnosticTelemetry,
+    DiagnosticTelemetryMiddleware,
+)
+from nafta2go.presentation.models import (
+    ErrorOutput,
+    PlaceSearchInput,
+    PriceDiagnosticOutput,
+    RecommendationInput,
+    RecommendationOutput,
+)
+from nafta2go.presentation.navigation import present_recommendation
+from nafta2go.presentation.prometheus import HTTPMetrics, MetricsMiddleware
+from nafta2go.presentation.telemetry import QueryTelemetry, QueryTelemetryMiddleware
+from nafta2go.presentation.web import install_web
+
+logger = logging.getLogger(__name__)
+bearer = HTTPBearer(auto_error=False)
+
+
+def authorize(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
+) -> None:
+    _authorize(credentials, os.environ.get("NAFTA2GO_API_TOKEN", "").strip())
+
+
+def authorize_admin(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
+) -> None:
+    expected = os.environ.get("NAFTA2GO_ADMIN_TOKEN", "").strip()
+    driver = os.environ.get("NAFTA2GO_API_TOKEN", "").strip()
+    if not expected or compare_digest(expected.encode(), driver.encode()):
+        raise HTTPException(503, detail={"code": "admin_not_configured"})
+    _authorize(credentials, expected)
+
+
+def _authorize(credentials, expected):
+    if not expected:
+        raise HTTPException(503, detail={"code": "api_not_configured"})
+    if credentials is None or not compare_digest(
+        credentials.credentials.encode(), expected.encode()
+    ):
+        raise HTTPException(
+            401, detail={"code": "unauthorized"}, headers={"WWW-Authenticate": "Bearer"}
+        )
+
+
+def dependency_error(_request, exc: Exception) -> JSONResponse:
+    status, code = 503, "data_unavailable"
+    if isinstance(exc, CoverageConfigurationError):
+        code = "coverage_not_configured"
+    if isinstance(exc, RoutingError):
+        status, code = 502, "routes_unavailable"
+        if isinstance(exc, ProviderTimeout):
+            status, code = 504, "routes_timeout"
+        elif isinstance(exc, QuotaExceeded):
+            status, code = 503, "routes_quota_exceeded"
+        elif isinstance(exc, InvalidCredentials):
+            status, code = 503, "routes_not_configured"
+    logger.warning(
+        "Dependencia de la consulta no disponible", extra={"error_type": type(exc).__name__}
+    )
+    return JSONResponse(status_code=status, content={"detail": {"code": code}})
+
+
+def validation_error(_request, exc: RequestValidationError) -> JSONResponse:
+    # No repetir el input ni ctx: pueden contener ubicaciones u otros datos enviados.
+    errors = []
+    for error in exc.errors():
+        message = {"missing": "Campo obligatorio", "extra_forbidden": "Campo no admitido"}.get(
+            error["type"], "Tipo o valor fuera del rango admitido"
+        )
+        if error["type"] == "value_error":
+            message = str(error.get("ctx", {}).get("error", message))
+        errors.append({"field": ".".join(map(str, error["loc"])), "message": message})
+    return JSONResponse(
+        status_code=422, content={"detail": {"code": "invalid_request", "errors": errors}}
+    )
+
+
+def create_app(
+    engine: Engine | None = None,
+    provider_factory: Callable = CapturedRoutes,
+    clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+    routing_provider: str = "openrouteservice",
+    place_provider: Callable | None = None,
+) -> FastAPI:
+    @asynccontextmanager
+    async def lifespan(application):
+        application.state.engine = engine if engine is not None else create_db_engine()
+        try:
+            yield
+        finally:
+            if engine is None:
+                application.state.engine.dispose()
+
+    application = FastAPI(title="Nafta2Go", version="0.1.0", lifespan=lifespan)
+    places = PlaceSearch(place_provider if place_provider is not None else USIGPlaces())
+    telemetry = QueryTelemetry()
+    diagnostic_telemetry = DiagnosticTelemetry()
+    application.add_middleware(QueryTelemetryMiddleware, telemetry=telemetry)
+    application.add_middleware(DiagnosticTelemetryMiddleware, telemetry=diagnostic_telemetry)
+
+    metrics = HTTPMetrics()
+    application.add_middleware(MetricsMiddleware, metrics=metrics)
+
+    @application.get("/metrics", dependencies=[Depends(authorize_admin)])
+    def prometheus_metrics():
+        return Response(
+            metrics.render(application.state.engine, shared_cache(), diagnostic_telemetry, clock()),
+            media_type="text/plain; version=0.0.4",
+            headers={"Cache-Control": "no-store"},
+        )
+
+    install_web(application)
+    application.add_exception_handler(RequestValidationError, validation_error)
+    for error in (
+        RoutingError,
+        SQLAlchemyError,
+        ScenarioIntegrityError,
+        OSError,
+        CoverageConfigurationError,
+    ):
+        application.add_exception_handler(error, dependency_error)
+
+    @application.get("/health")
+    def health():
+        return {"status": "ok"}
+
+    @application.post("/api/v1/places", dependencies=[Depends(authorize)])
+    def search_places(body: PlaceSearchInput, request: Request):
+        if request.query_params:
+            raise HTTPException(422, detail={"code": "invalid_request"})
+        try:
+            results = places.search(body.text)
+        except PlaceBusy as exc:
+            raise HTTPException(
+                429, detail={"code": "places_busy"}, headers={"Retry-After": "1"}
+            ) from exc
+        except PlaceUnavailable as exc:
+            raise HTTPException(503, detail={"code": "places_unavailable"}) from exc
+        except ValueError as exc:
+            raise HTTPException(422, detail={"code": "invalid_request"}) from exc
+        return JSONResponse(
+            content={"items": [asdict(place) for place in results], "source": "USIG · GCBA"},
+            headers={"Cache-Control": "no-store"},
+        )
+
+    @application.get(
+        "/api/v1/price-diagnostics/{station_id}",
+        dependencies=[Depends(authorize)],
+        response_model=PriceDiagnosticOutput,
+    )
+    def diagnostic(
+        station_id: int,
+        response: Response,
+        request: Request,
+        product_id: Annotated[int, Query(ge=2, le=3)] = 2,
+        schedule_id: Annotated[int, Query(ge=2, le=3)] = 2,
+    ):
+        if set(request.query_params) - {"product_id", "schedule_id"}:
+            raise HTTPException(422, detail={"code": "invalid_request"})
+        try:
+            result = price_diagnostic(
+                application.state.engine, station_id, product_id, schedule_id, clock()
+            )
+        except (DiagnosticUnavailable, ValueError) as exc:
+            raise HTTPException(503, detail={"code": "price_diagnostic_unavailable"}) from exc
+        if result is None:
+            raise HTTPException(404, detail={"code": "published_price_not_found"})
+        response.headers["Cache-Control"] = "no-store"
+        request.scope["nafta2go.diagnostic"] = {
+            key: result[key] for key in ("status", "method", "version")
+        }
+        return result
+
+    @application.get("/ready")
+    def ready():
+        configured = bool(os.environ.get("NAFTA2GO_API_TOKEN", "").strip())
+        try:
+            configured_max_price_age_days()
+        except CoverageConfigurationError:
+            configured = False
+        data = {"usable": False, "data_status": "unavailable"}
+        try:
+            if configured:
+                data = data_readiness(application.state.engine, clock())
+        except (SQLAlchemyError, OSError, ValueError, KeyError):
+            pass
+        available = configured and data["usable"]
+        return JSONResponse(
+            status_code=200 if available else 503,
+            content={"status": "ready" if available else "unavailable", **data},
+        )
+
+    @application.post(
+        "/api/v1/recommendations",
+        dependencies=[Depends(authorize)],
+        response_model=RecommendationOutput,
+        responses={status: {"model": ErrorOutput} for status in (401, 422, 502, 503, 504)},
+    )
+    def recommendations(body: RecommendationInput, request: Request) -> dict:
+        try:
+            result = recommend_from_database(
+                application.state.engine,
+                body.fuel_request(),
+                body.origin.point(),
+                body.destination.point() if body.destination else None,
+                provider_factory(),
+                fuel_type=body.fuel_type,
+                schedule_id=body.schedule_id,
+                reference_at=clock(),
+                routing_provider=routing_provider,
+                max_candidates=body.max_candidates,
+            )
+            request.scope["nafta2go.outcome"] = result["outcome"]
+            return present_recommendation(result)
+        except ValueError as exc:
+            if isinstance(exc, ScenarioIntegrityError):
+                raise
+            raise HTTPException(
+                422,
+                detail={
+                    "code": "invalid_request",
+                    "message": "Verificá las coordenadas de CABA y los parámetros del vehículo.",
+                },
+            ) from exc
+
+    @application.get("/api/v1/operations", dependencies=[Depends(authorize_admin)])
+    def operations():
+        return JSONResponse(
+            content={
+                "scope": "process",
+                "queries": telemetry.snapshot(),
+                "routes": shared_cache().snapshot(),
+                "price_diagnostics": diagnostic_telemetry.snapshot(),
+            },
+            headers={"Cache-Control": "no-store"},
+        )
+
+    @application.get("/api/v1/operations/ingestion", dependencies=[Depends(authorize_admin)])
+    def ingestion(source: Literal["vigente", "historico"] = "vigente"):
+        return JSONResponse(
+            content=ingestion_status(application.state.engine, source, clock()),
+            headers={"Cache-Control": "no-store"},
+        )
+
+    return application
+
+
+app = create_app()

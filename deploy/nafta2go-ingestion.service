@@ -1,0 +1,10 @@
+[Unit]
+Description=Ingesta diaria de precios vigentes de Nafta2Go
+OnFailure=nafta2go-monitor.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/nafta2go/ingestion.env
+ExecStart=/bin/sh -c 'cd "$${NAFTA2GO_DIR:?Falta NAFTA2GO_DIR}" && exec .venv/bin/python -m nafta2go.normalization --source vigente --json'
+TimeoutStartSec=2h
+UMask=0077

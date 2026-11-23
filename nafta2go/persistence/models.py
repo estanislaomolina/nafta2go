@@ -16,6 +16,8 @@ class RawCapture:
     stored_path: str
     fetched_at: datetime
     source_last_modified: str | None = None
+    acquisition_attempts: int = 1
+    provenance: Mapping[str, object] | None = None
 
 
 @dataclass(frozen=True)

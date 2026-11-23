@@ -9,11 +9,16 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
+from alembic.migration import MigrationContext
+from alembic.script import ScriptDirectory
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.engine import make_url
+from sqlalchemy.exc import SQLAlchemyError
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_URL = f"sqlite:///{ROOT / 'data' / 'nafta2go.db'}"
+# Igual al objetivo de RNF01: esperar más solo convertiría el error en una respuesta tardía.
+SQLITE_BUSY_TIMEOUT_MS = 5000
 
 
 def database_url() -> str:
@@ -25,7 +30,7 @@ def create_db_engine(url: str | None = None) -> Engine:
     engine = create_engine(url)
     if _is_sqlite(url):
         _ensure_sqlite_directory(url)
-        event.listen(engine, "connect", _enable_sqlite_foreign_keys)
+        event.listen(engine, "connect", _configure_sqlite_connection)
     return engine
 
 
@@ -43,6 +48,16 @@ def upgrade_to_head(url: str | None = None) -> None:
     command.upgrade(alembic_config(url), "head")
 
 
+def database_is_ready(engine: Engine) -> bool:
+    """Comprobar conexión y revisión sin crear tablas ni aplicar migraciones."""
+    try:
+        with engine.connect() as conn:
+            current = MigrationContext.configure(conn).get_current_heads()
+        return set(current) == set(ScriptDirectory.from_config(alembic_config()).get_heads())
+    except SQLAlchemyError:
+        return False
+
+
 def _is_sqlite(url: str) -> bool:
     return make_url(url).get_backend_name() == "sqlite"
 
@@ -53,7 +68,11 @@ def _ensure_sqlite_directory(url: str) -> None:
         Path(path).parent.mkdir(parents=True, exist_ok=True)
 
 
-def _enable_sqlite_foreign_keys(dbapi_connection, _record) -> None:
+def _configure_sqlite_connection(dbapi_connection, _record) -> None:
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
+    # Con WAL las lecturas en curso no bloquean el commit de otra consulta (#173);
+    # la espera explícita cubre solo escrituras simultáneas, que son breves.
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute(f"PRAGMA busy_timeout={SQLITE_BUSY_TIMEOUT_MS}")
     cursor.close()

@@ -72,4 +72,4 @@ La decisión se confirma cuando una misma consulta produce los mismos cálculos 
 
 * `docs/PRD.md`, RF04, RF07, RF10, RF11 y RNF10.
 * `docs/Propuesta nafta2go.md`, sección Enfoque de Machine Learning.
-* La exploración todavía no demuestra mejora del modelo frente al baseline; esa validación queda para la POC/MVP.
+* La evaluación retrospectiva del MVP se registra en `docs/ML.md` y ADR-014: se elige `bandera_reciente` en selección, aunque los modelos ganen en validación. ADR-015 sirve esa referencia y la auditoría del 17/11/2026 conserva los umbrales inactivos; el ranking sigue siendo determinístico.

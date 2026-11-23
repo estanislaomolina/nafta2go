@@ -1,0 +1,11 @@
+{
+  "observed_at_utc": "2026-11-23T22:06:09.392574+00:00",
+  "instance_id": "i-052e34f43e12d676d",
+  "command_id": "d8cb49b3-9c17-439e-abdd-0eb059ef68b9",
+  "status": "Success",
+  "stdout": "imagen_activa\nnafta2go:de1d98ddc8559a205ab9fe9557869ee359a6b8de\nsoporte_recibos\nactualizar_imagen_antes_de_instalar\nidentidad_de_maquina\narn:aws:sts::132597215044:assumed-role/nafta2go-demo-DemoRole-bO0rqxlBnOq7/i-052e34f43e12d676d\n",
+  "stderr": "",
+  "receipt_supported_by_active_image": false,
+  "timers_installed": false,
+  "automatic_ingestion_verified": false
+}

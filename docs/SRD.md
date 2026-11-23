@@ -1,20 +1,20 @@
 # SRD — Especificación técnica de Nafta2Go
 
 Documento de requisitos y diseño del sistema (System Requirements/Design
-Document) de la **Entrega 2: POC**. Traduce el [PRD](PRD.md) a una
-especificación técnica:
+Document). Se escribió para la **Entrega 2: POC** y se actualizó para la
+**Entrega 3: MVP**. Traduce el [PRD](PRD.md) a una especificación técnica:
 - La arquitectura, con su patrón y sus diagramas.
 - El stack tecnológico justificado.
 - El modelo de datos.
 - Los contratos de las interfaces principales.
 - La estrategia de datos.
 
-Como pide la consigna, **no incluye los componentes de ML**: el diagnóstico
-estadístico de precios (RF10, RF11), su entrenamiento, serving y monitoreo
-quedan para la entrega final. Solo se indica dónde se van a conectar.
+En la Entrega 2, como pedía la consigna, no incluía los componentes de ML. Para
+el MVP se agrega la [sección 11](#11-componentes-de-ml-entrenamiento-serving-y-monitoreo):
+entrenamiento, serving y monitoreo del diagnóstico de precios.
 
-Cada sección dice qué está **implementado en la POC** y qué está **diseñado
-para el MVP**. El detalle de cada componente está en su documento:
+Las secciones 1 a 10 conservan el diseño de la POC; la tabla de trazabilidad
+indica el estado actual de cada requisito. El detalle de cada componente está en su documento:
 [NORMALIZACION](NORMALIZACION.md), [PERSISTENCIA](PERSISTENCIA.md),
 [COBERTURA](COBERTURA.md), [RUTAS](RUTAS.md), [MOTOR](MOTOR.md) y
 [CALIDAD](CALIDAD.md). Las decisiones estructurales están en los
@@ -35,20 +35,22 @@ resuelto en POC-02 de esta forma:
 
 ## 2. Trazabilidad con el PRD
 
-| Requisito | Componente | Estado en la POC |
+| Requisito | Componente | Estado |
 |---|---|---|
 | RF01 Validar la consulta | `domain/engine.FuelRequest`, validaciones de `application/stored_query` | Implementado: rechaza valores faltantes, no numéricos, no finitos o inconsistentes nombrando el campo |
 | RF02 Filtrar CABA y nafta compatible | `normalization/reading` (alcance), `stored_query` (producto, franja y caja de CABA) | Implementado |
-| RF03 Preseleccionar y enrutar candidatas | `stored_query` (hasta 10 en el corredor), `application/recommendation.evaluate_stations` | Implementado con un máximo de 10 (el PRD admite hasta 20); se recorta por la cuota del proveedor |
+| RF03 Preseleccionar y enrutar candidatas | `stored_query`, `application/recommendation.evaluate_stations` | Admite hasta 20 mediante límite explícito; diez por defecto para reproducir la POC. Veinte probado con proveedor simulado |
 | RF04 Cálculos de alcanzabilidad, reserva, consumo, capacidad, litros y desvío | `domain/engine.evaluate_candidate` | Implementado, determinístico |
 | RF05 Descartar alternativas inviables con motivo | `domain/engine.DiscardReason`, exclusiones de `stored_query` | Implementado |
 | RF06 Hasta tres alternativas diferenciadas | `domain/ranking`, `application/query` | Implementado: combustible neto, menor desvío y equilibrio; agrupa prioridades que eligen la misma estación |
 | RF07 Explicar cada resultado | `query` CLI y `application/query` | Implementado: dirección, precio, fecha, litros, consumo, reserva, desvío, alertas y fuente; JSON con todos los descartes |
 | RF08 Ingerir y normalizar | `adapters/energy_source`, `normalization/`, `services/ingestion` | Implementado, con corrida real documentada |
-| RF09 Umbral configurable de vigencia | `application/coverage_rules`, `stored_query` | Implementado: 30 días, configurable en un solo módulo |
-| RF10 y RF11 Diagnóstico ML y ranking conservador | — | Fuera de la POC, por consigna. La alerta `precio_atipico` de la normalización es una regla, no un modelo |
-| RF12 Autenticación administrativa | — | Fuera de la POC: no hay funciones administrativas expuestas |
-| RF13 Configurar sin modificar código | — | Pendiente (Debería): hoy los parámetros son constantes de código |
+| RF09 Umbral configurable de vigencia | `application/coverage_rules`, `stored_query` | Implementado: 30 días, configurable en un solo módulo. Estimación rotulada de 31 a 120 días (ADR-020) en `application/stale_price_estimate`, fuera del ranking |
+| RF10 Diagnóstico de precio | `application/price_diagnostic`, `domain/price_alert`, `ml/` | Implementado: sirve la referencia elegida y su versión (ADR-015). La alerta provisional `conservative-v1` (ADR-021, #140) se activa solo para selecciones auditadas; otras quedan `not_calibrated`. Ver sección 11 |
+| RF11 Ranking conservador | `application/conservative_ranking`, API y web | Implementado (#141): comparación separada que excluye las excedencias de `conservative-v1` sin cambiar el ranking general (ADR-021) |
+| RF12 Autenticación administrativa | `presentation/http`, `NAFTA2GO_ADMIN_TOKEN` | Implementado: token administrativo separado del de conductor (ADR-016) |
+| RF13 Configurar sin modificar código | Variables de entorno, `compose.yaml` | Parcial: vigencia, caché y cupo de rutas se configuran por entorno; no hay auditoría de cambios |
+| RF14 Estado operativo | `/operacion`, `GET /api/v1/operations` | Implementado: ingestas, alertas, consultas/rutas y métricas operativas del diagnóstico |
 | RF15 Escenarios históricos | `application/scenario`, `docs/evidencia/escenario-vigente-2026-10-24/` | Implementado como respaldo automático y rotulado |
 | RNF03 Privacidad | `persistence/repository.record_recommendation` | Implementado: rechaza origen, destino y coordenadas en la consulta guardada |
 | RNF05 Trazabilidad | `ingestion_runs`, `raw_captures`, `recommendations.data_run_id`, rótulo `scenario` | Implementado: ingesta, recomendación persistida y escenario identificado por fecha y hashes |
@@ -73,6 +75,8 @@ infraestructura.
 | Normalización | `nafta2go/normalization/` | Reglas de calidad de datos sobre el CSV crudo | pandas |
 | Persistencia | `nafta2go/persistence/` | Esquema, migraciones y repositorios | SQLAlchemy |
 | Adaptadores | `nafta2go/adapters/` | Fuentes externas: catálogo de la Secretaría de Energía y OpenRouteService | requests |
+| Presentación (MVP) | `nafta2go/presentation/` | API HTTP, web y panel de operación; no calcula precios ni accede a tablas | Aplicación, FastAPI |
+| ML offline (MVP) | `nafta2go/ml/` | Preparación temporal, entrenamiento y evaluaciones; no corre en la consulta | pandas, scikit-learn |
 | Entrada | `python -m nafta2go.normalization`, `python -m nafta2go.coverage`, `python -m nafta2go.query`, `scripts/` | Comandos de la POC | Aplicación |
 
 Las reglas de dependencia son estas:
@@ -80,6 +84,11 @@ Las reglas de dependencia son estas:
 - La aplicación habla con las rutas a través del protocolo `RoutingProvider` y
   nunca con OpenRouteService directamente.
 - Ninguna capa de negocio escribe SQL: todo pasa por `repository`.
+
+El primer incremento HTTP de MVP-02 agrega `presentation/`, con FastAPI sobre
+`application.query`: la presentación no calcula precios ni accede directamente a
+tablas. Contrato, token local y controles de salud en [API](API.md); decisión en
+[ADR-009](../adr/ADR-009-api-http-con-fastapi.md). La primera web local se describe en [WEB](WEB.md).
 
 En el MVP se suman una capa de **presentación** (API HTTP y web) por encima de
 la aplicación, y el **diagnóstico ML** como un componente separado que la
@@ -139,11 +148,12 @@ flowchart LR
 
 ### Flujo de ingesta (implementado)
 
-1. `discover_resources` lee el catálogo y encuentra los CSV vigente e histórico.
-2. `download` baja el CSV a `data/raw/<origen>/`. Lo escribe primero como
+1. `ingest_from_source` abre la ejecución en estado `running`, en su propia
+   transacción, antes de consultar la fuente.
+2. `discover_resources` lee el catálogo y encuentra los CSV vigente e histórico.
+3. `download` baja el CSV a `data/raw/<origen>/`. Lo escribe primero como
    `.part` y lo renombra solo si el tamaño coincide con el del catálogo. Calcula
    el SHA-256.
-3. `ingest` abre la ejecución en estado `running`, en su propia transacción.
 4. `normalize_capture` lee por chunks, filtra CABA y nafta y aplica las reglas.
    Entrega las filas válidas, los rechazos con motivo y un reporte de calidad.
 5. En una segunda transacción se guardan la referencia a la captura, los
@@ -165,7 +175,7 @@ sequenceDiagram
     A->>DB: precios de la última ingesta vigente exitosa
     A->>A: filtra vigencia, calidad y corredor
     alt ≥ 3 estaciones recientes en el corredor
-        A->>R: una matriz con origen, hasta 10 candidatas y destino
+        A->>R: una matriz con origen, hasta 20 candidatas y destino (10 por defecto)
     else no alcanza
         A->>E: carga el recorte (verifica su SHA-256)
         A->>A: filtra contra la fecha del escenario
@@ -192,6 +202,7 @@ incluyen ingesta desde el CSV completo, matriz autenticada, ranking y registro.
 | Tecnología | Uso | Por qué | Alternativa considerada |
 |---|---|---|---|
 | Python 3.12 | Todo el sistema | Un solo lenguaje para datos, reglas y servicios. El equipo ya lo usa en la exploración. Tipado moderno y `zoneinfo` | — |
+| FastAPI + Pydantic + Uvicorn | API local de MVP-02 | Contrato tipado y OpenAPI sin duplicar el caso de uso; versiones en requirements.txt | Flask o Django/DRF ([ADR-009](../adr/ADR-009-api-http-con-fastapi.md)) |
 | pandas 2 | Normalización | El histórico tiene 3,4 millones de filas (780 MB). Se lee por chunks con operaciones vectorizadas: unos 2 minutos y 630 MB de memoria | Leer con el módulo `csv` fila por fila (más lento y más código) |
 | `decimal.Decimal` | Motor y precios | Entradas limitadas a 28 cifras significativas, métricas Decimal y restricciones exactas con Fraction; compra redondeada hacia abajo | `float` |
 | requests | Catálogo, descarga y rutas | Sesión inyectable: los tests reemplazan la red por una sesión falsa | httpx (no hace falta asincronía en la POC) |
@@ -199,7 +210,13 @@ incluyen ingesta desde el CSV completo, matriz autenticada, ranking y registro.
 | OpenRouteService Matrix V2 | Distancias y tiempos | Una sola solicitud por consulta devuelve todos los tramos. La cuota diaria alcanza ([RUTAS](RUTAS.md)) | OSRM propio, que queda como plan alternativo detrás del mismo protocolo ([ADR-003](../adr/ADR-003-proveedor-de-rutas.md)) |
 | Docker + Compose | Ejecución local y CI | Misma imagen en la máquina y en el CI. Prepara la salida a cloud (RNF07) | Instalación local únicamente |
 | GitHub Actions | Integración continua | Checks requeridos en `dev` y `main`: links, ruff, pytest, gitleaks y contenedores ([CALIDAD](CALIDAD.md)) | — |
+| scikit-learn | Modelos de precios offline (MVP-04) | Ridge y árboles potenciados con semilla fija y un hilo, reproducibles byte a byte ([ML](ML.md)) | Sólo referencias estadísticas, sin modelos aprendidos ([ADR-014](../adr/ADR-014-seleccion-de-modelo-de-precios.md)) |
 | pytest + pytest-cov + ruff | Calidad | Tests sin red y con bases temporales; cobertura de líneas ≥ 90% controlada en CI. Un único linter y formateador | flake8 + black |
+
+El incremento #55 incorpora caché volátil de matrices y cupo local por proceso y
+credencial en los adaptadores. Conserva fecha y hash, recalcula precios y no
+persiste ubicaciones. Configuración y limitaciones en [RUTAS](RUTAS.md) y
+[ADR-010](../adr/ADR-010-cache-volatil-y-cupo-de-rutas.md).
 
 ## 5. Modelo de datos
 
@@ -348,13 +365,13 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 | Respaldo | Escenario histórico congelado (vigente del 24/10/2026, 732 filas versionadas con su SHA-256), activado solo y rotulado ([ADR-006](../adr/ADR-006-escenario-historico-de-la-poc.md)) |
 | Frecuencia | En la POC, la ingesta se corre a mano con el comando. En el MVP será diaria y programada (RF08), con alerta si falla |
 | Privacidad | No se guardan ubicaciones de usuarios. Los datos de la fuente son públicos y de empresas |
-| Datos para ML | El histórico normalizado (80.008 filas válidas de CABA, 2015-2026) queda disponible para el diagnóstico de la entrega final. Su diseño no forma parte de este documento |
+| Datos para ML | El histórico normalizado (80.008 filas válidas de CABA, 2015-2026) alimenta la preparación temporal de la sección 11 |
 
 ## 8. Calidad, configuración y operación
 
-- **Integración continua:** cinco checks en cada push y PR a `dev` y `main`:
-  `Docs y notebooks`, `Lint`, `Tests`, `Secretos` y `Contenedores`. Los cuatro
-  primeros son requeridos por el ruleset ([CALIDAD](CALIDAD.md)).
+- **Integración continua:** seis checks en cada push y PR a `dev` y `main`:
+  `Docs y notebooks`, `Lint`, `Tests`, `Secretos`, `Contenedores` y
+  `Web y accesibilidad`. Los seis son requeridos por el ruleset ([CALIDAD](CALIDAD.md)).
 - **Tests:** unitarios para dominio y reglas, de integración contra un SQLite
   migrado y de contrato con sesiones HTTP falsas. Ningún test usa red. Las
   fixtures salen de filas reales de la fuente. Se exige cobertura de líneas de
@@ -369,22 +386,23 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
   el flujo completo; ver [POC-05](POC-05.md).
 - **Observabilidad:** las ingestas y las descargas registran logs con campos
   (`run_id`, filas, rechazos, SHA-256). El reporte de calidad queda en cada
-  ejecución. Las métricas y alertas de RNF08 son del MVP.
+  ejecución. El comando de ingesta ofrece estado, fechas y duración con `--json`,
+  incluidos fallos de adquisición. Las alertas automáticas de RNF08 siguen pendientes.
 
-## 9. Partes simplificadas en la POC
+## 9. Partes simplificadas y evolución al MVP
 
 | Parte | Simplificación | Plan para el MVP |
 |---|---|---|
-| Interfaz | No hay API ni web: comandos y código | API HTTP y web por encima de la capa de aplicación |
-| Ranking | Tres prioridades determinísticas; equilibrio con igual peso a ganancia neta y km extra normalizados | Comparación general/conservadora con diagnóstico ML |
-| Candidatas | Hasta 10 en lugar de 20, preseleccionadas por recencia dentro del corredor | Evaluar si la cuota permite 20 |
+| Interfaz | API HTTP y web local con código de demo y caché por proceso | QA de navegador automatizado; faltan coordinación entre réplicas y despliegue público |
+| Ranking | Tres prioridades determinísticas; equilibrio con igual peso a ganancia neta y km extra normalizados | Ranking conservador como comparación separada con regla provisional, sin precisión medida (ADR-021) |
+| Candidatas | Límite configurable hasta 20; diez por defecto para reproducir la POC | Validar cuota y latencia de veinte candidatas en vivo |
 | Corredor | Desvío estimado en línea recta | Se mantiene como prefiltro; el desvío real ya lo calcula el motor |
 | Escenario histórico | Una sola captura congelada | Congelar capturas nuevas con el mismo script |
-| Ingesta | Manual | Programada y diaria, con alerta |
+| Ingesta | Manual | Programada con systemd y monitor con alertas locales; sin supervisión fuera de la máquina (ADR-008) |
 | Base | SQLite local | PostgreSQL si hace falta concurrencia (ADR-005) |
-| Parámetros | Constantes de código | Configurables y auditados (RF13) |
+| Parámetros | Constantes de código | Vigencia, caché y cupo por entorno; sin auditoría de cambios (RF13) |
 | Caja de CABA | Rectángulo, no polígono | Polígono oficial de la ciudad |
-| Diagnóstico de precio | Regla de precio atípico (3 veces la mediana del mes) | Componente ML separado (ADR-002) |
+| Diagnóstico de precio | Regla de precio atípico (3 veces la mediana del mes) | Referencia servida sin alertas calibradas (sección 11) |
 
 ## 10. Riesgos técnicos abiertos
 
@@ -394,3 +412,145 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 | El proveedor de rutas cambia de host o de cuota (ya pasó con el host anterior) | Protocolo `RoutingProvider`; OSRM como alternativa; cuota diaria y límite por minuto verificados para la cuenta de la POC, con evidencia fechada ([RUTAS](RUTAS.md)) |
 | La fuente cambia columnas o formato | `UnexpectedSchema` falla nombrando lo que falta y la ejecución queda `failed` |
 | Coordenadas mal cargadas (dos estaciones con provincia CABA están fuera de la ciudad) | Alerta `fuera_de_caba`, que se excluye de la selección |
+
+El incremento de navegación de MVP-03 genera Maps URLs en `presentation/` a
+partir de coordenadas públicas de las estaciones elegidas, entregadas por
+aplicación después del registro de la recomendación. No persiste enlaces ni
+incluye ubicaciones del conductor; no modifica motor, ranking ni proveedor de
+rutas. API y CLI comparten esa presentación; contrato y pendientes en [MAPS](MAPS.md).
+
+La web local de MVP-03 sirve HTML/CSS/JS propios desde FastAPI, comparte origen
+con la API y no duplica reglas del motor. Contrato, acceso de demo y límites en
+[WEB](WEB.md); alternativas en [ADR-012](../adr/ADR-012-web-local-con-assets-propios.md).
+
+El incremento de monitoreo de MVP-01 agrega `python -m nafta2go.monitor`: detecta
+fallos, ejecuciones excedidas y ausencias, y persiste detección y resolución en
+`ingestion_alerts` (migración `0003`). La programación local usa systemd (vigente a las 06:00 de Argentina y monitor
+horario); instalación y límites en [INGESTA](INGESTA.md) y alternativas en
+[ADR-008](../adr/ADR-008-programacion-de-ingesta.md). Las notificaciones externas
+y la supervisión continua siguen pendientes.
+
+La adquisición remota incorpora hasta tres intentos dentro de una ingesta, con
+esperas acotadas y conteo en el reporte. No repite normalización ni persistencia;
+ver [política de reintentos](INGESTA.md). No requiere cambiar el esquema de datos.
+
+## Preparación del sandbox AWS (MVP-08)
+
+La base de red propuesta está versionada en `infra/aws/network.json`, sin cómputo
+ni aplicación desplegados. Acceso reportado, límites del presupuesto, validación
+y pendientes en [AWS](AWS.md); alternativas de IaC en
+[ADR-011](../adr/ADR-011-base-de-red-con-cloudformation.md).
+
+## Telemetría HTTP local
+
+La presentación ASGI registra el ciclo de POST de recomendaciones sin inspeccionar
+su cuerpo ni URL. Emite JSON con ID propio, fecha UTC, duración, estado y resultado
+acotado; expone contadores por aplicación y caché por proceso mediante lectura
+administrativa autenticada. El arranque suprime access logs con URLs y errores
+inesperados anteriores a la respuesta se sanitizan. No incorpora persistencia de
+ubicaciones, agregación entre réplicas, métricas ML ni supervisión sostenida.
+Contrato y límites: [API](API.md#telemetría-local-de-consultas).
+
+La lectura administrativa de ingestas pasa por aplicación y repositorio, proyecta
+únicamente metadatos permitidos y agrega conteos en SQL. Distingue intento y
+versión exitosa, reutiliza las reglas del monitor para un diagnóstico actual y
+limita la respuesta a veinte condiciones con total explícito. No sincroniza
+alertas ni muta ingestas desde GET. Contrato: [API](API.md#estado-de-ingestas-para-operación).
+
+La presentación `/operacion` usa assets propios y las dos lecturas operativas
+autenticadas del mismo origen. No consulta al cargar ni escribe datos; actualiza
+manual y conjuntamente las vistas, descarta lecturas parciales/anteriores ante
+fallos y cancela al limpiar o salir. Código sólo en memoria de pestaña. Separa conductor y administración; no hay despliegue público; [contrato y QA](WEB.md#panel-local-de-operación).
+
+## Telemetría CLI
+
+La CLI de consultas emite un evento JSON por ejecución en stderr mediante un
+logger aislado, con ID propio, fecha UTC, duración y resultado. stdout mantiene
+su contrato. Los errores y el parser usan mensajes seguros sin repetir valores
+ni excepciones originales. Los eventos CLI no se agregan a los contadores HTTP;
+contrato y retención en [POC-05](POC-05.md#telemetría-cli-agregada-en-mvp).
+
+La vigencia máxima de la consulta es configuración operativa por entorno
+(1–30 días, 30 predeterminado). Aplicación la lee una vez, la propaga a ambos
+orígenes y conserva el valor efectivo con cada recomendación; las capas de
+selección siguen recibiendo parámetros explícitos. Configuración inválida
+desactiva readiness y devuelve error seguro, sin rutas. No habilita override
+público, precios mayores de treinta días ni cambios administrativos en vivo;
+[contrato](COBERTURA.md#vigencia-configurable-en-mvp).
+
+## 11. Componentes de ML: entrenamiento, serving y monitoreo
+
+El diagnóstico de precios es un componente separado del recomendador
+([ADR-002](../adr/ADR-002-recomendador-deterministico-y-diagnostico-ml.md)): el
+ranking general no usa ninguna referencia ni modelo, y ningún valor estimado
+reemplaza el precio oficial. Detalle y resultados en [ML](ML.md).
+
+```mermaid
+flowchart LR
+    HIST[(Ingesta histórica<br/>normalizada)] --> PREP[ml<br/>preparación temporal]
+    PREP --> DS[(dataset<br/>examples.jsonl + manifest)]
+    DS --> TRAIN[ml.train<br/>referencias y modelos]
+    TRAIN --> MOD[(selección<br/>model-report + manifest)]
+    DS --> EVA[ml.evaluate_alerts<br/>ml.evaluate_stale]
+    MOD --> EVA
+    DS --> DIAG[price_diagnostic<br/>GET /price-diagnostics]
+    MOD --> DIAG
+    VIG[(Ingesta vigente)] --> DIAG
+    VIG --> STALE[stale_price_estimate<br/>en POST /recommendations]
+```
+
+### Entrenamiento (offline)
+
+- **Preparación** (`python -m nafta2go.ml`, `ml/temporal`): lee la última ingesta
+  histórica exitosa y arma ejemplos con features estrictamente anteriores al precio
+  objetivo, separados por un corte temporal ([ADR-013](../adr/ADR-013-evaluacion-temporal-de-precios.md)).
+  El manifiesto registra captura, hashes, reglas, código y parámetros.
+- **Selección** (`python -m nafta2go.ml.train`): compara tres referencias
+  estadísticas con Ridge y árboles potenciados. Elige con 2025, dentro de train, y
+  recién después informa la validación 2026, que no cambia la elección
+  ([ADR-014](../adr/ADR-014-seleccion-de-modelo-de-precios.md)). El método elegido es
+  la referencia `bandera_reciente` (mediana de la bandera en la última semana).
+- **Reproducibilidad (RNF10):** dos corridas completas dan archivos idénticos byte a
+  byte. Las corridas reales se conservan en `docs/evidencia/` con tags `evidencia/…`.
+  Los datos grandes no se versionan.
+
+### Serving
+
+- **Diagnóstico de una publicación** (`GET /api/v1/price-diagnostics/{station_id}`,
+  [ADR-015](../adr/ADR-015-referencia-servida-y-abstencion-de-alertas.md)): con
+  `NAFTA2GO_PRICE_DATASET_DIR` y `NAFTA2GO_PRICE_MODEL_DIR` configurados, verifica
+  los manifiestos y sirve la referencia elegida por el campeón del registro
+  (ADR-030), nunca el modelo guardado. Devuelve
+  precio oficial, referencia, diferencia, método y versión con
+  `alert_level=not_calibrated`. Sin configuración, la consulta habitual sigue
+  funcionando.
+- **Estimación de precios de 31 a 120 días** (`stale_price_estimates`,
+  [ADR-020](../adr/ADR-020-estimacion-de-precios-antiguos.md)): regla determinística
+  sin artefactos, rotulada como estimación, fuera del ranking y de la cobertura.
+- **Alertas y ranking conservador:** los umbrales candidatos de
+  [ADR-017](../adr/ADR-017-evaluacion-temporal-de-umbrales.md) siguen inactivos
+  (`runtime_enabled=false`) hasta que el equipo apruebe la regla de #20.
+
+### Monitoreo
+
+- **Implementado:** el serving rechaza artefactos con hashes, features, captura o
+  reglas que no coinciden (503 seguro), y responde `unavailable` cuando no hay
+  historia suficiente. Cada respuesta declara método, versión e ingestas usadas.
+- **Reevaluación:** se repite offline con las mismas herramientas y un protocolo
+  fijado antes de mirar los resultados (`ml.evaluate_alerts`, `ml.evaluate_stale`).
+  Cambiar la selección requiere un período de evaluación nuevo.
+- **Operación:** el panel muestra solicitudes, tiempos, abstenciones y fallos del
+  diagnóstico, junto con método/versión de la última referencia observada. No
+  registra ubicaciones, estaciones o precios. No hay monitoreo automático de
+  deriva ni error predictivo en línea; la reevaluación sigue siendo manual.
+
+
+### Resolución de origen y destino en la web
+
+La interfaz permite buscar una dirección o lugar y elegir explícitamente un punto,
+con coordenadas manuales como alternativa. Usa el servicio autenticado separado de
+la [PR #132](https://github.com/estanislaomolina/nafta2go/pull/132). Cambiar el texto
+invalida el punto anterior; las búsquedas no se agregan a la recomendación persistida.
+Geolocalización es optativa, con reintento acotado, cancelación y precisión visible;
+no garantiza disponibilidad de GPS. La UI conserva los contratos UC01/UC02 y no
+modifica el motor determinístico.

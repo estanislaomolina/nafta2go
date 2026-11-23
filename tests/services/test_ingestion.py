@@ -1,13 +1,13 @@
 """Tests del ciclo de vida de una ejecución de ingesta."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 import pytest
 
 from nafta2go.persistence import repository as repo
 from nafta2go.persistence.models import NormalizationResult, RawCapture
-from nafta2go.services.ingestion import IngestionFailed, ingest
+from nafta2go.services.ingestion import IngestionFailed, ingest, ingest_from_source
 
 T0 = datetime(2026, 10, 24, 18, 0)
 
@@ -164,3 +164,103 @@ def test_report_with_non_json_values_is_stored(engine):
     assert run["report"]["ultima_vigencia"] == "2026-10-23 06:00:00"
     assert run["report"]["precio_medio"] == "2147.50"
     assert run["report"]["cobertura"] is None
+
+
+def test_acquisition_failure_is_registered_and_keeps_previous_version(engine, caplog):
+    first = ingest(engine, capture(), normalizer_returning(result()), clock=fixed_clock)
+    ticks = iter([T0, T0 + timedelta(seconds=12)])
+
+    def acquire():
+        with engine.connect() as conn:
+            assert repo.get_run(conn, first + 1)["status"] == "running"
+        raise TimeoutError("falló el catálogo")
+
+    with pytest.raises(IngestionFailed) as exc:
+        ingest_from_source(
+            engine, "vigente", acquire, normalizer_returning(result()), lambda: next(ticks)
+        )
+    with engine.connect() as conn:
+        run = repo.get_run(conn, exc.value.run_id)
+        assert repo.latest_successful_run(conn, "vigente") == first
+        assert repo.raw_capture_for_run(conn, exc.value.run_id) is None
+    assert run["status"] == "failed"
+    assert (run["finished_at"] - run["started_at"]).total_seconds() == 12
+    assert counts(engine, exc.value.run_id) == (0, 0)
+    event = caplog.records[-1]
+    assert (event.run_id, event.status, event.duration_seconds) == (exc.value.run_id, "failed", 12)
+
+
+def test_acquisition_success_logs_duration(engine, caplog):
+    ticks = iter([T0, T0 + timedelta(seconds=4)])
+    with caplog.at_level("INFO"):
+        run_id = ingest_from_source(
+            engine, "vigente", capture, normalizer_returning(result()), lambda: next(ticks)
+        )
+    event = caplog.records[-1]
+    assert (event.run_id, event.source, event.status, event.duration_seconds) == (
+        run_id,
+        "vigente",
+        "succeeded",
+        4,
+    )
+
+
+def test_wrong_capture_source_fails_before_normalization(engine):
+    with pytest.raises(IngestionFailed, match="origen") as exc:
+        ingest_from_source(engine, "historico", capture, normalizer_returning(result()))
+    assert counts(engine, exc.value.run_id) == (0, 0)
+
+
+def test_exhausted_retries_keep_previous_prices_and_are_alerted(engine):
+    from datetime import UTC
+    from unittest.mock import Mock
+
+    import requests
+
+    from nafta2go.adapters.acquisition import acquire_with_retries
+    from nafta2go.application.ingestion_monitor import check_ingestion
+
+    first = ingest(engine, capture(), normalizer_returning(result()), clock=fixed_clock)
+    acquire = Mock(side_effect=requests.ConnectionError("DNS"))
+    normalize = Mock()
+    with pytest.raises(IngestionFailed) as failure:
+        ingest_from_source(
+            engine,
+            "vigente",
+            lambda: acquire_with_retries(acquire, "vigente", Mock()),
+            normalize,
+            fixed_clock,
+        )
+    normalize.assert_not_called()
+    with engine.connect() as conn:
+        run = repo.get_run(conn, failure.value.run_id)
+        assert run["report"]["acquisition_attempts"] == 3
+        assert run["status"] == "failed"
+        assert repo.latest_successful_run(conn, "vigente") == first
+        assert repo.raw_capture_for_run(conn, run["id"]) is None
+    assert counts(engine, first) == (2, 1)
+    alerts = check_ingestion(engine, "vigente", T0.replace(tzinfo=UTC))["alerts"]
+    assert any(a["kind"] == "failed" and a["run_id"] == failure.value.run_id for a in alerts)
+
+
+def test_normalization_failure_after_retry_does_not_repeat_acquisition(engine):
+    from unittest.mock import Mock
+
+    import requests
+
+    from nafta2go.adapters.acquisition import acquire_with_retries
+
+    acquire = Mock(side_effect=[requests.Timeout("timeout"), capture()])
+    normalize = Mock(side_effect=ValueError("columna faltante"))
+    with pytest.raises(IngestionFailed) as failure:
+        ingest_from_source(
+            engine,
+            "vigente",
+            lambda: acquire_with_retries(acquire, "vigente", Mock()),
+            normalize,
+            fixed_clock,
+        )
+    assert acquire.call_count == 2
+    normalize.assert_called_once()
+    with engine.connect() as conn:
+        assert repo.get_run(conn, failure.value.run_id)["report"]["acquisition_attempts"] == 2

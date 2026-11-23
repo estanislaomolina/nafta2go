@@ -1,0 +1,263 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Nafta2Go: HTTPS directo con IP estable y corte conservador de presupuesto. No borra datos; conserva reserva para almacenamiento.",
+  "Parameters": {
+    "InstanceId": {
+      "Type": "String",
+      "AllowedPattern": "i-[0-9a-f]{17}"
+    },
+    "SecurityGroupId": {
+      "Type": "AWS::EC2::SecurityGroup::Id"
+    },
+    "DeployRoleName": {
+      "Type": "String",
+      "AllowedPattern": "[a-zA-Z0-9+=,.@_-]{1,64}"
+    }
+  },
+  "Resources": {
+    "PublicAddress": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc",
+        "Tags": [
+          {
+            "Key": "Project",
+            "Value": "Nafta2Go"
+          }
+        ]
+      }
+    },
+    "AddressAssociation": {
+      "Type": "AWS::EC2::EIPAssociation",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "PublicAddress",
+            "AllocationId"
+          ]
+        },
+        "InstanceId": {
+          "Ref": "InstanceId"
+        }
+      }
+    },
+    "HttpIngress": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": {
+          "Ref": "SecurityGroupId"
+        },
+        "IpProtocol": "tcp",
+        "FromPort": 80,
+        "ToPort": 80,
+        "CidrIp": "0.0.0.0/0",
+        "Description": "ACME y redireccion HTTPS"
+      }
+    },
+    "HttpsIngress": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": {
+          "Ref": "SecurityGroupId"
+        },
+        "IpProtocol": "tcp",
+        "FromPort": 443,
+        "ToPort": 443,
+        "CidrIp": "0.0.0.0/0",
+        "Description": "API autenticada y Grafana por HTTPS"
+      }
+    },
+    "GuardRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "corte-presupuesto",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "budgets:ViewBudget",
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:budgets::${AWS::AccountId}:budget/nafta2go-17-usd-total"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:StopInstances",
+                    "ec2:CreateTags"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/${InstanceId}"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "ManagedPolicyArns": [
+          {
+            "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+          }
+        ]
+      }
+    },
+    "BudgetGuard": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Runtime": "python3.12",
+        "Handler": "index.handler",
+        "Timeout": 30,
+        "Role": {
+          "Fn::GetAtt": [
+            "GuardRole",
+            "Arn"
+          ]
+        },
+        "Environment": {
+          "Variables": {
+            "ACCOUNT": {
+              "Ref": "AWS::AccountId"
+            },
+            "REGION": {
+              "Ref": "AWS::Region"
+            },
+            "INSTANCE": {
+              "Ref": "InstanceId"
+            }
+          }
+        },
+        "Code": {
+          "ZipFile": "\"\"\"Corte conservador de c\u00f3mputo: presupuesto total, margen y datos preservados.\"\"\"\n\nimport os\nfrom datetime import UTC, datetime\nfrom decimal import Decimal\n\nBUDGET_TAG = \"Nafta2GoBudget\"\n\n\ndef cutoff(budget, now):\n    updated = budget[\"LastUpdatedTime\"]\n    age_hours = Decimal(str(max(0, (now - updated).total_seconds()) / 3600))\n    spent = Decimal(budget[\"CalculatedSpend\"][\"ActualSpend\"][\"Amount\"])\n    # Cubre la demora contable con una cota conservadora de c\u00f3mputo/red/disco.\n    upper = spent + age_hours * Decimal(\"0.05\")\n    return upper >= Decimal(\"15\") or age_hours > 36, upper\n\n\ndef handler(event, context):\n    import boto3\n\n    budget = boto3.client(\"budgets\", region_name=\"us-east-1\").describe_budget(\n        AccountId=os.environ[\"ACCOUNT\"], BudgetName=\"nafta2go-17-usd-total\"\n    )[\"Budget\"]\n    stop, upper = cutoff(budget, datetime.now(UTC))\n    if stop:\n        ec2 = boto3.client(\"ec2\", region_name=os.environ[\"REGION\"])\n        instance = os.environ[\"INSTANCE\"]\n        ec2.create_tags(Resources=[instance], Tags=[{\"Key\": BUDGET_TAG, \"Value\": \"exhausted\"}])\n        ec2.stop_instances(InstanceIds=[instance])\n    return {\n        \"stop_requested\": stop,\n        \"estimated_upper_usd\": str(upper),\n        \"reserve_usd\": \"2\",\n        \"data_deleted\": False,\n    }\n"
+        }
+      }
+    },
+    "ScheduleRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "scheduler.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ejecutar-control",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "lambda:InvokeFunction",
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "BudgetGuard",
+                      "Arn"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "GuardSchedule": {
+      "Type": "AWS::Scheduler::Schedule",
+      "Properties": {
+        "ScheduleExpression": "rate(1 hour)",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "Target": {
+          "Arn": {
+            "Fn::GetAtt": [
+              "BudgetGuard",
+              "Arn"
+            ]
+          },
+          "RoleArn": {
+            "Fn::GetAtt": [
+              "ScheduleRole",
+              "Arn"
+            ]
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 3600,
+            "MaximumRetryAttempts": 2
+          }
+        }
+      }
+    },
+    "PreventBudgetRestart": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "no-reiniciar-presupuesto-agotado",
+        "Roles": [
+          {
+            "Ref": "DeployRoleName"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Deny",
+              "Action": "ec2:StartInstances",
+              "Resource": {
+                "Fn::Sub": "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/${InstanceId}"
+              },
+              "Condition": {
+                "StringEquals": {
+                  "ec2:ResourceTag/Nafta2GoBudget": "exhausted"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "GuardLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/lambda/${BudgetGuard}"
+        },
+        "RetentionInDays": 7
+      }
+    }
+  },
+  "Outputs": {
+    "PublicIp": {
+      "Value": {
+        "Ref": "PublicAddress"
+      }
+    },
+    "BudgetGuardName": {
+      "Value": {
+        "Ref": "BudgetGuard"
+      }
+    }
+  }
+}

@@ -1,5 +1,7 @@
 """Tests del adaptador de OpenRouteService con una sesión HTTP falsa (sin red)."""
 
+from datetime import UTC, datetime
+
 import pytest
 import requests
 
@@ -7,6 +9,7 @@ from nafta2go.adapters.openrouteservice import (
     MAX_LOCATIONS,
     OpenRouteServiceClient,
     client_from_env,
+    retry_after,
 )
 from nafta2go.adapters.routing import (
     InvalidCredentials,
@@ -228,6 +231,36 @@ def test_client_from_env_uses_key(monkeypatch):
     session = FakeSession(ok_response(1, 1))
     client_from_env(session=session).matrix([OBELISCO], [CABILDO])
     assert session.calls[0]["headers"]["Authorization"] == "desde-entorno"
+
+
+@pytest.mark.parametrize(
+    "headers,expected",
+    [
+        ({"Retry-After": "90"}, 90),
+        ({"Retry-After": "Mon, 26 Oct 2026 12:02:00 GMT"}, 120),
+        ({"Retry-After": "inválido"}, None),
+        ({"x-ratelimit-remaining": "0", "x-ratelimit-reset": "1793016090"}, 90),
+        ({"x-ratelimit-remaining": "0", "x-ratelimit-reset": "NaN"}, None),
+    ],
+)
+def test_retry_delay_is_parsed_without_using_error_body(headers, expected):
+    assert retry_after(headers, datetime(2026, 10, 26, 12, tzinfo=UTC)) == expected
+
+
+def test_quota_error_propagates_retry_after():
+    response = FakeResponse(429, {"error": "no repetir"}, {"Retry-After": "90"})
+    with pytest.raises(QuotaExceeded) as exc:
+        client(FakeSession(response)).matrix([OBELISCO], [CABILDO])
+    assert exc.value.retry_after_seconds == 90
+
+
+def test_owned_sessions_can_be_closed(monkeypatch):
+    from unittest.mock import Mock
+
+    session = Mock()
+    monkeypatch.setattr("requests.Session", lambda: session)
+    client(None).close()
+    session.close.assert_called_once()
 
 
 @pytest.mark.parametrize("lat,lon", [(-91, 0), (91, 0), (0, -181), (0, 181), (float("nan"), 0)])

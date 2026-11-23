@@ -29,6 +29,7 @@ def coverage_report(
     scenario_loader: Callable[[], ScenarioPrices] = load_scenario,
 ) -> dict:
     """Cobertura actual por antigüedad (CABA y corredor) y la decisión que tomaría la consulta."""
+    max_age_days = coverage_rules.configured_max_price_age_days()
     query = {"fuel_type": fuel_type, "schedule_id": schedule_id, "reference_at": reference_at}
     windows = {}
     current = None
@@ -43,7 +44,12 @@ def coverage_report(
         current = current or city
 
     decision = select_with_coverage(
-        conn, origin, destination, scenario_loader=scenario_loader, **query
+        conn,
+        origin,
+        destination,
+        max_age_days=max_age_days,
+        scenario_loader=scenario_loader,
+        **query,
     )
     return {
         "reference_at": reference_at.isoformat(),
@@ -54,7 +60,7 @@ def coverage_report(
             "schedule_id": schedule_id,
         },
         "parameters": {
-            "max_price_age_days": coverage_rules.MAX_PRICE_AGE_DAYS,
+            "max_price_age_days": max_age_days,
             "min_recent_candidates": coverage_rules.MIN_RECENT_CANDIDATES,
             "max_detour_km": coverage_rules.MAX_DETOUR_KM,
         },

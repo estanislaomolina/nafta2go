@@ -52,3 +52,9 @@ def test_links_resolve_relative_to_each_file(tmp_path):
     write(tmp_path / "adr" / "ADR-Format.md", "x")
     write(tmp_path / "README.md", "x")
     assert check_links.find_broken_links(tmp_path) == []
+
+
+def test_vendor_markdown_is_ignored_but_project_links_are_checked(tmp_path):
+    write(tmp_path / "tests/browser/node_modules/pkg/README.md", "[roto](not-packaged.md)")
+    write(tmp_path / "docs/WEB.md", "[roto](missing.md)")
+    assert check_links.find_broken_links(tmp_path) == ["docs/WEB.md:1: link roto -> missing.md"]

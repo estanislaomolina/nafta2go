@@ -1,0 +1,14 @@
+{
+  "dataset_sha256": "690d5ce9e4cb59f9f8627f8c171c5ae13d5ba93e3366feac7cf24ef3a44ea89d",
+  "code_files_sha256": "60dfbf54e09b47d0a178292e5d96c18f40051e0f2196cb15c4b8183b1dd9246c",
+  "environment": {
+    "python": "3.12.16",
+    "sqlalchemy": "2.1.8",
+    "tzdata": "2026.6"
+  },
+  "same_dataset_and_metrics_as_local": true,
+  "network": "none",
+  "database_mount": "read_only",
+  "git_available": false,
+  "temporary_container_removed": true
+}

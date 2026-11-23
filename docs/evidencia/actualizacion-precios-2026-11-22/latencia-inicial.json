@@ -1,0 +1,12 @@
+{
+  "observed_at_utc": "2026-11-22T02:17:13.121973+00:00",
+  "scope": "real_history_api_in_process_synthetic_routes",
+  "source_sha256": "5a03269876a0facd38290938fcc580d6cf03fdae30264e5549affde22e3a1e70",
+  "http_status": 200,
+  "elapsed_s": 14.29236224500346,
+  "evaluations": 20,
+  "conservative_status": "available",
+  "active_diagnostics": 20,
+  "excluded_station_ids": [],
+  "without_reference_count": 0
+}

@@ -5,3 +5,11 @@ sqlalchemy>=2.0,<3
 alembic>=1.16,<2
 tzdata>=2024.1
 pandas>=2.2,<3
+fastapi==0.162.3
+pydantic==2.14.3
+uvicorn==0.54.0
+# Modelos del diagnóstico de precios (MVP-04); joblib y threadpoolctl llegan como dependencias.
+scikit-learn==1.9.1
+
+# Instrumentación HTTP y exportación Prometheus.
+prometheus-client==0.26.0

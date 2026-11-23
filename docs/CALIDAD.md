@@ -16,13 +16,27 @@ El workflow [ci.yml](../.github/workflows/ci.yml) corre en cada push y PR hacia
 | `Tests` | `pytest` con pytest-cov sobre `nafta2go` y las dependencias de `requirements-dev.txt` | Falla un test, la cobertura de líneas es < 90% o el job supera 5 min |
 | `Secretos` | [gitleaks](https://github.com/gitleaks/gitleaks) sobre los commits nuevos de cada push y PR | Aparece algo con forma de credencial (API keys, tokens, claves privadas) |
 | `Contenedores` | Construye la imagen con `docker compose build`, corre las migraciones, verifica el esquema y reproduce la consulta completa con la matriz real guardada | El `Dockerfile` no construye, una migración falla dentro del contenedor, el esquema no llega a `head` o la consulta no produce un resultado histórico trazable |
+| `Web y accesibilidad` | Flujos de navegador, teclado, privacidad y accesibilidad con Chromium/Playwright y axe-core | Falla un escenario o aparece una violación de accesibilidad en los estados cubiertos |
 
-`Docs y notebooks`, `Lint`, `Tests` y `Secretos` son **checks requeridos** en el
-ruleset de `dev` y `main`: una PR con cualquiera en rojo no se puede mergear.
-`Contenedores` corre en todas las PRs y falta sumarlo al ruleset. El ruleset
-identifica los checks por el `name` de cada job. **Si se renombra un job, hay que actualizar el ruleset en el
-mismo momento**; si no, el check requerido queda esperando un resultado que
-nunca llega y bloquea todas las PRs.
+Los seis checks de la tabla son **requeridos** por la regla activa
+[Reglas](https://github.com/estanislaomolina/nafta2go/rules/25794035) en `dev` y
+`main`. También exige una aprobación de otro integrante y resolver todas las
+conversaciones de review. Un push nuevo invalida las aprobaciones previas: se
+requiere revisar la versión actualizada. No hay actores con bypass; se mantienen
+las prohibiciones de borrado y force push. Estos controles se configuraron y
+verificaron por API el 17/11/2026 (#54).
+
+El ruleset identifica los checks por el `name` de cada job. **Si se renombra un
+job, hay que actualizar el ruleset en el mismo momento**; si no, el check queda
+esperando un resultado que nunca llega. La [evidencia de revisión cruzada](evidencia/revisiones-2026-11-17/README.md)
+conserva las reglas antes/después y una auditoría de las 36 PRs MVP integradas
+hasta #120. Cambiar este documento no configura GitHub: la configuración se
+administra en las reglas del repositorio.
+
+El check `Web y accesibilidad` ejecuta la suite de navegador con Chromium/Playwright y
+axe-core, sin APIs reales. Revisa flujos, teclado y estados de UI; reportes,
+versiones y límites en [QA web](../tests/browser/README.md). `Contenedores` también
+comprueba que las variables de caché/cupo lleguen a API y CLI mediante Compose.
 
 Las notebooks quedan fuera del lint: son exploración, y la lógica reutilizable
 vive en módulos con tests.
@@ -65,8 +79,9 @@ cada ejecución parcial.
 
 ## Credenciales y configuración sensible
 
-- La configuración sensible se lee de variables de entorno. Localmente se cargan
-  desde `.env`, que está en `.gitignore`; `.env.example` lista las claves sin valores.
+- La configuración sensible se lee de variables de entorno. CLI/API no cargan
+  `.env` automáticamente; Compose lo puede interpolar. `.env` está en `.gitignore`
+  y `.env.example` lista las claves sin valores.
 - En CI no hay credenciales: los tests reemplazan los servicios externos por
   dobles de prueba. Si un job llegara a necesitar una, se guarda como
   *GitHub Secret* y nunca en el workflow.

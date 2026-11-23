@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "purpose": "Actualizar compatibilidad con el original disponible sin modificar manifiestos anteriores",
+  "old_source_sha256": "950f748f881c95ea5bf9511a0c0ea120d6fc9a28345052ad46c8fc5d41f528bb",
+  "new_source_sha256": "5a03269876a0facd38290938fcc580d6cf03fdae30264e5549affde22e3a1e70",
+  "prepared_dataset_sha256_already_observed": "a6524b88d6fb900f69aed42c2001105ac3db32a332c2ac7029058cbcbf80ab58",
+  "known_before_fit": "Se preparó el dataset nuevo y se observaron counts y baseline MAE; 2026 fue evaluado anteriormente. No es una auditoría ciega ni prospectiva.",
+  "parameters": {
+    "cutoff_utc": "2026-01-01T03:00:00+00:00",
+    "window_days": 30,
+    "min_history": 5,
+    "model_parameters": {
+      "candidates": {
+        "boosting": {
+          "learning_rate": 0.05,
+          "loss": "absolute_error",
+          "max_iter": 300,
+          "max_leaf_nodes": 15,
+          "min_samples_leaf": 50
+        },
+        "ridge": {
+          "alpha": 1.0
+        }
+      },
+      "random_seed": 0,
+      "references": [
+        "mediana_previa",
+        "ultimo_precio",
+        "bandera_reciente"
+      ],
+      "selection_start_utc": "2025-01-01T03:00:00+00:00",
+      "threads": 1
+    },
+    "audit_start_local": "2026-07-01T00:00:00-03:00",
+    "quantile": 0.95,
+    "quantile_method": "nearest_rank",
+    "min_examples": 30,
+    "comparison": "strict_gt"
+  },
+  "activation_rules": [
+    "No editar hashes/manifiestos originales para forzar compatibilidad.",
+    "Repetir preparación y evaluación; contrastar hashes de ejemplos y umbrales.",
+    "Si cambia el método seleccionado, revisar serving sin cargar el artefacto no seleccionado.",
+    "Si cambian umbrales, cambiar versión de la política según ADR-021.",
+    "Una selección nueva requiere review antes de admitirla o activarla en AWS.",
+    "No cambiar el recomendador determinístico ni sustituir precios oficiales."
+  ],
+  "limitations": [
+    "Sin etiquetas de errores no se miden precisión, sensibilidad ni normalidad.",
+    "El servidor sigue apagado y la programación de encendido no depende de esta actualización."
+  ]
+}

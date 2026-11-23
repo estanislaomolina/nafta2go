@@ -9,3 +9,7 @@ coverage.xml
 .venv/
 .env
 data/
+node_modules/
+
+# Copias fijas y entornos de los servicios locales.
+.runtime/

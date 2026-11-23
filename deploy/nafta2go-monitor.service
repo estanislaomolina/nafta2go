@@ -1,0 +1,9 @@
+[Unit]
+Description=Detectar fallos e ingestas ausentes de Nafta2Go
+
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/nafta2go/ingestion.env
+ExecStart=/bin/sh -c 'cd "$${NAFTA2GO_DIR:?Falta NAFTA2GO_DIR}" && exec .venv/bin/python -m nafta2go.monitor'
+TimeoutStartSec=5min
+UMask=0077

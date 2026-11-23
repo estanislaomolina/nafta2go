@@ -24,28 +24,30 @@ def test_missing_key_is_reported_without_faking_routes(tmp_path, monkeypatch, ca
     monkeypatch.delenv("ORS_API_KEY", raising=False)
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'query.db'}")
     assert main([ORIGIN, DESTINATION]) == 2
-    assert "InvalidCredentials" in capsys.readouterr().err
+    assert "routes_not_configured" in capsys.readouterr().err
 
 
 def test_missing_matrix_is_reported(tmp_path, capsys):
     assert main([ORIGIN, "--matrix-file", str(tmp_path / "missing.json")]) == 2
-    assert "FileNotFoundError" in capsys.readouterr().err
+    assert "file_unavailable" in capsys.readouterr().err
 
 
-def test_no_coverage_requires_no_key(tmp_path, monkeypatch, capsys):
+@pytest.mark.parametrize("limit", [10, 20])
+def test_no_coverage_requires_no_key(tmp_path, monkeypatch, capsys, limit):
     monkeypatch.delenv("ORS_API_KEY", raising=False)
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'query.db'}")
-    assert main(["--origin=-34.71,-58.33", "--json"]) == 0
+    assert main(["--origin=-34.71,-58.33", f"--max-candidates={limit}", "--json"]) == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["outcome"] == "insufficient_coverage"
     assert payload["recommendation_id"] is None
+    assert payload["query"]["max_candidates"] == limit
 
 
 def test_origin_outside_caba_is_rejected_before_routing(tmp_path, monkeypatch, capsys):
     monkeypatch.delenv("ORS_API_KEY", raising=False)
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'query.db'}")
     assert main(["--origin=0,0"]) == 2
-    assert "origin: fuera del área" in capsys.readouterr().err
+    assert "invalid_request" in capsys.readouterr().err
 
 
 def test_reproduces_the_real_case_without_credentials(tmp_path, monkeypatch, capsys):
@@ -61,6 +63,17 @@ def test_reproduces_the_real_case_without_credentials(tmp_path, monkeypatch, cap
     assert payload["alternatives"] == original["alternatives"]
     assert payload["evaluations"] == original["evaluations"]
     assert payload["routes"]["replayed"]
+    assert {link["station_id"] for link in payload["navigation"]} == {
+        row["station_id"] for row in payload["alternatives"]
+    }
+    assert "navigation_destinations" not in payload
+
+
+@pytest.mark.parametrize("limit", [2, 21])
+def test_cli_rejects_candidate_limit_outside_supported_range(limit):
+    with pytest.raises(SystemExit) as exc:
+        main([ORIGIN, f"--max-candidates={limit}"])
+    assert exc.value.code == 2
 
 
 def test_budget_variant_discards_instead_of_inventing_a_recommendation(
@@ -77,3 +90,14 @@ def test_budget_variant_discards_instead_of_inventing_a_recommendation(
     assert payload["outcome"] == "no_feasible_stations"
     assert payload["alternatives"] == []
     assert all("no_budget" in row["reasons"] for row in payload["evaluations"])
+
+
+def test_text_result_shows_maps_and_keeps_historical_label(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'query.db'}")
+    matrix = (
+        Path(__file__).resolve().parents[1] / "docs/evidencia/poc-05-flujo-2026-10-26/matrix.json"
+    )
+    assert main([ORIGIN, DESTINATION, "--matrix-file", str(matrix)]) == 0
+    text = capsys.readouterr().out
+    assert "Cómo llegar a " in text and "https://www.google.com/maps/dir/" in text
+    assert "Google Maps recalcula" in text and "ESCENARIO HISTÓRICO" in text

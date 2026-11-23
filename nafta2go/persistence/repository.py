@@ -11,10 +11,11 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
-from sqlalchemy import Connection, select
+from sqlalchemy import Connection, func, select
 
 from nafta2go.persistence.models import RawCapture
 from nafta2go.persistence.schema import (
+    ingestion_alerts,
     ingestion_runs,
     raw_captures,
     recommendations,
@@ -33,6 +34,7 @@ ALLOWED_REQUEST_KEYS = frozenset(
         "budget_ars",
         "reserve_l",
         "max_candidates",
+        "max_price_age_days",
         "schedule_id",
     }
 )
@@ -76,6 +78,42 @@ def get_run(conn: Connection, run_id: int) -> dict | None:
     return dict(row._mapping) if row else None
 
 
+def runs_for_monitoring(conn: Connection, source: str) -> list[dict]:
+    # No cargar mensajes de error, parámetros ni URLs en el monitor.
+    columns = ("id", "status", "started_at", "finished_at")
+    query = select(*(ingestion_runs.c[key] for key in columns)).where(
+        ingestion_runs.c.source == source
+    )
+    return [dict(row._mapping) for row in conn.execute(query)]
+
+
+def sync_ingestion_alerts(
+    conn: Connection, source: str, alerts: list[dict], checked_at: datetime
+) -> list[dict]:
+    table = ingestion_alerts
+    keys = []
+    for alert in alerts:
+        key = f"{source}:{alert['key']}"
+        keys.append(key)
+        previous = conn.execute(select(table.c.key).where(table.c.key == key)).scalar()
+        values = {"last_seen_at": checked_at, "resolved_at": None}
+        if previous is None:
+            conn.execute(
+                table.insert().values(
+                    **{**alert, "key": key}, source=source, detected_at=checked_at, **values
+                )
+            )
+        else:
+            conn.execute(table.update().where(table.c.key == key).values(**values))
+    conn.execute(
+        table.update()
+        .where(table.c.source == source, table.c.resolved_at.is_(None), table.c.key.not_in(keys))
+        .values(resolved_at=checked_at)
+    )
+    query = select(table).where(table.c.source == source, table.c.resolved_at.is_(None))
+    return [dict(row._mapping) for row in conn.execute(query.order_by(table.c.key))]
+
+
 def latest_successful_run(conn: Connection, source: str) -> int | None:
     return conn.execute(
         select(ingestion_runs.c.id)
@@ -83,6 +121,31 @@ def latest_successful_run(conn: Connection, source: str) -> int | None:
         .order_by(ingestion_runs.c.finished_at.desc(), ingestion_runs.c.id.desc())
         .limit(1)
     ).scalar()
+
+
+def ingestion_run_summary(conn: Connection, run_id: int) -> dict:
+    """Proyección administrativa: no cargar errores, reportes, URLs ni archivos."""
+    columns = ("id", "status", "started_at", "finished_at", "rules_version")
+    query = (
+        select(
+            *(ingestion_runs.c[key] for key in columns),
+            raw_captures.c.sha256,
+            raw_captures.c.size_bytes,
+        )
+        .outerjoin(raw_captures, raw_captures.c.run_id == ingestion_runs.c.id)
+        .where(ingestion_runs.c.id == run_id)
+    )
+    result = dict(conn.execute(query).one()._mapping)
+    counts = conn.execute(
+        select(func.count(), func.count(func.distinct(station_prices.c.station_id))).where(
+            station_prices.c.run_id == run_id
+        )
+    ).one()
+    result["price_rows"], result["stations"] = counts
+    result["rejected_rows"] = conn.execute(
+        select(func.count()).select_from(rejected_rows).where(rejected_rows.c.run_id == run_id)
+    ).scalar_one()
+    return result
 
 
 def add_raw_capture(conn: Connection, run_id: int, capture: RawCapture) -> None:
@@ -151,6 +214,51 @@ def prices_for_run(conn: Connection, run_id: int, fuel_type: str | None = None) 
     if fuel_type is not None:
         query = query.where(station_prices.c.fuel_type == fuel_type)
     return [dict(row._mapping) for row in conn.execute(query.order_by(station_prices.c.id))]
+
+
+def _diagnostic_query(run_id: int, product_id: int, schedule_id: int):
+    columns = (
+        "source_row",
+        "station_id",
+        "product_id",
+        "schedule_id",
+        "valid_from",
+        "price",
+        "lat",
+        "lon",
+        "brand",
+    )
+    return select(*(station_prices.c[key] for key in columns)).where(
+        station_prices.c.run_id == run_id,
+        station_prices.c.product_id == product_id,
+        station_prices.c.schedule_id == schedule_id,
+    )
+
+
+def diagnostic_publication(
+    conn: Connection, run_id: int, station_id: int, product_id: int, schedule_id: int, at: datetime
+) -> dict | None:
+    query = (
+        _diagnostic_query(run_id, product_id, schedule_id)
+        .where(station_prices.c.station_id == station_id, station_prices.c.valid_from <= at)
+        .order_by(station_prices.c.valid_from.desc())
+        .limit(1)
+    )
+    row = conn.execute(query).mappings().first()
+    return dict(row) if row is not None else None
+
+
+def diagnostic_history(
+    conn: Connection, run_id: int, product_id: int, schedule_id: int, before: datetime
+) -> list[dict]:
+    # No recortar por antigüedad: el fallback usa el último precio propio,
+    # incluso si es anterior a la ventana de medianas de mercado.
+    query = (
+        _diagnostic_query(run_id, product_id, schedule_id)
+        .where(station_prices.c.valid_from < before)
+        .order_by(station_prices.c.id)
+    )
+    return [dict(row) for row in conn.execute(query).mappings()]
 
 
 def add_rejections(conn: Connection, run_id: int, rows: Iterable[Mapping[str, object]]) -> int:
@@ -233,6 +341,16 @@ def get_recommendation(conn: Connection, recommendation_id: int) -> dict | None:
     return dict(row._mapping) if row else None
 
 
+def recommendations_with_run_status(conn: Connection) -> list[dict]:
+    """Recomendaciones guardadas, con el estado de la ingesta que usaron, para auditarlas."""
+    query = (
+        select(recommendations, ingestion_runs.c.status.label("data_run_status"))
+        .select_from(recommendations.outerjoin(ingestion_runs))
+        .order_by(recommendations.c.id)
+    )
+    return [dict(row._mapping) for row in conn.execute(query)]
+
+
 def _optional_float(value: object) -> float | None:
     if value is None:
         return None
@@ -262,3 +380,18 @@ def _alerts_text(value: object) -> str:
     if isinstance(value, list | tuple):
         return "; ".join(str(v) for v in value)
     return str(value)
+
+
+def recommendation_results(conn: Connection):
+    """Recorrer resultados sin cargar requests ni toda la historia en memoria."""
+    query = select(recommendations.c.result).order_by(recommendations.c.id)
+    for row in conn.execution_options(yield_per=100).execute(query):
+        yield row.result
+
+
+def open_ingestion_alert_count(conn: Connection) -> int:
+    return conn.execute(
+        select(func.count())
+        .select_from(ingestion_alerts)
+        .where(ingestion_alerts.c.resolved_at.is_(None))
+    ).scalar_one()
