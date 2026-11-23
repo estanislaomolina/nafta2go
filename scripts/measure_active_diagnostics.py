@@ -118,7 +118,7 @@ def measure(runs=5, history_days=60):
         try:
             with (
                 patch.dict(os.environ, environment),
-                patch("nafta2go.domain.price_alert.AUDITED_MODEL_VERSION", version),
+                patch("nafta2go.domain.price_alert.AUDITED_MODEL_VERSIONS", frozenset({version})),
             ):
                 app = create_app(
                     engine,

@@ -231,3 +231,49 @@ La carga histórica y los directorios deben incorporarse al procedimiento de #22
 ninguno de estos pasos crea recursos AWS. La prueba de rendimiento sintética de
 [VALIDACION](VALIDACION.md#costo-del-diagnóstico-activo-con-veinte-candidatas)
 no sustituye esta preparación con datos reales.
+
+## Registro de modelos y campeón (#161)
+
+[ADR-030](../adr/ADR-030-registro-de-modelos-versionado.md). El registro es
+[`nafta2go/ml/registry.json`](../nafta2go/ml/registry.json) y se versiona en Git.
+Cada corrida se identifica por el SHA-256 de su manifiesto de modelo y guarda:
+
+- parámetros y linaje: hashes del dataset y del histórico, y commit;
+- el MAE de selección y de validación de cada candidato, marcado como `reference` o
+  `model`;
+- los hashes de `model.joblib` y de las predicciones;
+- la política de alertas para la que fue auditada, si la hay.
+
+```bash
+python -m nafta2go.ml.registry show
+python -m nafta2go.ml.registry register --manifest "$MODEL_DIR/manifest.json" \
+  --report "$MODEL_DIR/report.json"
+python -m nafta2go.ml.registry promote --run <sha256-del-manifiesto>
+```
+
+**Campeón y retadores.** El campeón actual es `bandera_reciente` de la corrida del
+22/11 (`b65d2d54…`). Ridge y boosting de esa corrida son retadores: quedan
+registrados con sus métricas, pero no se sirven.
+
+**Promoción.** Gana el menor MAE de selección; la validación de 2026 nunca se usa
+para elegir (ADR-014). Una promoción se rechaza sin tocar el archivo en estos casos:
+- la corrida no conserva el reporte;
+- el método elegido no es el ganador;
+- la corrida no fue auditada para la política del método.
+
+Por eso cambiar un alias no puede habilitar los umbrales de `conservative-v1` para
+otro modelo. Para revertir se vuelve a promover la corrida anterior.
+
+**Serving.** `domain/price_alert.py` acepta solo las corridas que el registro marca
+como auditadas para `conservative-v1`, que hoy son `91cb07a3…` y `b65d2d54…`. Ya no
+hay hashes escritos en el código. El manifiesto se sigue leyendo desde
+`NAFTA2GO_PRICE_MODEL_DIR`.
+
+**Lo que no se conserva.** Está inventariado en el campo `missing` del registro:
+- la corrida del 13/11 fue solo el baseline, sin manifiesto de modelo;
+- la corrida auditada `91cb07a3…` no tiene el reporte de selección en el repositorio,
+  así que está registrada pero no se puede promover;
+- `model.joblib` y las predicciones de todas las corridas están fuera de Git;
+- Ridge no guarda artefacto, porque solo se serializa el mejor modelo aprendido.
+
+Nada de esto se reconstruyó.

@@ -337,7 +337,7 @@ def test_without_current_ingestion_estimates_are_not_available(engine):
 )
 def test_conservative_uses_existing_routes_and_persists_trace(engine, monkeypatch, mode):
     from nafta2go.application.price_diagnostic import DiagnosticUnavailable
-    from nafta2go.domain.price_alert import AUDITED_MODEL_VERSION
+    from nafta2go.domain.price_alert import AUDITED_MODEL_VERSIONS
     from nafta2go.persistence.schema import station_prices
 
     prices = load_scenario().rows
@@ -362,7 +362,7 @@ def test_conservative_uses_existing_routes_and_persists_trace(engine, monkeypatc
             "official_price_ars_per_l": row["price_ars_per_l"],
             "published_at": row["published_at_local"] + "-03:00",
             "method": "bandera_reciente",
-            "version": "otra" if mode == "incompatible" else AUDITED_MODEL_VERSION,
+            "version": "otra" if mode == "incompatible" else min(AUDITED_MODEL_VERSIONS),
             "reference_ars_per_l": None if mode == "unknown" else "1000",
             "alert_level": "provisional_deviation"
             if mode == "all" or row["station_id"] == excluded

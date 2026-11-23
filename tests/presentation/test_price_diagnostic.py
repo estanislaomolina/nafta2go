@@ -417,18 +417,12 @@ def test_diagnostic_metrics_cover_results_failures_and_preserve_privacy(
         )
 
 
-@pytest.mark.parametrize("audited_slot", ["legacy", "updated"])
 def test_compatible_selection_emits_provisional_alert_without_changing_official(
-    engine, prepared, monkeypatch, audited_slot
+    engine, prepared, monkeypatch
 ):
     _, _, _, manifest = prepared
     version = hashlib.sha256(manifest.read_bytes()).hexdigest()
-    if audited_slot == "legacy":
-        monkeypatch.setattr("nafta2go.domain.price_alert.AUDITED_MODEL_VERSION", version)
-    else:
-        monkeypatch.setattr(
-            "nafta2go.domain.price_alert.ADDITIONAL_AUDITED_MODEL_VERSIONS", frozenset({version})
-        )
+    monkeypatch.setattr("nafta2go.domain.price_alert.AUDITED_MODEL_VERSIONS", frozenset({version}))
     with client(engine) as http:
         body = http.get(URL, headers=AUTH).json()
     assert body["alert_level"] == "provisional_deviation"
@@ -446,8 +440,8 @@ def test_http_recommendation_applies_same_diagnostic_and_keeps_general(
 
     runs, _, target, manifest = prepared
     monkeypatch.setattr(
-        "nafta2go.domain.price_alert.AUDITED_MODEL_VERSION",
-        hashlib.sha256(manifest.read_bytes()).hexdigest(),
+        "nafta2go.domain.price_alert.AUDITED_MODEL_VERSIONS",
+        frozenset({hashlib.sha256(manifest.read_bytes()).hexdigest()}),
     )
     target = {**target, "fuel_type": "super"}
     with engine.begin() as conn:
