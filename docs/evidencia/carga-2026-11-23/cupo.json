@@ -1,0 +1,109 @@
+{
+  "format_version": 1,
+  "measured_at_utc": "2026-11-23T19:20:01.088313+00:00",
+  "profile": "cupo",
+  "configuration": {
+    "users": [
+      10
+    ],
+    "step_seconds": 90,
+    "think_seconds": 0.0,
+    "quota_per_minute": 30
+  },
+  "scope": "local_recorded_routes",
+  "excludes": [
+    "llamada real a OpenRouteService",
+    "red entre cliente y servidor"
+  ],
+  "requests": 1229,
+  "steps": [
+    {
+      "users": 10,
+      "requests": 1225,
+      "requests_per_second": 13.61,
+      "latency_s": {
+        "p50": 0.7296,
+        "p95": 0.9374,
+        "p99": 1.015,
+        "max": 1.1456
+      },
+      "error_rate": 0.951,
+      "statuses": {
+        "200": 60,
+        "503": 1165
+      },
+      "error_codes": {
+        "routes_quota_exceeded": 1165
+      }
+    }
+  ],
+  "saturation": {
+    "users": 10,
+    "reasons": [
+      "errores_superan_umbral"
+    ]
+  },
+  "server_resources": [
+    {
+      "users": 10,
+      "cpu_percent_mean": 114.3,
+      "cpu_percent_max": 119.9,
+      "rss_mb_max": 165.6
+    }
+  ],
+  "persistence": {
+    "successful_responses": 60,
+    "stored_recommendations": 60,
+    "all_successes_stored": true,
+    "stored_without_recorded_response": 0,
+    "audit": {
+      "audit_version": "recommendation-audit-v2",
+      "recommendations": 60,
+      "origins": {
+        "ingesta_vigente": 0,
+        "escenario_historico": 60
+      },
+      "trazabilidad": {
+        "cumplen": 60,
+        "total": 60,
+        "proporcion": 1.0
+      },
+      "frescura": {
+        "cumplen": 600,
+        "total": 600,
+        "proporcion": 1.0,
+        "unidad": "precios evaluados"
+      },
+      "privacidad": {
+        "cumplen": 60,
+        "total": 60,
+        "proporcion": 1.0
+      },
+      "fallas": {
+        "trazabilidad": {},
+        "frescura": {},
+        "privacidad": {}
+      }
+    }
+  },
+  "quota": {
+    "quota_per_minute": 30,
+    "duration_s": 90,
+    "provider_calls": 60,
+    "max_allowed_calls": 60,
+    "blocked_by_quota": 1169,
+    "respected": true
+  },
+  "code": {
+    "git_commit": "ac67b8cf69168dccdf29a32687fdfd2afc533985",
+    "git_dirty": false,
+    "files_sha256": "f676153af813d7aa8037faf6163aa63532c66bb0fcb578a0096cf0b4df3ed1da"
+  },
+  "environment": {
+    "python": "3.12.3",
+    "platform": "Linux x86_64",
+    "cpu_count": 16,
+    "cpu_model": "Intel(R) Core(TM) Ultra 9 285H",
+    "server": "uvicorn, un proceso"
+  }
+}

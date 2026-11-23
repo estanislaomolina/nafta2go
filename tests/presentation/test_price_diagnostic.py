@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import shutil
 from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock
 
@@ -12,6 +13,7 @@ from sqlalchemy import func, select
 
 from nafta2go.application.price_diagnostic import ASSUMPTION
 from nafta2go.application.scenario import load_scenario
+from nafta2go.ml import registry as model_registry
 from nafta2go.ml.models import examples_frame, reference_predictions
 from nafta2go.ml.temporal import FEATURES_VERSION, build_temporal_dataset
 from nafta2go.persistence import repository as repo
@@ -21,6 +23,7 @@ from nafta2go.presentation.http import create_app
 
 NOW = datetime(2026, 1, 4, tzinfo=UTC)
 AUTH = {"Authorization": "Bearer prueba-local"}
+REAL_CHAMPION = model_registry.champion
 URL = "/api/v1/price-diagnostics/7"
 
 
@@ -113,7 +116,14 @@ def prepared(engine, tmp_path, monkeypatch):
     (model / "model.joblib").write_bytes(b"NO CARGAR")
     monkeypatch.setenv("NAFTA2GO_PRICE_DATASET_DIR", str(dataset))
     monkeypatch.setenv("NAFTA2GO_PRICE_MODEL_DIR", str(model))
+    # La selección sintética es el campeón, aunque cada test la reescriba después.
+    monkeypatch.setattr("nafta2go.ml.registry.champion", lambda: champion_of(model))
     return runs, history, target, model / "manifest.json"
+
+
+def champion_of(model):
+    raw = (model / "manifest.json").read_bytes()
+    return {"run": hashlib.sha256(raw).hexdigest(), "method": json.loads(raw)["chosen_method"]}
 
 
 def client(engine):
@@ -417,18 +427,12 @@ def test_diagnostic_metrics_cover_results_failures_and_preserve_privacy(
         )
 
 
-@pytest.mark.parametrize("audited_slot", ["legacy", "updated"])
 def test_compatible_selection_emits_provisional_alert_without_changing_official(
-    engine, prepared, monkeypatch, audited_slot
+    engine, prepared, monkeypatch
 ):
     _, _, _, manifest = prepared
     version = hashlib.sha256(manifest.read_bytes()).hexdigest()
-    if audited_slot == "legacy":
-        monkeypatch.setattr("nafta2go.domain.price_alert.AUDITED_MODEL_VERSION", version)
-    else:
-        monkeypatch.setattr(
-            "nafta2go.domain.price_alert.ADDITIONAL_AUDITED_MODEL_VERSIONS", frozenset({version})
-        )
+    monkeypatch.setattr("nafta2go.domain.price_alert.AUDITED_MODEL_VERSIONS", frozenset({version}))
     with client(engine) as http:
         body = http.get(URL, headers=AUTH).json()
     assert body["alert_level"] == "provisional_deviation"
@@ -446,8 +450,8 @@ def test_http_recommendation_applies_same_diagnostic_and_keeps_general(
 
     runs, _, target, manifest = prepared
     monkeypatch.setattr(
-        "nafta2go.domain.price_alert.AUDITED_MODEL_VERSION",
-        hashlib.sha256(manifest.read_bytes()).hexdigest(),
+        "nafta2go.domain.price_alert.AUDITED_MODEL_VERSIONS",
+        frozenset({hashlib.sha256(manifest.read_bytes()).hexdigest()}),
     )
     target = {**target, "fuel_type": "super"}
     with engine.begin() as conn:
@@ -502,3 +506,119 @@ def test_http_recommendation_applies_same_diagnostic_and_keeps_general(
     assert "8" in {c["station_id"] for c in result["alternatives"]}
     assert provider.matrix.call_count == 1
     assert all(d["history_run_id"] == runs["historico"] for d in block["diagnostics"])
+
+
+def test_promoting_and_reverting_the_champion_changes_the_served_version(
+    engine, prepared, monkeypatch, tmp_path
+):
+    """El alias del registro decide lo servido; una corrida sin auditoría no cambia nada."""
+    _, _, _, manifest = prepared
+    store = tmp_path / "almacen"
+    versions = []
+    for seed in (0, 1):
+        raw = json.dumps(json.loads(manifest.read_bytes()) | {"seed": seed}).encode()
+        version = hashlib.sha256(raw).hexdigest()
+        (store / version).mkdir(parents=True)
+        (store / version / "manifest.json").write_bytes(raw)
+        versions.append(version)
+    first, second = versions
+    winner = {"bandera_reciente": 1.0, "boosting": 2.0}
+    run = {
+        "chosen_method": "bandera_reciente",
+        "candidates": {
+            method: {
+                "kind": "reference" if method == "bandera_reciente" else "model",
+                "selection_mae_ars_per_l": mae,
+                "validation_mae_ars_per_l": 0.0,
+            }
+            for method, mae in winner.items()
+        },
+        "policy": "conservative-v1",
+        "audit": {"file": "auditoria.json", "sha256": "0" * 64},
+    }
+    path = tmp_path / "registry.json"
+    model_registry.save(
+        {
+            "policies": {"conservative-v1": {"method": "bandera_reciente", "thresholds": {}}},
+            "runs": {first: run, second: run, "c" * 64: run | {"audit": None}},
+            "aliases": {"champion": {"run": first, "method": "bandera_reciente"}},
+        },
+        path,
+    )
+    monkeypatch.setattr(model_registry, "REGISTRY", path)
+    monkeypatch.setattr(model_registry, "champion", REAL_CHAMPION)
+    monkeypatch.setattr(
+        "nafta2go.domain.price_alert.AUDITED_MODEL_VERSIONS",
+        model_registry.audited_versions(
+            "conservative-v1", "bandera_reciente", model_registry.load()
+        ),
+    )
+    monkeypatch.setenv("NAFTA2GO_PRICE_MODEL_DIR", str(store))
+
+    def served():
+        with client(engine) as http:
+            body = http.get(URL, headers=AUTH).json()
+        return body["version"], body["alert_policy_version"]
+
+    assert served() == (first, "conservative-v1")
+    assert model_registry.main(["promote", "--run", second]) == 0
+    assert served() == (second, "conservative-v1")
+    assert model_registry.main(["promote", "--run", first]) == 0
+    assert served() == (first, "conservative-v1")
+    # Etiquetada con la política pero sin auditoría verificada: se rechaza sin tocar nada.
+    before = path.read_bytes()
+    assert model_registry.main(["promote", "--run", "c" * 64]) == 1
+    assert path.read_bytes() == before
+    assert served() == (first, "conservative-v1")
+    # Un campeón que no está en el almacén deja el diagnóstico no disponible, sin otra versión.
+    model_registry.promote(registry := model_registry.load(), second)
+    shutil.rmtree(store / second)
+    model_registry.save(registry, path)
+    with client(engine) as http:
+        assert http.get(URL, headers=AUTH).status_code == 503
+
+
+def test_batch_matches_individual_diagnostics_with_one_history_read(engine, prepared, monkeypatch):
+    from nafta2go.application.price_diagnostic import (
+        price_diagnostic_on_connection,
+        price_diagnostics_on_connection,
+    )
+
+    runs, _, target, _ = prepared
+    with engine.begin() as conn:
+        conn.execute(
+            station_prices.insert(),
+            [
+                {
+                    **target,
+                    "id": None,
+                    "run_id": runs["vigente"],
+                    "station_id": 8,
+                    "source_row": 902,
+                    "valid_from": target["valid_from"] - timedelta(days=1),
+                    "price": 999999,
+                },
+                {
+                    **target,
+                    "id": None,
+                    "run_id": runs["vigente"],
+                    "station_id": 9,
+                    "source_row": 903,
+                },
+            ],
+        )
+    spy = Mock(wraps=repo.diagnostic_history)
+    monkeypatch.setattr(repo, "diagnostic_history", spy)
+    with engine.connect() as conn:
+        batch = price_diagnostics_on_connection(conn, [7, 8, 9, 999], 2, 2, NOW)
+        assert spy.call_count == 1
+        individual = {
+            station: price_diagnostic_on_connection(conn, station, 2, 2, NOW)
+            for station in [7, 8, 9, 999]
+        }
+        assert batch == individual
+        assert batch[999] is None
+        assert batch[8]["status"] == "unavailable"
+        assert batch[7]["reference_ars_per_l"] == batch[9]["reference_ars_per_l"] == "120.000"
+        with pytest.raises(ValueError):
+            price_diagnostics_on_connection(conn, list(range(21)), 2, 2, NOW)
