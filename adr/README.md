@@ -45,5 +45,6 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 | [ADR-025](ADR-025-imagen-verificada-por-digest.md) | Imagen verificada en CI y entregada por digest | Propuesto |
 | [ADR-026](ADR-026-despliegue-con-oidc.md) | Despliegue con OIDC y aprobación independiente | Propuesto |
 | [ADR-027](ADR-027-observabilidad-con-prometheus-y-grafana.md) | Observabilidad con Prometheus y Grafana | Propuesto |
+| [ADR-028](ADR-028-url-https-con-cloudflare.md) | URL HTTPS de demo con Cloudflare Tunnel | Propuesto |
 | [ADR-029](ADR-029-pruebas-de-carga-con-locust.md) | Pruebas de carga y estrés con Locust sobre un servidor aislado | Propuesto |
 | [ADR-030](ADR-030-registro-de-modelos-versionado.md) | Registro de modelos versionado con alias de campeón | Propuesto |
