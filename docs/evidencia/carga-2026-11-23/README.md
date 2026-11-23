@@ -111,7 +111,14 @@ Se obtuvieron 147 respuestas, **todas con los veinte diagnósticos disponibles**
   es 1,97 s. Con 5 llega a 9,57 s y supera RNF01.
 - **El rendimiento baja en lugar de quedar estable.** Pasa de 2,2 a 0,5 consultas por
   segundo con 5 usuarios. Una cola pura sobre un núcleo lo mantendría constante, así
-  que hay contención entre diagnósticos concurrentes. La causa no se investigó.
+  que hay contención entre diagnósticos concurrentes.
+- **Dónde se va el tiempo.** Un perfil con `cProfile` de tres consultas muestra que el
+  diagnóstico es CPU en Python y se repite entero en cada consulta: cerca de dos
+  tercios se van en `build_temporal_dataset`, que recorre todo el histórico del
+  producto y la franja, y un tercio en leer ese histórico de SQLite
+  (`diagnostic_history`). Repetir la corrida con un solo hilo numérico
+  (`OMP_NUM_THREADS=1` y equivalentes) dio los mismos resultados, así que no es
+  sobresuscripción de BLAS. La caída por debajo de una cola lineal no se explicó.
 - **Los escalones de 10 y 20 usuarios no se leen como rendimiento.** Ahí las
   latencias superan los 30 s del escalón, así que casi ninguna consulta termina
   dentro de su ventana.
@@ -126,8 +133,10 @@ usuarios simultáneos sin pausa. **Con el diagnóstico activo sobre el históric
 y veinte candidatas, sólo lo cumple hasta 2 consultas simultáneas sin pausa.** El
 cuello de botella es la preparación de diagnósticos dentro de un único proceso.
 Agregar workers de uvicorn exigiría compartir la caché y el cupo de rutas entre
-procesos (ADR-010), y precalcular diagnósticos fuera de la consulta es otra
-decisión de diseño. Ninguna de las dos se toma en esta etapa.
+procesos (ADR-010). Cachear la lectura del histórico, que no cambia dentro de una
+corrida, ahorraría como mucho un tercio por consulta. Precalcular los diagnósticos
+al terminar cada ingesta sacaría el costo de la consulta, pero es otra decisión de
+diseño. Ninguna de las tres se toma en esta etapa.
 
 Pendiente para cerrar #158: medir contra la instancia `t3.small` de AWS. Para la
 línea de base alcanza `--target`. Para el perfil histórico hace falta correr el
