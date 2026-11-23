@@ -205,3 +205,7 @@ Las fechas y simplificaciones del caso reproducible se detallan en
 El repositorio se mantiene público por autorización de la cátedra, confirmada
 por el equipo al cerrar esta entrega. La presentación se identifica con el
 commit específico de `main` y la URL del video.
+
+La observabilidad opcional de Prometheus/Grafana se levanta con la
+[guía de dashboards](docs/OBSERVABILIDAD.md); sus métricas de negocio son
+recomendaciones y estimaciones, no compras confirmadas.
