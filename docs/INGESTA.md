@@ -341,9 +341,11 @@ confianza exige audiencia STS y el subject inmutable de este repositorio para
 
 `.github/workflows/acquire-prices.yml` programa adquisición a las 09:17 UTC
 (06:17 Argentina). No usa environment ni aprobación interactiva en cada corrida:
-es una identidad distinta del despliegue de #156. `workflow_dispatch` permite
-probar desde `dev` una vez integradas todas las dependencias. El cron sólo corre
-desde la rama predeterminada, actualmente `main`, y GitHub puede retrasarlo.
+es una identidad distinta del despliegue de #156. Tanto el cron como el primer
+disparo manual requieren que el archivo exista en la rama predeterminada,
+actualmente `main`. Después se puede seleccionar `dev` al disparar manualmente;
+integrarlo sólo a `dev` no habilita esa primera corrida. GitHub puede retrasar el
+cron; [condiciones de los disparadores](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
 Las variables de repositorio `NAFTA2GO_CAPTURE_BUCKET` y
 `NAFTA2GO_CAPTURE_ROLE_ARN` son referencias públicas, no credenciales.
 
@@ -352,7 +354,8 @@ Las variables de repositorio `NAFTA2GO_CAPTURE_BUCKET` y
 1. Aplicar el change set de `capture-relay.json` con `DemoRoleName` igual al rol
    EC2 existente; el proveedor OIDC debe existir. Usar sus outputs para las dos
    variables de repositorio. No crear access keys ni copiar sesiones SSO al host.
-2. Integrar #176/#177 y la programación; activar una imagen que incluya
+2. Integrar #176/#177 y la programación en `dev`, y entregar desde `dev` a `main`
+   mediante PR para registrar el workflow. Activar una imagen que incluya
    `--receipt`. Mantener base/configuración privadas del host. El instalador
    verifica esa capacidad antes de habilitar los servicios.
 3. Desde el directorio de esa release, ejecutar mediante SSM como root
