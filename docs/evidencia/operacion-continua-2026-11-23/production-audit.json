@@ -1,0 +1,6 @@
+{
+  "command_id": "02c9d15d-22c2-4f2c-9cea-950b3974bb54",
+  "status": "Success",
+  "stdout": "{\"audit_version\": \"recommendation-audit-v2\", \"recommendations\": 23, \"origins\": {\"ingesta_vigente\": 23, \"escenario_historico\": 0}, \"trazabilidad\": {\"cumplen\": 23, \"total\": 23, \"proporcion\": 1.0}, \"frescura\": {\"cumplen\": 308, \"total\": 308, \"proporcion\": 1.0, \"unidad\": \"precios evaluados\"}, \"privacidad\": {\"cumplen\": 23, \"total\": 23, \"proporcion\": 1.0}, \"fallas\": {\"trazabilidad\": {}, \"frescura\": {}, \"privacidad\": {}}}\n{\"integrity\": \"ok\", \"journal_mode\": \"wal\", \"schema\": \"0003\"}\n",
+  "stderr": ""
+}

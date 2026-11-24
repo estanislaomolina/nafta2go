@@ -65,3 +65,33 @@ No es un límite duro de facturación: detener EC2 conserva discos y dirección
 pública, que pueden seguir generando cargos. No hay autorización para destruir
 los datos. Cost Explorer está bloqueado por SCP; Budgets informa gasto, pero no
 se afirma conocer el saldo exacto de créditos educativos.
+
+## Recuperación y auditoría productiva
+
+[Rollback real](rollback.json): se volvió de la imagen `66ed4cbf` a la release
+previamente instalada `c0739705`, se aprobó el smoke y se restauró `66ed4cbf`,
+también con smoke aprobado. Ambos pasos usaron modo rollback y digests guardados,
+sin reconstrucción ni migración inversa. El esquema permanece en `0003`; una
+migración futura requiere revisar compatibilidad antes de revertir código.
+
+[Auditoría productiva](production-audit.json): 23/23 recomendaciones con
+trazabilidad y privacidad, 308/308 precios con frescura; SQLite íntegro y WAL.
+[Prueba en navegador sobre Pages](pages-browser.json): UC01 y UC02 reales 200,
+geolocalización emulada dentro de CABA, cero errores de página y almacenamiento
+local/session vacío. La emulación no se presenta como prueba de un teléfono físico.
+El dueño probó previamente un iPhone 13 con ubicación manual fuera de CABA y una
+computadora con geolocalización detectada dentro de CABA; no informó SO/navegador.
+
+[Timers AWS habilitados](ingestion-timers.json): ingesta diaria 06:45 Argentina
+y monitor horario, ambos con `Persistent=true`. Instalarlos no demuestra una
+adquisición exitosa: esa evidencia se registra por separado.
+
+## RNF01 en AWS con ORS real
+
+[Medición aislada](live-api.json): copia consistente de la base desplegada,
+mismo digest `66ed4cbf`, modelo y política vigentes, tres consultas de
+calentamiento y cien medidas (50 UC01, 50 UC02). ORS real con caché, un usuario,
+HTTP loopback; no incluye el transporte HTTPS público. p95 UC01 0,66478 s y
+UC02 0,65488 s. Se guardaron las 103 consultas y la
+[auditoría posterior](qa-live-audit.json) terminó sin fallas. Los tamaños de las
+muestras y las condiciones no se extrapolan a veinte usuarios simultáneos.

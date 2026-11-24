@@ -1,0 +1,42 @@
+{
+  "observed_at": "2026-11-23T23:58:10.204535+00:00",
+  "authenticated": true,
+  "health": {
+    "database": "ok",
+    "version": "13.3.1",
+    "commit": "da3aa3ff574e7dbbf808c66b6daa744defed0441"
+  },
+  "dashboards": [
+    {
+      "uid": "nafta2go-operations",
+      "title": "Funcionamiento \u00b7 Nafta2Go"
+    },
+    {
+      "uid": "nafta2go-business",
+      "title": "Negocio \u00b7 recomendaciones estimadas"
+    }
+  ],
+  "datasource": {
+    "details": {
+      "application": "Prometheus",
+      "features": {
+        "rulerApiEnabled": false
+      }
+    },
+    "message": "Successfully queried the Prometheus API.",
+    "status": "OK"
+  },
+  "alerts": {
+    "count": 3,
+    "titles": [
+      "Ingesta ausente, fallida o atrasada",
+      "p95 de consultas mayor que cinco segundos",
+      "Errores HTTP mayores al cinco por ciento"
+    ]
+  },
+  "api_up_values": [
+    [
+      1
+    ]
+  ]
+}

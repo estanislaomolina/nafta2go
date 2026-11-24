@@ -211,3 +211,26 @@ completó cinco consultas con veinte diagnósticos activos cada una, p95 **0,677
 con código limpio `1275047` y 1.200 filas históricas de QA. No se suma
 su p95 al del lote ORS para anunciar una latencia completa: siguen siendo muestras
 y condiciones diferentes. La latencia con el histórico real queda sin acreditar.
+
+
+## Verificación desplegada — 23/11/2026
+
+La [evidencia operativa](evidencia/operacion-continua-2026-11-23/README.md)
+complementa las tablas y observaciones históricas anteriores. Pages y la API AWS
+completaron UC01/UC02 en Chromium con ORS real. La auditoría de la base desplegada
+registró trazabilidad 23/23, privacidad 23/23 y frescura 308/308 precios, sin fallas.
+La carga se ejecutó en una base separada de producción: perfil histórico con
+veinte diagnósticos activos, 128 respuestas medidas y cero errores; sostenida
+con rutas grabadas, 1.069 respuestas y cero errores. En histórico, p95 con un
+usuario 0,8048 s; con veinte usuarios 29,0305 s. RNF01 no se acredita para veinte
+usuarios simultáneos: se observa saturación desde dos usuarios. No se mezclan
+estos valores con los de ORS y el transporte público HTTPS.
+
+RNF01 con proveedor real en AWS: cien consultas medidas en base aislada,
+cincuenta por caso de uso y tres de calentamiento. p95 UC01 0,66478 s y
+UC02 0,65488 s, veinte candidatas solicitadas, diagnóstico activo y caché
+habilitada; HTTP loopback excluye transporte público. Cien respuestas 200,
+103 nuevas recomendaciones persistidas y auditoría sin fallas. La prueba
+[publicada](evidencia/operacion-continua-2026-11-23/live-api.json) acredita
+la condición medida con un usuario, no disponibilidad continua ni capacidad
+para veinte usuarios.
