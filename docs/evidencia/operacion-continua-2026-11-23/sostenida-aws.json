@@ -1,0 +1,98 @@
+{
+  "format_version": 1,
+  "measured_at_utc": "2026-11-23T23:41:10.057468+00:00",
+  "profile": "sostenida",
+  "configuration": {
+    "users": [
+      10
+    ],
+    "step_seconds": 120,
+    "think_seconds": 1.0,
+    "quota_per_minute": null
+  },
+  "scope": "local_recorded_routes",
+  "excludes": [
+    "llamada real a OpenRouteService",
+    "red entre cliente y servidor"
+  ],
+  "requests": 1069,
+  "steps": [
+    {
+      "users": 10,
+      "requests": 1069,
+      "requests_per_second": 8.91,
+      "latency_s": {
+        "p50": 0.0647,
+        "p95": 0.3513,
+        "p99": 0.9664,
+        "max": 1.8931
+      },
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 1069
+      },
+      "error_codes": {}
+    }
+  ],
+  "saturation": {
+    "users": null,
+    "reasons": []
+  },
+  "server_resources": [
+    {
+      "users": 10,
+      "cpu_percent_mean": 57.2,
+      "cpu_percent_max": 86.0,
+      "rss_mb_max": 161.6
+    }
+  ],
+  "persistence": {
+    "successful_responses": 1069,
+    "stored_recommendations": 1069,
+    "all_successes_stored": true,
+    "stored_without_recorded_response": 0,
+    "audit": {
+      "audit_version": "recommendation-audit-v2",
+      "recommendations": 1069,
+      "origins": {
+        "ingesta_vigente": 0,
+        "escenario_historico": 1069
+      },
+      "trazabilidad": {
+        "cumplen": 1069,
+        "total": 1069,
+        "proporcion": 1.0
+      },
+      "frescura": {
+        "cumplen": 10690,
+        "total": 10690,
+        "proporcion": 1.0,
+        "unidad": "precios evaluados"
+      },
+      "privacidad": {
+        "cumplen": 1069,
+        "total": 1069,
+        "proporcion": 1.0
+      },
+      "fallas": {
+        "trazabilidad": {},
+        "frescura": {},
+        "privacidad": {}
+      }
+    }
+  },
+  "quota": null,
+  "diagnostics": null,
+  "code": {
+    "git_commit": null,
+    "git_dirty": null,
+    "files_sha256": "b9f299bd3cca1da934ddc596ec551b52b7aa8776640f0a745c0a77c45bd75597"
+  },
+  "environment": {
+    "python": "3.12.16",
+    "platform": "Linux x86_64",
+    "cpu_count": 2,
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8175M CPU @ 2.50GHz",
+    "server": "uvicorn, un proceso"
+  }
+}

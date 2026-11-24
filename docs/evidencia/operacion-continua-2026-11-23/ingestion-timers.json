@@ -1,0 +1,6 @@
+{
+  "command_id": "32c43bde-d10c-495e-95a8-5cd733886b6a",
+  "status": "Success",
+  "stdout": "NEXT                        LEFT      LAST PASSED UNIT                         ACTIVATES\nTue 2026-11-24 00:00:00 UTC 5min left -    -      nafta2go-aws-monitor.timer   nafta2go-aws-monitor.service\nTue 2026-11-24 09:45:00 UTC 9h left   -    -      nafta2go-aws-ingestion.timer nafta2go-aws-ingestion.service\n\n2 timers listed.\nPass --all to see loaded but inactive timers, too.\nenabled\nenabled\n",
+  "stderr": "Created symlink /etc/systemd/system/timers.target.wants/nafta2go-aws-ingestion.timer \u2192 /etc/systemd/system/nafta2go-aws-ingestion.timer.\nCreated symlink /etc/systemd/system/timers.target.wants/nafta2go-aws-monitor.timer \u2192 /etc/systemd/system/nafta2go-aws-monitor.timer.\n"
+}

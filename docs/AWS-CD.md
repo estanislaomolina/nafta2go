@@ -31,7 +31,9 @@ plantilla para reutilizarlo antes de crear uno duplicado. Guardar las referencia
 como variables del environment: RoleArn → DEMO_ROLE_ARN, ID de instancia →
 DEMO_INSTANCE_ID y nombre de SecureString → DEMO_RUNTIME_PARAMETER. Nunca su valor.
 
-[Evidencia real de preparación](evidencia/oidc-demo-2026-11-22/README.md): stack
-CREATE_COMPLETE y protecciones leídas de GitHub. La ejecución OIDC queda pendiente
-hasta integrar el workflow de #156 y aprobar una corrida; una plantilla válida
-no acredita un despliegue. [Alternativas](../adr/ADR-026-despliegue-con-oidc.md).
+[Preparación](evidencia/oidc-demo-2026-11-22/README.md) y
+[despliegue OIDC real exitoso](https://github.com/estanislaomolina/nafta2go/actions/runs/45290583089),
+23/11/2026. El deploy por digest y el smoke terminaron correctamente.
+La aprobación excepcional fue de Estanislao, con autorización explícita; después
+se restauró Felipe como revisor y el bloqueo de autoaprobación.
+[Alternativas](../adr/ADR-026-despliegue-con-oidc.md).

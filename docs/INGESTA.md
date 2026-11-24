@@ -397,3 +397,14 @@ no se habilitaron servicios incompatibles. El cierre de #160 requiere activar
 una imagen compatible y observar el recorrido completo después de la revisión
 e integración. Referencias: [OIDC de GitHub](https://docs.github.com/en/actions/reference/security/oidc)
 y [S3 en CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-s3-bucket.html).
+
+
+## Entorno de adquisición del canal AWS
+
+`NAFTA2GO_ACQUISITION_RUNNER` permite seleccionar un runner de Actions con
+conectividad comprobada al catálogo HTTP. Si no se configura, usa
+`ubuntu-latest`. Un timeout del catálogo desde un runner no prueba ausencia de
+publicación del proveedor. El flujo conserva OIDC, los reintentos acotados y
+la validación del CSV; cambiar el runner no permite reutilizar capturas viejas
+como si fueran descargas nuevas. La ingesta en EC2 conserva identidad de
+instancia y timers persistentes, sin una sesión SSO personal.

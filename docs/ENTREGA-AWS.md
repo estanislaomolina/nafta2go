@@ -60,8 +60,9 @@ aplica migraciones ni ingesta. No restaura la base: antes de desplegar una
 migración hay que revisar compatibilidad con la versión anterior y planificar
 recuperación de datos. Un respaldo no sustituye esa revisión.
 
-La prueba de rollback real en AWS sigue pendiente: los tests con dependencias
-falsas no la acreditan. [Alternativas y límites](../adr/ADR-025-imagen-verificada-por-digest.md).
+La prueba real de rollback y restauración en AWS terminó con ambos smoke tests
+aprobados el 23/11: [evidencia](evidencia/operacion-continua-2026-11-23/rollback.json).
+Los tests con dependencias falsas cubren además la recuperación automática fallida. [Alternativas y límites](../adr/ADR-025-imagen-verificada-por-digest.md).
 
 ## Publicación y lectura de la imagen
 
@@ -73,7 +74,8 @@ no publican ni reciben permiso de escritura sobre paquetes. El job comprueba que
 el digest publicado resuelve al mismo ID de imagen probado, y exporta
 `image-digest.txt` junto al resumen de Actions.
 
-GHCR crea los paquetes privados por defecto. El titular debe configurar el paquete
+El paquete actual es público y se comprobó la descarga anónima por digest. En
+una cuenta nueva, GHCR puede crear paquetes privados; el titular debe configurar el paquete
 `nafta2go` como **público** tras la primera publicación y comprobar desde un cliente
 sin sesión que `docker pull "$IMAGE_DIGEST"` funciona. El host no recibe un token
 GitHub; un fallo de lectura conserva la API anterior. La publicación usa sólo
