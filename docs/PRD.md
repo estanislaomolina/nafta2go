@@ -192,3 +192,11 @@ por diez escenarios técnicos reproducibles de [ADR-023](../adr/ADR-023-validaci
 Los objetivos de utilidad y comprensión anteriores se conservan como **no acreditados**:
 la simulación no mide personas, elecciones ni respuestas humanas. No se presenta
 como un estudio de usuarios ni se presume aceptación del recorte por la cátedra.
+
+
+## Entrega MVP — 24/11/2026
+
+La [documentación de entrega](ENTREGA-3.md) identifica video, tag anotado,
+procedimiento reproducible y límites. Sitio: https://estanislaomolina.github.io/nafta2go/.
+Video: https://youtu.be/Y3cV71ZnxuY (7:26). Las evidencias de validación no se
+extrapolan a disponibilidad continua, utilidad humana o concurrencia ilimitada.

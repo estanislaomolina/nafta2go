@@ -1,4 +1,17 @@
-# AWS: preparación del sandbox y base de red
+# AWS: operación y preparación del sandbox
+
+## Estado actual de la entrega MVP
+
+Sitio: https://estanislaomolina.github.io/nafta2go/. API/Grafana HTTPS en EC2,
+publicación por digest, OIDC, smoke y rollback reales verificados. La ingesta
+usa Actions/OIDC → S3 → servicio EC2 con monitor y timers persistentes.
+[HOSTING](HOSTING.md) describe operación continua bajo guardia de presupuesto;
+[ENTREGA-3](ENTREGA-3.md) enlaza video y versión.
+
+Los apartados siguientes conservan la preparación histórica de noviembre. El
+apagado inicial a dos horas y la ausencia inicial de URL pública fueron
+reemplazados por ADR-032; no describen la configuración actual.
+
 
 El [servidor de demo](AWS-DEMO.md) se creó y se probó el 21/11/2026 con autorización
 del titular: acceso SSM, contenedor por commit y apagado a las dos horas por arranque.
@@ -82,7 +95,7 @@ Eliminar el stack borra sus recursos. Antes de añadir cómputo o almacenamiento
 hay que definir backup/restauración, orden de eliminación y retención de datos;
 no conectar recursos manuales que impidan borrar esta red.
 
-## Presupuesto y trabajo pendiente (#59 y #22)
+## Presupuesto inicial y evolución (#59 y #22)
 
 AWS publica USD 0,005 por hora de IPv4 pública: 2976 horas equivalen a **USD 14,88
 solo de dirección**, sin servidor, discos, transferencia ni otros servicios.

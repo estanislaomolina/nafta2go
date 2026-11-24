@@ -1,10 +1,17 @@
-# Aplicación web local — MVP-03
+# Aplicación web — MVP-03
+
+Sitio publicado: https://estanislaomolina.github.io/nafta2go/.
+API: https://nafta2go.18.216.94.147.sslip.io/.
+Video de entrega: https://youtu.be/Y3cV71ZnxuY.
+El hosting/CORS HTTPS se documenta en [HOSTING](HOSTING.md); las instrucciones
+siguientes conservan el arranque local.
+
 
 La pantalla está en `/` del servidor descrito en [API](API.md). Levantar el
 mismo servicio con `uvicorn nafta2go.presentation.http:app --host 127.0.0.1 --port 8000`
 o `docker compose --profile mvp up --build api`, después de configurar el código
 `NAFTA2GO_API_TOKEN` y migrar la base. Abrir `http://127.0.0.1:8000/` y usar ese
-código en «Acceso a la demo». La API y la web comparten origen; decisión propuesta
+código en «Acceso a la demo». En local la API y la web comparten origen; decisión aceptada
 en [ADR-012](../adr/ADR-012-web-local-con-assets-propios.md).
 
 El formulario permite buscar una dirección o lugar de CABA para origen y destino.
@@ -37,16 +44,16 @@ el código o las coordenadas. El código queda en memoria y se vacía al abandon
 la página. Las respuestas de la pantalla llevan `no-store`, CSP de assets propios
 y política de referrer. Los textos remotos se insertan como texto, no HTML.
 El acceso por código es **local/demo**, no autenticación de usuarios para uso público.
-No se desplegó en AWS ni se incorporó hosting externo.
+La demo está desplegada en AWS y Pages; conserva códigos de demo, sin cuentas de usuario.
 
 Incluye etiquetas, enlace para saltar al formulario, foco visible y regiones de
 estado/error. Las [pruebas de navegador](../tests/browser/README.md) verifican UC01/UC02 con
 teclado y los descartes de UC06, errores, privacidad y layouts de escritorio/móvil
 emulado. Axe-core registró cero violaciones e incompletos en doce estados de
 la corrida local; no se declara conformidad completa con WCAG. Falta teléfono
-físico, otros navegadores y lector de pantalla.
+físico exhaustivo, otros navegadores y lector de pantalla. El titular informó una prueba de iPhone 13 con búsqueda/ubicación manual funcionando.
 El diagnóstico ML y el ranking conservador están descritos más abajo; perfiles y
-autenticación pública siguen pendientes. La web usa diez candidatas por defecto;
+cuentas de usuario siguen fuera del alcance; el acceso público por HTTPS con códigos de demo está desplegado. La web usa diez candidatas por defecto;
 la API admite un límite de 3 a 20. No completa por sí sola MVP-03.
 
 ## Panel local de operación
