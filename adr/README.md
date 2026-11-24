@@ -6,11 +6,18 @@ Los Architecture Decision Records documentan decisiones de diseño relevantes, l
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| [ADR-001](ADR-001-alcance-y-estrategia-de-datos.md) | Alcance en CABA y estrategia frente a la baja cobertura reciente | Aceptado |
+| [ADR-002](ADR-002-recomendador-deterministico-y-diagnostico-ml.md) | Recomendador determinístico con diagnóstico ML separado | Aceptado |
+| [ADR-003](ADR-003-proveedor-de-rutas.md) | OpenRouteService como proveedor principal y OSRM como alternativa | Aceptado |
+| [ADR-004](ADR-004-arquitectura-por-capas.md) | Arquitectura modular por capas | Aceptado |
 
 ## Decisiones de la Entrega 2
 
 | ADR | Decisión | Estado |
 |---|---|---|
+| [ADR-005](ADR-005-persistencia-de-la-poc.md) | SQLite con SQLAlchemy y Alembic para la persistencia de la POC | Aceptado |
+| [ADR-006](ADR-006-escenario-historico-de-la-poc.md) | Captura vigente congelada como escenario histórico de la POC | Propuesto |
+| [ADR-007](ADR-007-trazabilidad-de-recomendaciones-historicas.md) | Origen de datos de recomendaciones históricas | Propuesto |
 
 La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de POC-03; el resultado está en [docs/RUTAS.md](../docs/RUTAS.md).
 
@@ -48,5 +55,5 @@ La decisión sobre el proveedor de rutas se aceptó con la prueba autenticada de
 | [ADR-028](ADR-028-url-https-con-cloudflare.md) | URL HTTPS de demo con Cloudflare Tunnel | Reemplazado por ADR-032 |
 | [ADR-029](ADR-029-pruebas-de-carga-con-locust.md) | Pruebas de carga y estrés con Locust sobre un servidor aislado | Propuesto |
 | [ADR-030](ADR-030-registro-de-modelos-versionado.md) | Registro de modelos versionado con alias de campeón | Propuesto |
-| [ADR-031](ADR-031-transferencia-verificada-de-capturas.md) | Transferencia verificada de capturas para la ingesta cloud | Propuesto |
+| [ADR-031](ADR-031-transferencia-verificada-de-capturas.md) | Transferencia verificada de capturas para la ingesta cloud | Aceptado |
 | [ADR-032](ADR-032-pages-y-api-publica-con-presupuesto.md) | Pages y API pública con presupuesto total | Aceptado |

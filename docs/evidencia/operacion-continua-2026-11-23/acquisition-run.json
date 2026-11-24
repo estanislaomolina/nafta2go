@@ -1,0 +1,9 @@
+{
+  "id": 45295037962,
+  "head_sha": "9530b681e9e98cd14b0470a1e6df30acbfc5cea3",
+  "run_attempt": 2,
+  "event": "workflow_dispatch",
+  "status": "completed",
+  "conclusion": "success",
+  "html_url": "https://github.com/estanislaomolina/nafta2go/actions/runs/45295037962"
+}

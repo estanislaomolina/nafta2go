@@ -21,7 +21,7 @@ Santiago Bunge
 - [ADRs](adr/README.md): decisiones de diseño y comparación de alternativas.
 - [SRD](docs/SRD.md): especificación técnica de la POC: arquitectura y diagramas, stack, modelo de datos, contratos y estrategia de datos.
 - [Consulta completa de POC-05](docs/POC-05.md): ejecución, ranking, evidencia real y simplificaciones.
-- [Ingesta diaria y monitor](docs/INGESTA.md): unidades systemd, alertas locales y evidencia de fallos/recuperación; supervisión sostenida pendiente (MVP-01).
+- [Ingesta diaria y monitor](docs/INGESTA.md): unidades systemd, alertas locales y evidencia de fallos/recuperación; [canal AWS automático y límites comprobados](docs/evidencia/operacion-continua-2026-11-23/README.md) (MVP-01).
 - [Preparación AWS](docs/AWS.md): acceso del sandbox, plantilla de red, validación y límites.
 - [Servidor de demo AWS](docs/AWS-DEMO.md): `t3.small` efímera, entrega versionada por SSM, costos, resultado de la primera demo y respaldo de la base.
 - [Hosting continuo](docs/HOSTING.md): web en GitHub Pages y API/Grafana por HTTPS en EC2 con guardia de presupuesto (ADR-032); [evidencia operativa](docs/evidencia/operacion-continua-2026-11-23/README.md).
@@ -91,7 +91,7 @@ Cada decisión estructural tiene un ADR con alternativas comparadas; el índice 
     de carga con Locust, registro de modelos con alias de campeón y transferencia
     verificada de capturas.
 
-  Abarca de ADR-008 a ADR-031.
+  Abarca de ADR-008 a ADR-032.
 
 ## Desarrollo local
 
@@ -127,7 +127,7 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración; la Ent
 | Componente | Tarea | Estado |
 |---|---|---|
 | Integración continua: links, lint, tests y secretos | POC-07 | Implementado |
-| Aplicación web local | MVP-03 | Formulario y resultados explicados con acceso de demo; flujos de teclado y navegador automatizados; validación física de móvil pendiente; ver docs/WEB.md |
+| Aplicación web local | MVP-03 | Formulario y resultados explicados con acceso de demo; flujos de teclado y navegador automatizados; prueba física de iPhone 13 informada por el dueño; otros navegadores y lector de pantalla sin acreditar; ver docs/WEB.md |
 | API del recomendador | MVP-02 | Implementada localmente con token, caché por proceso y tests HTTP; despliegue público por HTTPS comprobado; ver docs/API.md |
 | Normalización de precios | POC-01 | Implementado: descarga verificada, reglas con rechazos y alertas, y corrida real documentada en docs/NORMALIZACION.md |
 | Cobertura de precios y escenario histórico | POC-02 | Implementado: mínimo de 3 estaciones recientes en el corredor, escenario congelado del 24/10 rotulado como histórico y reporte en docs/COBERTURA.md |
@@ -156,7 +156,7 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración; la Ent
 - **Diagnóstico ML:** sirve una referencia estadística (mediana de la bandera) con alertas provisionales cuya precisión no se midió. Los modelos aprendidos solo se evalúan offline. En la demo de AWS el diagnóstico queda no disponible si falta el histórico.
 - **Demo AWS:** una sola instancia, operación continua autorizada y guardia de presupuesto; detener cómputo no elimina cargos de discos/IP. Ver docs/HOSTING.md.
 - **Pendientes:**
-  - ingesta autónoma en AWS (#160);
+  - video, identificación de la entrega y revisión final del equipo (#24);
   - supervisión continua de la ingesta;
   - pruebas con usuarios y en un teléfono físico.
 

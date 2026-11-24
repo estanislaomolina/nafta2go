@@ -233,3 +233,7 @@ habilitada; HTTP loopback excluye transporte público. Cien respuestas 200,
 [publicada](evidencia/operacion-continua-2026-11-23/live-api.json) acredita
 la condición medida con un usuario, no disponibilidad continua ni capacidad
 para veinte usuarios.
+
+La ingesta autónoma se comprobó por el canal Actions/OIDC → S3 → EC2,
+runs 5 y 6, 732 precios por versión y monitor sin alertas. La adquisición
+requiere el equipo del runner encendido/conectado; no se declara un SLA 24/7.

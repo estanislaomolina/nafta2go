@@ -1,5 +1,5 @@
 ---
-status: Propuesto
+status: Aceptado
 date: 2026-11-23
 decision-makers: Equipo Nafta2Go
 consulted: ADR-019, ADR-024, issue 160
@@ -61,3 +61,16 @@ recuperan al arrancar un disparo omitido y rechazan recibos vencidos. Se mantien
 apagado automático y límites de duración. Las pruebas simulan transporte, fallos
 y permisos; la evidencia de creación de infraestructura no reemplaza una corrida
 OIDC ni una ingesta automática exitosa. Sin esa comprobación #160 sigue abierto.
+
+
+## Verificación y entorno de adquisición
+
+El 23/11 se comprobó el circuito Actions/OIDC → S3 → ingesta en EC2 con hash,
+tamaño y linaje verificados. Los runners alojados Linux/macOS también dieron
+timeout al catálogo: se eligió un runner dedicado en el entorno con conectividad
+comprobada, con servicio persistente e identidad de máquina, sin SSO personal.
+Conservar runners alojados evita operar un equipo propio, pero no resolvió el
+acceso observado. Un runner dedicado permite adquirir, a cambio de mantenerlo
+encendido, conectado y actualizado. No se declara disponibilidad 24/7 del
+productor; el consumidor conserva las últimas versiones y el monitor detecta
+la ausencia/fallo. [Prueba y límites](../docs/evidencia/operacion-continua-2026-11-23/README.md).
