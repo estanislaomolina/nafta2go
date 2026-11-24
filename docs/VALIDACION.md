@@ -57,7 +57,7 @@ supera RNF01; el rendimiento cae de 2,2 a 0,5 consultas por segundo. El modelo
 servido es la corrida auditada del 17/11, porque los artefactos del campeón no
 estaban en la máquina de medición.
 
-No incluye ORS ni la red del cliente. Falta la repetición contra AWS.
+Este ensayo local excluye ORS y la red del cliente. La repetición AWS y el ensayo adicional con ORS real constan en la verificación del 23/11 al final.
 
 **Trazabilidad, frescura y privacidad.** `python -m nafta2go.audit` revisa lo que
 quedó guardado en `recommendations`, no lo que el código intentó guardar:
@@ -108,15 +108,15 @@ una corrida nueva de 120 consultas dio los mismos 123/123, 1.230/1.230 y 123/123
 
 | ID | Estado | Evidencia | Falta |
 |---|---|---|---|
-| RNF01 Rendimiento | Parcial | Medición en proceso, composición con ORS y carga con Locust (arriba): sin diagnóstico, p95 ≤ 5 s hasta 40 usuarios simultáneos; con diagnóstico sobre histórico real y veinte candidatas, sólo hasta 2 | Carga en la `t3.small` de AWS y red del cliente (#158); ver lote real del 21/11 |
+| RNF01 Rendimiento | Cumple en condición medida; limitado bajo concurrencia | AWS, cien consultas con ORS real: p95 UC01 0,665 s, UC02 0,655 s. Perfil histórico con veinte diagnósticos: saturación desde dos usuarios; ver evidencia del 23/11 | No acredita p95 ≤ 5 s para veinte usuarios simultáneos ni un SLA de transporte público |
 | RNF02 Disponibilidad | Cumple | `tests/adapters/test_openrouteservice.py` (401/403/429/5xx, timeout, matriz inválida) | — |
 | RNF03 Privacidad | Cumple | Auditoría 100 % sobre las recomendaciones generadas en la medición y la prueba integral, `tests/integration/test_local_mvp.py`, `tests/presentation/test_telemetry.py` | Auditar la base del despliegue (#22) |
 | RNF04 Seguridad | Cumple | Check Secretos del CI, pruebas de acceso administrativo, [CALIDAD](CALIDAD.md) | — |
 | RNF05 Trazabilidad | Cumple | Auditoría 100 % sobre las recomendaciones generadas en la medición y la prueba integral, restricción `ck_recommendations_data_origin`, `tests/persistence/test_repository.py` | Auditar la base del despliegue (#22) |
 | RNF06 Calidad | Cumple | Cobertura 98 %, seis checks requeridos en `main` y `dev` (#121) | — |
-| RNF07 Portabilidad | Cumple | Check Contenedores (build, migración y consulta sin red), README | Readiness del despliegue en AWS (#22) |
+| RNF07 Portabilidad | Cumple | Check Contenedores (build, migración y consulta sin red), README | Readiness y smoke reales en AWS aprobados el 23/11 |
 | RNF08 Observabilidad | Parcial | Eventos JSON de API y CLI (`tests/test_query_telemetry.py`), monitor de ingesta | Supervisión continua fuera de la máquina local |
-| RNF09 Accesibilidad | Parcial | Teclado y axe en `tests/browser/web.test.cjs`, [WEB](WEB.md) | Teléfono físico, otros navegadores y lector de pantalla |
+| RNF09 Accesibilidad | Parcial | Teclado y axe en `tests/browser/web.test.cjs`, [WEB](WEB.md) | iPhone 13 probado por el dueño; quedan otros navegadores y lector de pantalla sin acreditar |
 | RNF10 Reproducibilidad ML | Cumple | Corridas idénticas en [ML](ML.md) y en la evidencia de ADR-014, #118 y #120 | — |
 
 ## Criterios de éxito del PRD
@@ -141,9 +141,8 @@ una corrida nueva de 120 consultas dio los mismos 123/123, 1.230/1.230 y 123/123
 - **Ranking conservador (RF11):** integrado en API y web (#140, #141). La regla
   provisional no mide sensibilidad ni precisión.
 - **Rendimiento:** el lote del 21/11 incluye ORS real, pero sólo cinco solicitudes
-  por caso de uso y HTTP en proceso. Falta medir la red del cliente y el despliegue.
-- **Accesibilidad y operación:** faltan la verificación en un teléfono físico y la
-  supervisión continua de la ingesta fuera de la máquina local.
+  por caso de uso y HTTP en proceso. Se complementó el 23/11 con cien consultas en AWS y diez consultas por HTTPS público; no acredita un SLA de red.
+- **Accesibilidad y operación:** el dueño probó un iPhone 13 con ubicación manual y búsqueda; no se acreditan otros navegadores ni lector de pantalla. El despliegue AWS y los timers están comprobados; no hay un SLA de supervisión continua.
 
 
 ## Diez escenarios técnicos — 21/11/2026

@@ -63,6 +63,13 @@ def test_acquisition_has_no_environment_or_sso_dependency_and_runs_serially():
     workflow = yaml.safe_load((ROOT / ".github/workflows/acquire-prices.yml").read_text())
     job = workflow["jobs"]["acquire"]
     assert "NAFTA2GO_ACQUISITION_RUNNER" in job["runs-on"]
+    setup = next(s for s in job["steps"] if s.get("uses") == "actions/setup-python@v5")
+    assert setup["if"] == "runner.environment == 'github-hosted'"
+    isolation = next(
+        s for s in job["steps"] if s.get("name") == "Aislar dependencias de adquisición"
+    )
+    assert 'python3.12 -m venv "$RUNNER_TEMP/' in isolation["run"]
+    assert '"$GITHUB_PATH"' in isolation["run"]
     assert "environment" not in job
     assert job["permissions"] == {"contents": "read", "id-token": "write"}
     assert workflow["concurrency"]["cancel-in-progress"] is False
