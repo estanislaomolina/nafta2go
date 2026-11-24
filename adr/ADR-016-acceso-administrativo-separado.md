@@ -1,5 +1,5 @@
 ---
-status: Propuesto
+status: Aceptado
 date: 2026-11-16
 decision-makers: Equipo Nafta2Go
 consulted: ADR-009, RF12, RNF04, issue 21

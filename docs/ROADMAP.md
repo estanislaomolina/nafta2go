@@ -116,6 +116,14 @@ Un Issue puede pasar a `Done` cuando su criterio de aceptación está verificado
 
 ### Entrega 3 — MVP
 
+Cierre documental del 24/11/2026: [video del MVP](https://youtu.be/Y3cV71ZnxuY)
+(7:26), [sitio publicado](https://estanislaomolina.github.io/nafta2go/) y
+[tag de entrega](https://github.com/estanislaomolina/nafta2go/tree/entrega-3-mvp).
+El [acta de entrega](ENTREGA-3.md) vincula la reproducción y evidencia de las
+épicas MVP-01 a MVP-10 con sus límites. Las tablas conservan el plan y criterios
+originales; no implican que se hayan acreditado los objetivos humanos recortados
+en ADR-023 ni disponibilidad 24/7.
+
 **Objetivo:** completar el producto definido en el PRD, automatizar su ciclo de vida y demostrar que puede ejecutarse, observarse y mantenerse.
 
 | ID | Épica o resultado | Dependencias | Criterio de salida |

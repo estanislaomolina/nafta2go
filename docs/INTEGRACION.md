@@ -1,5 +1,15 @@
 # Validación local conjunta — primer incremento de MVP-09
 
+## Cierre desplegado del MVP
+
+La [validación integral](VALIDACION.md) y la
+[evidencia AWS](evidencia/operacion-continua-2026-11-23/README.md) complementan
+los ensayos locales fechados de este documento. Incluyen Pages/API HTTPS,
+ML/ranking servidos, OIDC, ingesta automática, observabilidad y carga aislada.
+[Video de entrega](https://youtu.be/Y3cV71ZnxuY) y [versión](ENTREGA-3.md).
+Los recortes de utilidad humana y disponibilidad permanecen explícitos; los
+pendientes expresados en observaciones antiguas describen sus fechas.
+
 Se reunieron los incrementos de ingesta/monitor/reintentos, límite de candidatas,
 API, caché/cupo, Maps, web/QA y plantillas de red en una rama de validación.
 [Fuentes históricas](evidencia/integracion-local-2026-11-13/fuentes.json) registra
