@@ -4,6 +4,25 @@ Nafta2Go es un recomendador de estaciones de servicio para conductores de CABA. 
 
 Este repositorio contiene el diseño de la **Entrega 1**, la **Entrega 2: POC y SRD** y el **MVP de la Entrega 3** del Trabajo Práctico Integrador: ingesta programada, API HTTP, aplicación web, panel de operación y diagnóstico de precios con ML evaluado offline. Todo corre localmente con Python o Docker. La web está publicada en [GitHub Pages](https://estanislaomolina.github.io/nafta2go/) y la API en [AWS por HTTPS](https://nafta2go.18.216.94.147.sslip.io/), con despliegue OIDC por digest y [Grafana autenticado](https://nafta2go.18.216.94.147.sslip.io/grafana/). Lo que está simulado o recortado se lista en [Partes simuladas, simplificadas o pendientes](#partes-simuladas-simplificadas-o-pendientes).
 
+## Enlaces de la demo
+
+- [Aplicación web](https://estanislaomolina.github.io/nafta2go/).
+- [Panel de operación](https://estanislaomolina.github.io/nafta2go/operacion/): requiere el código administrativo.
+- [API HTTPS](https://nafta2go.18.216.94.147.sslip.io/), [salud](https://nafta2go.18.216.94.147.sslip.io/health) y [readiness](https://nafta2go.18.216.94.147.sslip.io/ready).
+- [Grafana](https://nafta2go.18.216.94.147.sslip.io/grafana/): dashboards de [negocio](https://nafta2go.18.216.94.147.sslip.io/grafana/d/nafta2go-business) y [funcionamiento](https://nafta2go.18.216.94.147.sslip.io/grafana/d/nafta2go-operations).
+- [CI y despliegues](https://github.com/estanislaomolina/nafta2go/actions).
+- [Evidencia operativa y límites](docs/evidencia/operacion-continua-2026-11-23/README.md), [guion para grabar](docs/GUION-DEMO.md) y [cierre de la entrega](https://github.com/estanislaomolina/nafta2go/issues/24).
+
+**Acceso a Grafana:** usuario `admin`. El equipo autorizado obtiene la contraseña
+del parámetro **SecureString** `/nafta2go/demo/grafana-admin` en AWS Systems Manager
+Parameter Store, región `us-east-2`. La contraseña y los códigos de acceso no se
+publican en el repositorio. El login de Grafana es independiente del código del
+conductor y del código administrativo de la aplicación.
+
+Pages aloja la web estática; API y Grafana dependen de la EC2 y del presupuesto.
+La adquisición automática requiere el equipo del runner encendido y conectado;
+ver [operación y presupuesto](docs/HOSTING.md).
+
 ## Integrantes
 
 Estanislao Molina Abeniacar
@@ -191,6 +210,7 @@ Los tests no usan red: reemplazan la API por una sesión HTTP simulada. Solo la 
 
 ## Videos de las entregas
 
+- **Entrega 3 — MVP:** pendiente de grabación y publicación en [#24](https://github.com/estanislaomolina/nafta2go/issues/24).
 - **Entrega 2 — POC y SRD:** [Demostración funcional de Nafta2Go](https://youtu.be/3hBFj-BQNzA) (9 min 57 s).
 - **Entrega 1 — Diseño:** [PRD y Roadmap](https://youtu.be/zZpi70Od-EE).
 
