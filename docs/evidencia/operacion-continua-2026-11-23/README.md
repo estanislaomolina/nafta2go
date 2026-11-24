@@ -95,3 +95,41 @@ HTTP loopback; no incluye el transporte HTTPS público. p95 UC01 0,66478 s y
 UC02 0,65488 s. Se guardaron las 103 consultas y la
 [auditoría posterior](qa-live-audit.json) terminó sin fallas. Los tamaños de las
 muestras y las condiciones no se extrapolan a veinte usuarios simultáneos.
+
+## Canal autónomo completo
+
+[Actions de adquisición](acquisition-run.json) terminó correctamente usando
+OIDC y un runner dedicado con acceso al catálogo. [Resultado](acquisition.json):
+9.258.843 bytes, SHA-256 `0ec9333f68f0ee2a7607b973bbaf2fb59ae3efb5f4bad3a37830bc1d44fecfbc`,
+732 precios utilizables de CABA. No hubo transferencia manual del CSV ni uso de
+SSO personal en el circuito. Linux y macOS alojados habían agotado los reintentos
+de conexión; eso no demuestra que el proveedor no publique archivos.
+
+La [prueba programada](autonomous-ingestion.json) y su
+[verificación](ingestion-final.json) registran los runs 5 y 6 en AWS, ambos
+exitosos, 732 precios por versión y 184 estaciones. El segundo está rotulado
+como adquisición de contenido duplicado del run 5; no se presenta como una
+publicación nueva del proveedor. Sus recomendaciones seleccionan una versión,
+no suman las filas de ambas. Los dos conservan el linaje de Actions y el hash del
+recibo. Monitor sin alertas abiertas; readiness 200.
+
+Se disparó el servicio existente mediante timers transitorios para observarlo
+ahora; no se atribuye la prueba al calendario diario de mañana. La instalación
+diaria queda habilitada: Actions 06:17 y consumo EC2 06:45 de Argentina, monitor
+horario y `Persistent=true`. La primera prueba usó la precisión predeterminada
+del timer y el monitor consultado antes de dispararse indicó ausencia; al ejecutar
+la ingesta, el monitor se resolvió correctamente.
+
+Las capturas actuales de Grafana se renovaron después de esta recuperación.
+Los precios conservan sus fechas originales: el máximo observado del conjunto
+CABA es 17/11/2026 aunque se descargó el 23/11; no se rejuvenecen al copiarlo.
+`fetched_at` de RawCapture usa hora de Argentina y las marcas de ejecución
+son UTC, según el contrato de persistencia.
+
+El runner oficial Linux x64 2.338.2 se verificó contra SHA-256
+`baebf204307bac6193480852732f0aba2ae97b6c5597c244f4d5558390147c40`,
+con Python 3.12 y AWS CLI 2.42.1. Su servicio de usuario está habilitado, con
+reinicio y `Linger=yes`; usa credenciales de máquina de GitHub y OIDC de AWS.
+Se instaló fuera del checkout. Necesita este equipo encendido y con red: no se
+acredita disponibilidad 24/7 del origen de adquisición ni de sus proveedores.
+La API y Grafana sí siguen en EC2 bajo el guardia de presupuesto.
