@@ -393,7 +393,7 @@ Exclusiones de la selección: `incompatible_product`, `incompatible_schedule`,
 
 | Parte | Simplificación | Plan para el MVP |
 |---|---|---|
-| Interfaz | API HTTP y web local con código de demo y caché por proceso | QA de navegador automatizado; faltan coordinación entre réplicas y despliegue público |
+| Interfaz | API HTTP y web local con código de demo y caché por proceso | QA de navegador y despliegue público comprobados; no hay coordinación entre réplicas |
 | Ranking | Tres prioridades determinísticas; equilibrio con igual peso a ganancia neta y km extra normalizados | Ranking conservador como comparación separada con regla provisional, sin precisión medida (ADR-021) |
 | Candidatas | Límite configurable hasta 20; diez por defecto para reproducir la POC | Validar cuota y latencia de veinte candidatas en vivo |
 | Corredor | Desvío estimado en línea recta | Se mantiene como prefiltro; el desvío real ya lo calcula el motor |
@@ -436,10 +436,17 @@ ver [política de reintentos](INGESTA.md). No requiere cambiar el esquema de dat
 
 ## Preparación del sandbox AWS (MVP-08)
 
-La base de red propuesta está versionada en `infra/aws/network.json`, sin cómputo
-ni aplicación desplegados. Acceso reportado, límites del presupuesto, validación
-y pendientes en [AWS](AWS.md); alternativas de IaC en
-[ADR-011](../adr/ADR-011-base-de-red-con-cloudformation.md).
+La red está versionada en `infra/aws/network.json`; la aplicación funciona en
+EC2 con SQLite/EBS, secretos en Parameter Store y despliegue OIDC por digest.
+La web se publica en GitHub Pages; API y Grafana usan HTTPS gratuito con Caddy
+y sslip.io. Ingesta autónoma: runner dedicado con OIDC → S3 privado → servicio
+programado en EC2, sin SSO personal. El runner necesita su equipo encendido y
+conectado; no se afirma un SLA 24/7. Control de presupuesto y costos residuales
+en [HOSTING](HOSTING.md), prueba real en
+[evidencia operativa](evidencia/operacion-continua-2026-11-23/README.md).
+Alternativas: [ADR-011](../adr/ADR-011-base-de-red-con-cloudformation.md),
+[ADR-031](../adr/ADR-031-transferencia-verificada-de-capturas.md) y
+[ADR-032](../adr/ADR-032-pages-y-api-publica-con-presupuesto.md).
 
 ## Telemetría HTTP local
 
@@ -458,9 +465,10 @@ limita la respuesta a veinte condiciones con total explícito. No sincroniza
 alertas ni muta ingestas desde GET. Contrato: [API](API.md#estado-de-ingestas-para-operación).
 
 La presentación `/operacion` usa assets propios y las dos lecturas operativas
-autenticadas del mismo origen. No consulta al cargar ni escribe datos; actualiza
+autenticadas de la API configurada: mismo origen en local y HTTPS explícito
+desde Pages. No consulta al cargar ni escribe datos; actualiza
 manual y conjuntamente las vistas, descarta lecturas parciales/anteriores ante
-fallos y cancela al limpiar o salir. Código sólo en memoria de pestaña. Separa conductor y administración; no hay despliegue público; [contrato y QA](WEB.md#panel-local-de-operación).
+fallos y cancela al limpiar o salir. Código sólo en memoria de pestaña. Separa conductor y administración; desplegado en AWS/Pages; [contrato y QA](WEB.md#panel-local-de-operación).
 
 ## Telemetría CLI
 
@@ -554,3 +562,16 @@ invalida el punto anterior; las búsquedas no se agregan a la recomendación per
 Geolocalización es optativa, con reintento acotado, cancelación y precisión visible;
 no garantiza disponibilidad de GPS. La UI conserva los contratos UC01/UC02 y no
 modifica el motor determinístico.
+
+
+## Observabilidad desplegada
+
+`/metrics` requiere token administrativo y se bloquea en el proxy público.
+Prometheus conserva series y Grafana provisiona negocio y funcionamiento; CPU
+y memoria proceden de cAdvisor. Las métricas de negocio representan estaciones
+recomendadas y litros/gasto estimados por alternativa, sin confirmar compras.
+No se registra barrio de origen del usuario; una estación recomendada por varias
+prioridades cuenta una vez por consulta. Cardinalidad acotada, guía y límites
+en [OBSERVABILIDAD](OBSERVABILIDAD.md). La auditoría real desplegada de
+trazabilidad, frescura y privacidad y el rendimiento con histórico/ORS se
+documentan en [VALIDACION](VALIDACION.md).
