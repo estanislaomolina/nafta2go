@@ -34,3 +34,15 @@ ingesta y monitor sigue [INGESTA](INGESTA.md); los dashboards,
 [OBSERVABILIDAD](OBSERVABILIDAD.md). Los agregados de negocio se cachean hasta
 120 s para no recorrer toda la historia en cada scrape; los contadores HTTP
 siguen siendo actuales. `business_snapshot_age_seconds` permite observar esa edad.
+
+
+## Estado comprobado
+
+[Operación del 23/11](evidencia/operacion-continua-2026-11-23/README.md):
+Pages publicado, API y Grafana HTTPS accesibles, deploy OIDC y rollback reales
+aprobados, guardia invocada y apagado a dos horas deshabilitado.
+El [presupuesto observado](evidencia/operacion-continua-2026-11-23/budget.json)
+es un control de gasto autorizado, no un saldo educativo auditado. El monto de
+USD 17 fue informado por el titular; SCP impide verificar independientemente
+créditos y vencimiento. La reserva y la detención de cómputo no eliminan costos
+residuales de almacenamiento y dirección pública.

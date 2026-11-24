@@ -1,0 +1,54 @@
+{
+  "observed_at": "2026-11-24T00:01:50.757694+00:00",
+  "owner_authorized_budget_usd": 17,
+  "credits_balance_source": "owner statement; independent credit balance and expiry not accessible through current sandbox permissions",
+  "budget": {
+    "BudgetName": "nafta2go-17-usd-total",
+    "BudgetLimit": {
+      "Amount": "17.0",
+      "Unit": "USD"
+    },
+    "TimeUnit": "CUSTOM",
+    "TimePeriod": {
+      "Start": "2026-10-31T21:00:00-03:00",
+      "End": "2027-10-31T21:00:00-03:00"
+    },
+    "CostTypes": {
+      "IncludeTax": true,
+      "IncludeSubscription": true,
+      "UseBlended": false,
+      "IncludeRefund": false,
+      "IncludeCredit": false,
+      "IncludeUpfront": true,
+      "IncludeRecurring": true,
+      "IncludeOtherSubscription": true,
+      "IncludeSupport": true,
+      "IncludeDiscount": true,
+      "UseAmortized": false
+    },
+    "CalculatedSpend": {
+      "ActualSpend": {
+        "Amount": "0.105",
+        "Unit": "USD"
+      },
+      "ForecastedSpend": {
+        "Amount": "0.443",
+        "Unit": "USD"
+      }
+    },
+    "LastUpdatedTime": "2026-11-23T19:23:54.670000-03:00"
+  },
+  "guard_result": {
+    "stop_requested": false,
+    "estimated_upper_usd": "0.186609325277777780",
+    "reserve_usd": "2",
+    "data_deleted": false
+  },
+  "residual_costs_after_stop": [
+    "EBS",
+    "public IPv4",
+    "S3",
+    "logs"
+  ],
+  "destructive_cleanup_authorized": false
+}
