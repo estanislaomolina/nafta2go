@@ -2,7 +2,7 @@
 
 Nafta2Go es un recomendador de estaciones de servicio para conductores de CABA. Combina precio publicado, presupuesto, autonomía, capacidad del tanque y desvío del recorrido para mostrar alternativas explicadas.
 
-Este repositorio contiene el diseño de la **Entrega 1**, la **Entrega 2: POC y SRD** y el **MVP de la Entrega 3** del Trabajo Práctico Integrador: ingesta programada, API HTTP, aplicación web, panel de operación y diagnóstico de precios con ML evaluado offline. Todo corre localmente con Python o Docker. Además hay una demo efímera en AWS: se entrega por SSM y se accede por un túnel de Session Manager, todavía sin URL pública. Lo que está simulado o recortado se lista en [Partes simuladas, simplificadas o pendientes](#partes-simuladas-simplificadas-o-pendientes).
+Este repositorio contiene el diseño de la **Entrega 1**, la **Entrega 2: POC y SRD** y el **MVP de la Entrega 3** del Trabajo Práctico Integrador: ingesta programada, API HTTP, aplicación web, panel de operación y diagnóstico de precios con ML evaluado offline. Todo corre localmente con Python o Docker. La web está publicada en [GitHub Pages](https://estanislaomolina.github.io/nafta2go/) y la API en [AWS por HTTPS](https://nafta2go.18.216.94.147.sslip.io/), con despliegue OIDC por digest y [Grafana autenticado](https://nafta2go.18.216.94.147.sslip.io/grafana/). Lo que está simulado o recortado se lista en [Partes simuladas, simplificadas o pendientes](#partes-simuladas-simplificadas-o-pendientes).
 
 ## Integrantes
 
@@ -21,10 +21,10 @@ Santiago Bunge
 - [ADRs](adr/README.md): decisiones de diseño y comparación de alternativas.
 - [SRD](docs/SRD.md): especificación técnica de la POC: arquitectura y diagramas, stack, modelo de datos, contratos y estrategia de datos.
 - [Consulta completa de POC-05](docs/POC-05.md): ejecución, ranking, evidencia real y simplificaciones.
-- [Ingesta diaria y monitor](docs/INGESTA.md): unidades systemd, alertas locales y evidencia de fallos/recuperación; supervisión sostenida pendiente (MVP-01).
+- [Ingesta diaria y monitor](docs/INGESTA.md): unidades systemd, alertas locales y evidencia de fallos/recuperación; [canal AWS automático y límites comprobados](docs/evidencia/operacion-continua-2026-11-23/README.md) (MVP-01).
 - [Preparación AWS](docs/AWS.md): acceso del sandbox, plantilla de red, validación y límites.
 - [Servidor de demo AWS](docs/AWS-DEMO.md): `t3.small` efímera, entrega versionada por SSM, costos, resultado de la primera demo y respaldo de la base.
-- [Hosting continuo](docs/HOSTING.md): web en GitHub Pages y API/Grafana por HTTPS en EC2 con guardia de presupuesto (ADR-032); evidencia operativa pendiente.
+- [Hosting continuo](docs/HOSTING.md): web en GitHub Pages y API/Grafana por HTTPS en EC2 con guardia de presupuesto (ADR-032); [evidencia operativa](docs/evidencia/operacion-continua-2026-11-23/README.md).
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
 - [Enlaces de Google Maps](docs/MAPS.md): navegación por alternativa en API/CLI/web; pruebas en navegador y móvil emulado; teléfono físico pendiente.
@@ -91,7 +91,7 @@ Cada decisión estructural tiene un ADR con alternativas comparadas; el índice 
     de carga con Locust, registro de modelos con alias de campeón y transferencia
     verificada de capturas.
 
-  Abarca de ADR-008 a ADR-031.
+  Abarca de ADR-008 a ADR-032.
 
 ## Desarrollo local
 
@@ -127,8 +127,8 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración; la Ent
 | Componente | Tarea | Estado |
 |---|---|---|
 | Integración continua: links, lint, tests y secretos | POC-07 | Implementado |
-| Aplicación web local | MVP-03 | Formulario y resultados explicados con acceso de demo; flujos de teclado y navegador automatizados; validación física de móvil pendiente; ver docs/WEB.md |
-| API del recomendador | MVP-02 | Implementada localmente con token, caché por proceso y tests HTTP; despliegue público pendiente; ver docs/API.md |
+| Aplicación web local | MVP-03 | Formulario y resultados explicados con acceso de demo; flujos de teclado y navegador automatizados; prueba física de iPhone 13 informada por el dueño; otros navegadores y lector de pantalla sin acreditar; ver docs/WEB.md |
+| API del recomendador | MVP-02 | Implementada localmente con token, caché por proceso y tests HTTP; despliegue público por HTTPS comprobado; ver docs/API.md |
 | Normalización de precios | POC-01 | Implementado: descarga verificada, reglas con rechazos y alertas, y corrida real documentada en docs/NORMALIZACION.md |
 | Cobertura de precios y escenario histórico | POC-02 | Implementado: mínimo de 3 estaciones recientes en el corredor, escenario congelado del 24/10 rotulado como histórico y reporte en docs/COBERTURA.md |
 | Persistencia e ingesta mínimas | POC-06 | Implementado: esquema, migraciones e ingesta trazable, conectada a la normalización de POC-01 |
@@ -139,12 +139,12 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración; la Ent
 | Levantar el sistema completo con contenedores | POC-07, MVP-08 | Implementado: migraciones, consulta y API con web (perfil `mvp`); el CI construye una imagen, migra y consulta sin red; publica por digest tras aprobar los checks; el primer digest se publicó el 23/11 y el paquete de GHCR es público |
 | Entrenamiento y selección de modelos | MVP-04 | Implementado offline y reproducible; el método elegido es una referencia (mediana de la bandera), no un modelo; ver docs/ML.md |
 | Registro de modelos | MVP-04 (#161) | Implementado: registro versionado con alias de campeón; la API sirve sólo el campeón y la política exige una auditoría verificada (ADR-030); ver docs/ML.md |
-| Pruebas de carga | MVP-09 (#158) | Locust local (ADR-029): sin diagnóstico activo, p95 ≤ 5 s hasta 40 usuarios simultáneos; con diagnóstico sobre histórico real y veinte candidatas, sólo hasta 2. Cupo y persistencia verificados bajo carga; falta la medición en la `t3.small`; ver docs/VALIDACION.md |
+| Pruebas de carga | MVP-09 (#158) | Locust local (ADR-029): sin diagnóstico activo, p95 ≤ 5 s hasta 40 usuarios simultáneos; con diagnóstico sobre histórico real y veinte candidatas, sólo hasta 2. Cupo y persistencia verificados bajo carga; medición en `t3.small` con veinte diagnósticos y saturación documentada desde dos usuarios; ver docs/VALIDACION.md |
 | Diagnóstico estadístico servido | MVP-05 (#19) | Implementado: la API y la web sirven la referencia elegida y una alerta provisional `conservative-v1` solo para las selecciones auditadas (ADR-021). No tiene precisión medida para detectar errores reales; ver docs/API.md |
 | Ranking conservador | MVP-06 (#20) | Implementado como comparación separada que excluye excedencias de `conservative-v1`, sin cambiar el ranking general ni el precio oficial (ADR-021); ver docs/WEB.md |
 | Estimación de precios de 31 a 120 días | #117 | Implementada en API y web, rotulada y fuera del ranking (ADR-020) |
 | Operación y acceso administrativo | MVP-07 | Panel `/operacion`, estado de ingestas y métricas de consultas/rutas/diagnóstico, con token administrativo separado (ADR-016); supervisión continua pendiente |
-| Despliegue en AWS | MVP-08 (#22) | Demo efímera creada el 21/11, con entrega versionada por SSM, respaldo verificado de la base y acceso por túnel. Faltan la URL pública y el despliegue desde el CI; ver docs/AWS-DEMO.md |
+| Despliegue en AWS | MVP-08 (#22) | Pages y API HTTPS publicados; despliegue OIDC desde CI, smoke y rollback real comprobados; ver docs/HOSTING.md |
 | Recomendador completo | MVP-02 | CLI, caso de uso y API admiten hasta veinte candidatas (diez por defecto); ver docs/MOTOR.md |
 
 ### Partes simuladas, simplificadas o pendientes
@@ -154,10 +154,9 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración; la Ent
 - **Acceso:** tokens de demo por variable de entorno (conductor y administración); no hay cuentas de usuario.
 - **Base y caché:** SQLite local y caché de rutas en memoria por proceso, sin coordinación entre réplicas.
 - **Diagnóstico ML:** sirve una referencia estadística (mediana de la bandera) con alertas provisionales cuya precisión no se midió. Los modelos aprendidos solo se evalúan offline. En la demo de AWS el diagnóstico queda no disponible si falta el histórico.
-- **Demo AWS:** una sola instancia efímera, que se enciende para la demo y se apaga; el acceso es por túnel de Session Manager, no por una URL pública.
+- **Demo AWS:** una sola instancia, operación continua autorizada y guardia de presupuesto; detener cómputo no elimina cargos de discos/IP. Ver docs/HOSTING.md.
 - **Pendientes:**
-  - URL pública y despliegue automático desde el CI (#22, #155, #156);
-  - ingesta autónoma en AWS (#160);
+  - video, identificación de la entrega y revisión final del equipo (#24);
   - supervisión continua de la ingesta;
   - pruebas con usuarios y en un teléfono físico.
 
@@ -217,6 +216,8 @@ commit específico de `main` y la URL del video.
 La observabilidad opcional de Prometheus/Grafana se levanta con la
 [guía de dashboards](docs/OBSERVABILIDAD.md); sus métricas de negocio son
 recomendaciones y estimaciones, no compras confirmadas.
-La demo admite una [URL HTTPS temporal mediante Cloudflare](docs/AWS-HTTPS.md),
-conservando el código de acceso y el apagado automático. Obtener una posición GPS
-en un teléfono depende además de permisos y del dispositivo.
+La [web en Pages](https://estanislaomolina.github.io/nafta2go/) usa la API HTTPS
+gratuita de sslip.io según [ADR-032](adr/ADR-032-pages-y-api-publica-con-presupuesto.md).
+Cloudflare queda como alternativa histórica. Geolocalización depende de permisos
+y dispositivo; la prueba física previa en iPhone 13 se conserva como evidencia
+del alcance informado por el dueño, sin inventar navegador o sistema operativo.

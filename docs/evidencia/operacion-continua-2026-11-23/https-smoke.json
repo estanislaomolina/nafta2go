@@ -1,0 +1,100 @@
+{
+  "observed_at_utc": "2026-11-23T23:34:44.269037+00:00",
+  "scope": "public_https_functional_smoke_not_stress",
+  "real_ors": true,
+  "includes_public_transport": true,
+  "requests": [
+    {
+      "http_status": 200,
+      "seconds": 2.624030115955975,
+      "evaluations": 20,
+      "diagnostics": 20,
+      "conservative_status": "available",
+      "query_case": "UC01",
+      "data_status": "ready"
+    },
+    {
+      "http_status": 200,
+      "seconds": 1.3744931310066022,
+      "evaluations": 17,
+      "diagnostics": 17,
+      "conservative_status": "available",
+      "query_case": "UC02",
+      "data_status": "ready"
+    },
+    {
+      "http_status": 200,
+      "seconds": 0.9415861980523914,
+      "evaluations": 20,
+      "diagnostics": 20,
+      "conservative_status": "available",
+      "query_case": "UC01",
+      "data_status": "ready"
+    },
+    {
+      "http_status": 200,
+      "seconds": 0.8080615290091373,
+      "evaluations": 17,
+      "diagnostics": 17,
+      "conservative_status": "available",
+      "query_case": "UC02",
+      "data_status": "ready"
+    },
+    {
+      "http_status": 200,
+      "seconds": 0.9680464070406742,
+      "evaluations": 20,
+      "diagnostics": 20,
+      "conservative_status": "available",
+      "query_case": "UC01",
+      "data_status": "ready"
+    },
+    {
+      "http_status": 200,
+      "seconds": 0.8577212870004587,
+      "evaluations": 17,
+      "diagnostics": 17,
+      "conservative_status": "available",
+      "query_case": "UC02",
+      "data_status": "ready"
+    },
+    {
+      "http_status": 200,
+      "seconds": 1.2294142150203697,
+      "evaluations": 20,
+      "diagnostics": 20,
+      "conservative_status": "available",
+      "query_case": "UC01",
+      "data_status": "ready"
+    },
+    {
+      "http_status": 200,
+      "seconds": 0.9795784939778969,
+      "evaluations": 17,
+      "diagnostics": 17,
+      "conservative_status": "available",
+      "query_case": "UC02",
+      "data_status": "ready"
+    },
+    {
+      "http_status": 200,
+      "seconds": 0.955479265016038,
+      "evaluations": 20,
+      "diagnostics": 20,
+      "conservative_status": "available",
+      "query_case": "UC01",
+      "data_status": "ready"
+    },
+    {
+      "http_status": 200,
+      "seconds": 0.784668660024181,
+      "evaluations": 17,
+      "diagnostics": 17,
+      "conservative_status": "available",
+      "query_case": "UC02",
+      "data_status": "ready"
+    }
+  ],
+  "p95_seconds": 2.624030115955975,
+  "credentials_exported": false
+}

@@ -1,0 +1,20 @@
+{
+  "observed_at": "2026-11-23T23:55:11.219Z",
+  "browser": "158.0.8127.18",
+  "scope": "published_pages_real_api_real_ors",
+  "geolocation": "emulated_caba_not_physical_device",
+  "cases": [
+    {
+      "use_case": "UC01",
+      "status": 200,
+      "evaluations": 10
+    },
+    {
+      "use_case": "UC02",
+      "status": 200,
+      "evaluations": 10
+    }
+  ],
+  "page_errors": [],
+  "browser_storage_entries": 0
+}

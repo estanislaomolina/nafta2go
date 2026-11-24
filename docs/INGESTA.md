@@ -13,7 +13,9 @@ anteriores. El recibo no firma al proveedor HTTP: requiere un canal privado y
 autenticado. El productor y receptor se incorporan como otro tramo de #160,
 según [ADR-031](../adr/ADR-031-transferencia-verificada-de-capturas.md).
 Pruebas de integridad, linaje y persistencia: `tests/adapters/test_capture_relay.py`.
-#160 sigue abierto: este contrato no instala programación ni acredita autonomía.
+El contrato por sí solo no acredita autonomía. El canal completo fue instalado
+y [verificado en AWS](evidencia/operacion-continua-2026-11-23/README.md):
+Actions → S3 → servicio EC2, con linaje, timers y monitor sin alertas.
 
 RF08 requiere una ingesta diaria. El comando registra `running` **antes** de
 consultar el catálogo: un fallo de catálogo, descarga, archivo local o normalización
@@ -397,3 +399,52 @@ no se habilitaron servicios incompatibles. El cierre de #160 requiere activar
 una imagen compatible y observar el recorrido completo después de la revisión
 e integración. Referencias: [OIDC de GitHub](https://docs.github.com/en/actions/reference/security/oidc)
 y [S3 en CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-s3-bucket.html).
+
+
+## Entorno de adquisición del canal AWS
+
+`NAFTA2GO_ACQUISITION_RUNNER` permite seleccionar un runner de Actions con
+conectividad comprobada al catálogo HTTP. Si no se configura, usa
+`ubuntu-latest`. Un timeout del catálogo desde un runner no prueba ausencia de
+publicación del proveedor. El flujo conserva OIDC, los reintentos acotados y
+la validación del CSV; cambiar el runner no permite reutilizar capturas viejas
+como si fueran descargas nuevas. La ingesta en EC2 conserva identidad de
+instancia y timers persistentes, sin una sesión SSO personal.
+
+
+## Runner dedicado del canal AWS
+
+Los runners alojados de Linux y macOS dieron timeout de conexión al catálogo
+el 23/11, mientras el equipo de operación recibió HTTP 200. Se configuró un
+runner de repositorio con etiqueta `nafta2go-energy` y la variable de Actions
+`NAFTA2GO_ACQUISITION_RUNNER=nafta2go-energy`. Sólo adquisición usa esa etiqueta;
+los PR y CI continúan en runners alojados. El job sólo admite `main` y `dev`,
+crea un venv privado en `RUNNER_TEMP` y usa Python 3.12 instalado en el host.
+`setup-python` se limita a runners alojados: su instalador no maneja las rutas
+con espacios de este equipo. No se instalan dependencias en el Python global.
+
+La instalación usa el runner oficial de `actions/runner`, verificando el SHA-256
+de su release, registro de un único repositorio y credenciales de máquina en
+un directorio privado fuera del checkout de Git. Su servicio de usuario es
+`nafta2go-energy-runner.service`, habilitado con `Linger=yes`; no usa AWS SSO.
+Actions obtiene credenciales AWS temporales por OIDC para escribir únicamente
+en el bucket; EC2 consume con su propio rol. El registro inicial requiere una
+cuenta autorizada de GitHub; no se conserva un PAT ni una access key de AWS.
+
+Para reproducir: registrar un runner Linux x64 desde Settings → Actions → Runners
+con la etiqueta anterior, instalar Python 3.12 y AWS CLI v2 en el PATH del servicio, habilitar su servicio con reinicio
+y configurar la variable del repositorio. Mantener el runner actualizado.
+No ejecutar código de forks ni PR no revisados en ese equipo. Comprobar
+`systemctl --user is-active nafta2go-energy-runner.service` y el estado online en
+GitHub antes de disparar `gh workflow run acquire-prices.yml --ref dev`.
+
+**Disponibilidad:** `Linger` permite funcionar sin sesión abierta, pero no evita
+suspensión, falta de red ni apagado físico. En esos casos Actions queda en cola
+y AWS conserva su última versión utilizable; el monitor informa falta/fallo de
+ingesta. No se acredita disponibilidad 24/7 del equipo de adquisición. Para
+retirarlo, detener/deshabilitar su servicio y eliminar su registro en GitHub.
+
+
+La prueba completa del 23/11 y sus límites están en la
+[evidencia del canal autónomo](evidencia/operacion-continua-2026-11-23/README.md).
+No se equipara la hora de descarga con la fecha de los precios originales.

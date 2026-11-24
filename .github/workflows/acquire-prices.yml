@@ -16,7 +16,7 @@ permissions:
 jobs:
   acquire:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.NAFTA2GO_ACQUISITION_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 20
     permissions:
       contents: read
@@ -29,8 +29,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
+        if: runner.environment == 'github-hosted'
         with:
           python-version: "3.12"
+      - name: Aislar dependencias de adquisición
+        run: |
+          python3.12 -m venv "$RUNNER_TEMP/nafta2go-capture-venv"
+          echo "$RUNNER_TEMP/nafta2go-capture-venv/bin" >> "$GITHUB_PATH"
       - name: Comprobar configuración
         run: test -n "$CAPTURE_BUCKET" && test -n "$CAPTURE_ROLE"
       - name: Instalar dependencias

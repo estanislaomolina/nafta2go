@@ -1,0 +1,197 @@
+{
+  "format_version": 1,
+  "measured_at_utc": "2026-11-23T23:38:58.448753+00:00",
+  "profile": "historico",
+  "configuration": {
+    "users": [
+      1,
+      2,
+      5,
+      10,
+      20
+    ],
+    "step_seconds": 30,
+    "think_seconds": 0.0,
+    "quota_per_minute": null
+  },
+  "scope": "local_real_history_synthetic_routes",
+  "excludes": [
+    "rutas reales (distancias sint\u00e9ticas)",
+    "red entre cliente y servidor"
+  ],
+  "requests": 128,
+  "steps": [
+    {
+      "users": 1,
+      "requests": 48,
+      "requests_per_second": 1.6,
+      "latency_s": {
+        "p50": 0.6075,
+        "p95": 0.8048,
+        "p99": 0.8998,
+        "max": 0.8998
+      },
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 48
+      },
+      "error_codes": {}
+    },
+    {
+      "users": 2,
+      "requests": 29,
+      "requests_per_second": 0.97,
+      "latency_s": {
+        "p50": 2.0052,
+        "p95": 2.9123,
+        "p99": 2.9299,
+        "max": 2.9299
+      },
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 29
+      },
+      "error_codes": {}
+    },
+    {
+      "users": 5,
+      "requests": 25,
+      "requests_per_second": 0.83,
+      "latency_s": {
+        "p50": 5.4607,
+        "p95": 7.0758,
+        "p99": 7.6447,
+        "max": 7.6447
+      },
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 25
+      },
+      "error_codes": {}
+    },
+    {
+      "users": 10,
+      "requests": 15,
+      "requests_per_second": 0.5,
+      "latency_s": {
+        "p50": 15.5166,
+        "p95": 19.1689,
+        "p99": 19.1689,
+        "max": 19.1689
+      },
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 15
+      },
+      "error_codes": {}
+    },
+    {
+      "users": 20,
+      "requests": 11,
+      "requests_per_second": 0.37,
+      "latency_s": {
+        "p50": 25.3907,
+        "p95": 29.0305,
+        "p99": 29.0305,
+        "max": 29.0305
+      },
+      "error_rate": 0.0,
+      "statuses": {
+        "200": 11
+      },
+      "error_codes": {}
+    }
+  ],
+  "saturation": {
+    "users": 2,
+    "reasons": [
+      "rendimiento_no_crece"
+    ]
+  },
+  "server_resources": [
+    {
+      "users": 1,
+      "cpu_percent_mean": 81.9,
+      "cpu_percent_max": 100.0,
+      "rss_mb_max": 152.0
+    },
+    {
+      "users": 2,
+      "cpu_percent_mean": 112.6,
+      "cpu_percent_max": 126.9,
+      "rss_mb_max": 171.9
+    },
+    {
+      "users": 5,
+      "cpu_percent_mean": 119.2,
+      "cpu_percent_max": 146.9,
+      "rss_mb_max": 217.9
+    },
+    {
+      "users": 10,
+      "cpu_percent_mean": 142.0,
+      "cpu_percent_max": 168.9,
+      "rss_mb_max": 264.7
+    },
+    {
+      "users": 20,
+      "cpu_percent_mean": 148.2,
+      "cpu_percent_max": 165.9,
+      "rss_mb_max": 328.2
+    }
+  ],
+  "persistence": {
+    "successful_responses": 128,
+    "stored_recommendations": 168,
+    "all_successes_stored": true,
+    "stored_without_recorded_response": 40,
+    "audit": {
+      "audit_version": "recommendation-audit-v2",
+      "recommendations": 168,
+      "origins": {
+        "ingesta_vigente": 168,
+        "escenario_historico": 0
+      },
+      "trazabilidad": {
+        "cumplen": 168,
+        "total": 168,
+        "proporcion": 1.0
+      },
+      "frescura": {
+        "cumplen": 3238,
+        "total": 3238,
+        "proporcion": 1.0,
+        "unidad": "precios evaluados"
+      },
+      "privacidad": {
+        "cumplen": 168,
+        "total": 168,
+        "proporcion": 1.0
+      },
+      "fallas": {
+        "trazabilidad": {},
+        "frescura": {},
+        "privacidad": {}
+      }
+    }
+  },
+  "quota": null,
+  "diagnostics": {
+    "required_per_response": 20,
+    "complete_responses": 128,
+    "incomplete_responses": 0,
+    "passed": true
+  },
+  "code": {
+    "git_commit": null,
+    "git_dirty": null,
+    "files_sha256": "b9f299bd3cca1da934ddc596ec551b52b7aa8776640f0a745c0a77c45bd75597"
+  },
+  "environment": {
+    "python": "3.12.16",
+    "platform": "Linux x86_64",
+    "cpu_count": 2,
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8175M CPU @ 2.50GHz",
+    "server": "uvicorn, un proceso"
+  }
+}

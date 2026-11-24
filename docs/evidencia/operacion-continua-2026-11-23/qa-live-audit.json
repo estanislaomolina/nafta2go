@@ -1,0 +1,29 @@
+{
+  "audit_version": "recommendation-audit-v2",
+  "recommendations": 128,
+  "origins": {
+    "ingesta_vigente": 128,
+    "escenario_historico": 0
+  },
+  "trazabilidad": {
+    "cumplen": 128,
+    "total": 128,
+    "proporcion": 1.0
+  },
+  "frescura": {
+    "cumplen": 2235,
+    "total": 2235,
+    "proporcion": 1.0,
+    "unidad": "precios evaluados"
+  },
+  "privacidad": {
+    "cumplen": 128,
+    "total": 128,
+    "proporcion": 1.0
+  },
+  "fallas": {
+    "trazabilidad": {},
+    "frescura": {},
+    "privacidad": {}
+  }
+}
