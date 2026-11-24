@@ -1,4 +1,20 @@
-# Servidor temporal de demo AWS
+# Servidor AWS: operación actual e historial de demo
+
+## Estado de la entrega MVP
+
+Web: https://estanislaomolina.github.io/nafta2go/.
+API: https://nafta2go.18.216.94.147.sslip.io/.
+Grafana: https://nafta2go.18.216.94.147.sslip.io/grafana/.
+El [hosting actual](HOSTING.md) complementa el servidor inicial con EIP,
+Caddy/TLS y entrada 80/443; mantiene SSM para administración, despliegue OIDC
+por digest y datos persistentes. El apagado a dos horas quedó deshabilitado
+por autorización del titular, después de comprobar la guardia de presupuesto.
+La ingesta autónoma, smoke y rollback tienen
+[evidencia real](evidencia/operacion-continua-2026-11-23/README.md).
+
+Las secciones de diseño/propuesta y pruebas fechadas siguientes son históricas;
+sus pendientes se contrastan con ese cierre. [Video y versión](ENTREGA-3.md).
+
 
 La [plantilla](../infra/aws/demo-server.json) define un host con Docker sobre la
 [red existente](AWS.md). Se creó el 21/11/2026 con autorización del titular; la

@@ -4,9 +4,12 @@ Nafta2Go es un recomendador de estaciones de servicio para conductores de CABA. 
 
 Este repositorio contiene el diseño de la **Entrega 1**, la **Entrega 2: POC y SRD** y el **MVP de la Entrega 3** del Trabajo Práctico Integrador: ingesta programada, API HTTP, aplicación web, panel de operación y diagnóstico de precios con ML evaluado offline. Todo corre localmente con Python o Docker. La web está publicada en [GitHub Pages](https://estanislaomolina.github.io/nafta2go/) y la API en [AWS por HTTPS](https://nafta2go.18.216.94.147.sslip.io/), con despliegue OIDC por digest y [Grafana autenticado](https://nafta2go.18.216.94.147.sslip.io/grafana/). Lo que está simulado o recortado se lista en [Partes simuladas, simplificadas o pendientes](#partes-simuladas-simplificadas-o-pendientes).
 
-## Enlaces de la demo
+## Entrega 3 — MVP publicado
 
-- [Aplicación web](https://estanislaomolina.github.io/nafta2go/).
+- **Sitio web:** [https://estanislaomolina.github.io/nafta2go/](https://estanislaomolina.github.io/nafta2go/).
+- **Video de Entrega 3:** [Demostración del MVP — 7 min 26 s](https://youtu.be/Y3cV71ZnxuY).
+- **Versión de entrega:** [entrega-3-mvp](https://github.com/estanislaomolina/nafta2go/tree/entrega-3-mvp), tag anotado del commit final de `main`.
+- **Documentación de entrega:** [alcance, reproducibilidad y límites](docs/ENTREGA-3.md).
 - [Panel de operación](https://estanislaomolina.github.io/nafta2go/operacion/): requiere el código administrativo.
 - [API HTTPS](https://nafta2go.18.216.94.147.sslip.io/), [salud](https://nafta2go.18.216.94.147.sslip.io/health) y [readiness](https://nafta2go.18.216.94.147.sslip.io/ready).
 - [Grafana](https://nafta2go.18.216.94.147.sslip.io/grafana/): dashboards de [negocio](https://nafta2go.18.216.94.147.sslip.io/grafana/d/nafta2go-business) y [funcionamiento](https://nafta2go.18.216.94.147.sslip.io/grafana/d/nafta2go-operations).
@@ -38,18 +41,18 @@ Santiago Bunge
 - [Notebook de exploración](notebooks/data_exploration.ipynb): descubrimiento de recursos oficiales, calidad, cobertura, histórico, riesgo de fechas, rutas y esfuerzo.
 - [Roadmap](docs/ROADMAP.md): hitos, dependencias, orden de construcción y vínculo con GitHub Projects.
 - [ADRs](adr/README.md): decisiones de diseño y comparación de alternativas.
-- [SRD](docs/SRD.md): especificación técnica de la POC: arquitectura y diagramas, stack, modelo de datos, contratos y estrategia de datos.
+- [SRD](docs/SRD.md): especificación técnica de POC y MVP: arquitectura y diagramas, stack, modelo de datos, contratos y estrategia de datos.
 - [Consulta completa de POC-05](docs/POC-05.md): ejecución, ranking, evidencia real y simplificaciones.
 - [Ingesta diaria y monitor](docs/INGESTA.md): unidades systemd, alertas locales y evidencia de fallos/recuperación; [canal AWS automático y límites comprobados](docs/evidencia/operacion-continua-2026-11-23/README.md) (MVP-01).
 - [Preparación AWS](docs/AWS.md): acceso del sandbox, plantilla de red, validación y límites.
-- [Servidor de demo AWS](docs/AWS-DEMO.md): `t3.small` efímera, entrega versionada por SSM, costos, resultado de la primera demo y respaldo de la base.
+- [Servidor de demo AWS](docs/AWS-DEMO.md): operación actual en `t3.small`, historial de la primera demo, entrega por SSM y respaldo de la base.
 - [Hosting continuo](docs/HOSTING.md): web en GitHub Pages y API/Grafana por HTTPS en EC2 con guardia de presupuesto (ADR-032); [evidencia operativa](docs/evidencia/operacion-continua-2026-11-23/README.md).
 - [Proveedor de rutas](docs/RUTAS.md): adaptador de OpenRouteService, contrato, errores, límites y prueba autenticada (POC-03).
 - [Motor determinístico](docs/MOTOR.md): fórmulas, contrato de integración, motivos de descarte y ejemplo ejecutable (POC-04).
-- [Enlaces de Google Maps](docs/MAPS.md): navegación por alternativa en API/CLI/web; pruebas en navegador y móvil emulado; teléfono físico pendiente.
+- [Enlaces de Google Maps](docs/MAPS.md): navegación por alternativa en API/CLI/web; pruebas en navegador y móvil emulado; no se acredita una prueba física específica de navegación externa.
 - [Validación integral](docs/VALIDACION.md): matriz de requisitos y evidencia, latencia de la API y auditoría de trazabilidad, frescura y privacidad (MVP-09).
 - [Guion de demo](docs/GUION-DEMO.md): recorrido del video de la Entrega 3, con lo que se muestra y las limitaciones que se dicen en cada bloque.
-- [Validación conjunta local](docs/INTEGRACION.md): pruebas de ingesta, caché, API, web y Docker; alcances pendientes de MVP-09.
+- [Validación conjunta local](docs/INTEGRACION.md): pruebas de ingesta, caché, API, web y Docker, complementadas por evidencia desplegada de MVP-09.
 - [Aplicación web local](docs/WEB.md): formulario y resultados explicados sobre la API y panel local `/operacion`, con acceso por código.
 - [API local](docs/API.md): consulta HTTP autenticada, OpenAPI, validaciones, errores y ejecución con Python o Docker (incremento de MVP-02).
 - [Normalización de precios](docs/NORMALIZACION.md): formato real de las fechas, reglas de rechazo y alertas, duplicados y corrida real (POC-01).
@@ -59,13 +62,13 @@ Santiago Bunge
 - [Consigna del TP](res/%5BSHR%5D%5BS2%5D%20-%20Consigna%20TP%20I408.pdf): requisitos y formato de las entregas.
 - [GitHub Project](https://github.com/users/estanislaomolina/projects/1): seguimiento operativo del roadmap.
 
-## Evidencia y conclusión de viabilidad
+## Evidencia y conclusión de viabilidad de la Entrega 1
 
 La exploración del 18 de septiembre de 2026 utilizó el catálogo oficial de precios en surtidor de la Secretaría de Energía. Para el conjunto vigente se observaron 36.667 registros, 1.630 filas de CABA y 732 filas de nafta. Sólo 8 registros correspondientes a 2 estaciones tenían una antigüedad de hasta 30 días.
 
 El histórico filtrado de nafta en CABA reunió 20.522 observaciones, 76 identificadores de estación y aproximadamente 142 meses de cobertura. Se detectaron 84 fechas posteriores a la ejecución, por lo que las reglas de normalización deben confirmarse antes de unir fuentes o entrenar modelos. En la POC se confirmó que esas fechas salían de leer el histórico con el mes primero: con el día primero coincide con `anio`/`mes` en el 99,99 % de las filas y queda una sola fecha futura real (ver [docs/NORMALIZACION.md](docs/NORMALIZACION.md)).
 
-El proyecto es **viable con condiciones y/o recorte de alcance**. La POC debe validar fechas, cobertura y proveedor de rutas. Si no existe cobertura reciente suficiente, el sistema deberá informar la limitación o utilizar escenarios históricos claramente rotulados; nunca presentar precios antiguos como actuales.
+La exploración concluyó que el proyecto era **viable con condiciones y/o recorte de alcance**. La POC debía validar fechas, cobertura y proveedor de rutas; sus verificaciones y el cierre MVP están vinculados en las secciones de entrega. Si no existe cobertura reciente suficiente, el sistema deberá informar la limitación o utilizar escenarios históricos claramente rotulados; nunca presentar precios antiguos como actuales.
 
 ## Reproducir la exploración
 
@@ -106,7 +109,7 @@ Cada decisión estructural tiene un ADR con alternativas comparadas; el índice 
   - ML: evaluación y selección de modelos, referencia servida, umbrales y estimación de precios antiguos;
   - ranking conservador, búsqueda de direcciones, validación técnica y entrega por SSM;
   - imagen verificada en el CI y entregada por digest, despliegue con OIDC,
-    observabilidad con Prometheus y Grafana, URL HTTPS con Cloudflare Tunnel, pruebas
+    observabilidad con Prometheus y Grafana, web en Pages y API HTTPS con Caddy/sslip.io, pruebas
     de carga con Locust, registro de modelos con alias de campeón y transferencia
     verificada de capturas.
 
@@ -137,7 +140,7 @@ Requiere Docker con Compose v2. Desde la raíz del repositorio:
 docker compose up --build
 ```
 
-Construye la imagen de la aplicación y corre las migraciones sobre una base SQLite guardada en el volumen `nafta2go-data`. El contenedor `migrate` termina cuando el esquema queda actualizado. Para borrar la base: `docker compose down --volumes`. La consulta completa se ejecuta con `docker compose run --rm query`; ver [POC-05](docs/POC-05.md). Para iniciar la API local, configurar el token y usar `docker compose --profile mvp up --build api`; ver [API](docs/API.md). La pantalla local se abre en `http://127.0.0.1:8000/`; ver [WEB](docs/WEB.md). La primera demo AWS se probó por túnel SSM; ver [servidor de demo](docs/AWS-DEMO.md) para acceso, costos, captura importada y pendientes. El despliegue público sigue pendiente.
+Construye la imagen de la aplicación y corre las migraciones sobre una base SQLite guardada en el volumen `nafta2go-data`. El contenedor `migrate` termina cuando el esquema queda actualizado. Para borrar la base: `docker compose down --volumes`. La consulta completa se ejecuta con `docker compose run --rm query`; ver [POC-05](docs/POC-05.md). Para iniciar la API local, configurar el token y usar `docker compose --profile mvp up --build api`; ver [API](docs/API.md). La pantalla local se abre en `http://127.0.0.1:8000/`; ver [WEB](docs/WEB.md). La primera demo AWS se probó por túnel SSM; ver [servidor de demo](docs/AWS-DEMO.md) para acceso, costos e historial de la primera captura. La operación actual usa [Pages](https://estanislaomolina.github.io/nafta2go/) y [API HTTPS](https://nafta2go.18.216.94.147.sslip.io/), según [HOSTING](docs/HOSTING.md).
 
 ## Estado del desarrollo
 
@@ -162,7 +165,7 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración; la Ent
 | Diagnóstico estadístico servido | MVP-05 (#19) | Implementado: la API y la web sirven la referencia elegida y una alerta provisional `conservative-v1` solo para las selecciones auditadas (ADR-021). No tiene precisión medida para detectar errores reales; ver docs/API.md |
 | Ranking conservador | MVP-06 (#20) | Implementado como comparación separada que excluye excedencias de `conservative-v1`, sin cambiar el ranking general ni el precio oficial (ADR-021); ver docs/WEB.md |
 | Estimación de precios de 31 a 120 días | #117 | Implementada en API y web, rotulada y fuera del ranking (ADR-020) |
-| Operación y acceso administrativo | MVP-07 | Panel `/operacion`, estado de ingestas y métricas de consultas/rutas/diagnóstico, con token administrativo separado (ADR-016); supervisión continua pendiente |
+| Operación y acceso administrativo | MVP-07 | Panel `/operacion`, estado de ingestas y métricas de consultas/rutas/diagnóstico, con token administrativo separado (ADR-016), Prometheus/Grafana y cAdvisor; sin SLA de supervisión 24/7 |
 | Despliegue en AWS | MVP-08 (#22) | Pages y API HTTPS publicados; despliegue OIDC desde CI, smoke y rollback real comprobados; ver docs/HOSTING.md |
 | Recomendador completo | MVP-02 | CLI, caso de uso y API admiten hasta veinte candidatas (diez por defecto); ver docs/MOTOR.md |
 
@@ -174,10 +177,7 @@ La Entrega 2 (POC) incluye el flujo completo y su video de demostración; la Ent
 - **Base y caché:** SQLite local y caché de rutas en memoria por proceso, sin coordinación entre réplicas.
 - **Diagnóstico ML:** sirve una referencia estadística (mediana de la bandera) con alertas provisionales cuya precisión no se midió. Los modelos aprendidos solo se evalúan offline. En la demo de AWS el diagnóstico queda no disponible si falta el histórico.
 - **Demo AWS:** una sola instancia, operación continua autorizada y guardia de presupuesto; detener cómputo no elimina cargos de discos/IP. Ver docs/HOSTING.md.
-- **Pendientes:**
-  - video, identificación de la entrega y revisión final del equipo (#24);
-  - supervisión continua de la ingesta;
-  - pruebas con usuarios y en un teléfono físico.
+- **Límites de validación y operación:** no se acredita un SLA 24/7 del productor de capturas, utilidad con participantes, otros navegadores ni lector de pantalla. La prueba física de iPhone 13 con ubicación manual fue informada por el titular. El recorte técnico está registrado en ADR-023.
 
 ## Consulta completa con datos reales (POC-05)
 
@@ -210,7 +210,7 @@ Los tests no usan red: reemplazan la API por una sesión HTTP simulada. Solo la 
 
 ## Videos de las entregas
 
-- **Entrega 3 — MVP:** pendiente de grabación y publicación en [#24](https://github.com/estanislaomolina/nafta2go/issues/24).
+- **Entrega 3 — MVP:** [Demostración del MVP](https://youtu.be/Y3cV71ZnxuY) (7 min 26 s).
 - **Entrega 2 — POC y SRD:** [Demostración funcional de Nafta2Go](https://youtu.be/3hBFj-BQNzA) (9 min 57 s).
 - **Entrega 1 — Diseño:** [PRD y Roadmap](https://youtu.be/zZpi70Od-EE).
 

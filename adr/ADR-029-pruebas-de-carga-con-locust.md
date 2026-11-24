@@ -1,5 +1,5 @@
 ---
-status: Propuesto
+status: Aceptado
 date: 2026-11-22
 decision-makers: Equipo Nafta2Go
 consulted: PRD (RNF01), ADR-010, issue 158
